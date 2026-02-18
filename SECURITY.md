@@ -43,21 +43,21 @@
 - **Patched Version Required**: >= 1.13.5
 - **Status**: RESOLVED
 
-#### 4. Next.js Multiple Vulnerabilities
+#### 4. Next.js Multiple Critical Vulnerabilities (Including RCE)
 - **Package**: next
-- **Affected Version**: 14.1.0 → 14.2.35 → 15.0.8
-- **Final Version**: 15.2.3
+- **Affected Version**: 14.1.0 → 14.2.35 → 15.0.8 → 15.2.3
+- **Final Version**: 15.2.9
 - **Vulnerabilities**:
-  1. HTTP request deserialization DoS with React Server Components (CRITICAL)
-  2. Denial of Service with Server Components (multiple variants)
-  3. Authorization bypass vulnerability
-  4. Cache Poisoning
-  5. Server-Side Request Forgery in Server Actions
-  6. Authorization Bypass in Middleware
-  7. DoS via cache poisoning (15.0.x specific)
-- **Severity**: Critical
-- **Fix Applied**: ✅ Upgraded to 15.2.3 (with React 19)
-- **Patched Version Required**: >= 15.2.3
+  1. **RCE in React flight protocol** (CRITICAL - Remote Code Execution)
+  2. HTTP request deserialization DoS with React Server Components
+  3. Denial of Service with Server Components (multiple variants)
+  4. Authorization bypass vulnerability
+  5. Cache Poisoning
+  6. Server-Side Request Forgery in Server Actions
+  7. Authorization Bypass in Middleware
+- **Severity**: Critical (RCE)
+- **Fix Applied**: ✅ Upgraded to 15.2.9 (with React 19)
+- **Patched Version Required**: >= 15.2.9
 - **Status**: RESOLVED
 - **Note**: Required upgrade to React 19 for compatibility
 
@@ -86,7 +86,7 @@
 ### Frontend (package.json)
 ```diff
 - "next": "14.1.0"
-+ "next": "15.2.3"
++ "next": "15.2.9"
 
 - "axios": "1.6.5"
 + "axios": "1.13.5"
@@ -97,6 +97,8 @@
 - "react-dom": "18.2.0"
 + "react-dom": "19.0.0"
 ```
+
+**Critical**: Next.js 15.2.9 includes patch for RCE vulnerability in React flight protocol.
 
 ## Testing Required
 
@@ -144,23 +146,28 @@ After these updates, the following testing should be performed:
 - Subscribe to security advisories
 - Regular CodeQL scans
 
-### Next.js 15.2.3 Upgrade Notes
+### Next.js 15.2.9 Upgrade Notes
 
-Next.js 15 requires React 19. The following breaking changes may apply:
+Next.js 15 requires React 19. The following security fixes are included:
 
-1. **React 19 Changes**:
+1. **Critical Security Fixes in 15.2.9**:
+   - **RCE vulnerability patched** (Remote Code Execution in React flight protocol)
+   - HTTP request deserialization DoS fixed
+   - Server Components DoS vulnerabilities fixed
+   - Cache poisoning vulnerabilities fixed
+   - Authorization bypass in middleware fixed
+
+2. **React 19 Changes**:
    - New `useActionState` hook (replaces `useFormState`)
    - Improved form handling
    - Better error boundaries
 
-2. **Next.js 15 Changes**:
+3. **Next.js 15 Changes**:
    - Improved caching behavior
    - Better TypeScript support
    - Enhanced App Router features
-   - Fixed cache poisoning vulnerabilities
-   - Fixed authorization bypass in middleware
 
-3. **Compatibility**:
+4. **Compatibility**:
    - All current code is compatible with Next.js 15
    - No breaking changes in our implementation
    - React Server Components work as expected
@@ -173,7 +180,7 @@ Next.js 15 requires React 19. The following breaking changes may apply:
 | uvicorn | 0.27.0 | 0.34.0 | ✅ UPDATED |
 | python-multipart | 0.0.6 | 0.0.22 | ✅ RESOLVED |
 | axios | 1.6.5 | 1.13.5 | ✅ RESOLVED |
-| next | 14.1.0 → 14.2.35 → 15.0.8 | **15.2.3** | ✅ RESOLVED |
+| next | 14.1.0 → 14.2.35 → 15.0.8 → 15.2.3 | **15.2.9** | ✅ RESOLVED |
 | react | 18.2.0 | 19.0.0 | ✅ UPDATED |
 | react-dom | 18.2.0 | 19.0.0 | ✅ UPDATED |
 | @types/react | 18.2.48 | 19.0.1 | ✅ UPDATED |
