@@ -28,16 +28,20 @@ class RateLimiter:
         # Count current requests in window
         pipe.zcard(f"ratelimit:{key}")
         
-        # Add current request
-        pipe.zadd(f"ratelimit:{key}", {str(now): now})
-        
-        # Set expiry
-        pipe.expire(f"ratelimit:{key}", self.window + 1)
-        
+        # Execute cleanup and count operations
         results = pipe.execute()
         request_count = results[1]
+        allowed = request_count < self.max_requests
         
-        return request_count < self.max_requests
+        if allowed:
+            # Only record the request if it is allowed
+            pipe = self.redis_client.pipeline()
+            pipe.zadd(f"ratelimit:{key}", {str(now): now})
+            # Set expiry so the key is cleaned up when no longer needed
+            pipe.expire(f"ratelimit:{key}", self.window + 1)
+            pipe.execute()
+        
+        return allowed
     
     def wait_if_needed(self, key: str):
         """Wait if rate limit is exceeded"""
