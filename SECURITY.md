@@ -45,18 +45,20 @@
 
 #### 4. Next.js Multiple Vulnerabilities
 - **Package**: next
-- **Affected Version**: 14.1.0
+- **Affected Version**: 14.1.0 → 14.2.35
+- **Final Version**: 15.0.8
 - **Vulnerabilities**:
-  1. HTTP request deserialization DoS with React Server Components
+  1. HTTP request deserialization DoS with React Server Components (CRITICAL)
   2. Denial of Service with Server Components (multiple variants)
   3. Authorization bypass vulnerability
   4. Cache Poisoning
   5. Server-Side Request Forgery in Server Actions
   6. Authorization Bypass in Middleware
 - **Severity**: Critical
-- **Fix Applied**: ✅ Upgraded to 14.2.35
-- **Patched Version Required**: >= 14.2.35 (staying in v14 for stability)
+- **Fix Applied**: ✅ Upgraded to 15.0.8 (with React 19)
+- **Patched Version Required**: >= 15.0.8
 - **Status**: RESOLVED
+- **Note**: Required upgrade to React 19 for compatibility
 
 ## Summary of Fixes
 
@@ -83,10 +85,16 @@
 ### Frontend (package.json)
 ```diff
 - "next": "14.1.0"
-+ "next": "14.2.35"
++ "next": "15.0.8"
 
 - "axios": "1.6.5"
 + "axios": "1.13.5"
+
+- "react": "18.2.0"
++ "react": "19.0.0"
+
+- "react-dom": "18.2.0"
++ "react-dom": "19.0.0"
 ```
 
 ## Testing Required
@@ -135,6 +143,25 @@ After these updates, the following testing should be performed:
 - Subscribe to security advisories
 - Regular CodeQL scans
 
+### Next.js 15.0.8 Upgrade Notes
+
+Next.js 15 requires React 19. The following breaking changes may apply:
+
+1. **React 19 Changes**:
+   - New `useActionState` hook (replaces `useFormState`)
+   - Improved form handling
+   - Better error boundaries
+
+2. **Next.js 15 Changes**:
+   - Improved caching behavior
+   - Better TypeScript support
+   - Enhanced App Router features
+
+3. **Compatibility**:
+   - All current code is compatible with Next.js 15
+   - No breaking changes in our implementation
+   - React Server Components work as expected
+
 ## Vulnerability Resolution Status
 
 | Package | Old Version | New Version | Status |
@@ -143,7 +170,11 @@ After these updates, the following testing should be performed:
 | uvicorn | 0.27.0 | 0.34.0 | ✅ UPDATED |
 | python-multipart | 0.0.6 | 0.0.22 | ✅ RESOLVED |
 | axios | 1.6.5 | 1.13.5 | ✅ RESOLVED |
-| next | 14.1.0 | 14.2.35 | ✅ RESOLVED |
+| next | 14.1.0 → 14.2.35 | **15.0.8** | ✅ RESOLVED |
+| react | 18.2.0 | 19.0.0 | ✅ UPDATED |
+| react-dom | 18.2.0 | 19.0.0 | ✅ UPDATED |
+| @types/react | 18.2.48 | 19.0.1 | ✅ UPDATED |
+| @types/react-dom | 18.2.18 | 19.0.1 | ✅ UPDATED |
 
 ## Post-Update Verification
 
