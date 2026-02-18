@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { Activity, TrendingUp, Brain, LineChart, Filter } from 'lucide-react'
 
 export default function Home() {
@@ -138,7 +137,7 @@ export default function Home() {
           <div className="glass-card p-6">
             <h3 className="text-xl font-bold mb-4 text-secondary">Frontend</h3>
             <ul className="space-y-2 text-gray-400">
-              <li>• Next.js 14 (App Router)</li>
+              <li>• Next.js 15.2.9 (App Router)</li>
               <li>• TypeScript</li>
               <li>• Tailwind CSS</li>
               <li>• TradingView Charts</li>

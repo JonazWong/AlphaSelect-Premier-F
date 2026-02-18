@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
-![Next.js](https://img.shields.io/badge/next.js-14.1-black)
+![Next.js](https://img.shields.io/badge/next.js-15.2.9-black)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Overview
@@ -37,7 +37,7 @@
 - **ORM**: SQLAlchemy 2.0
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15.2.9 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Charts**: TradingView Lightweight Charts

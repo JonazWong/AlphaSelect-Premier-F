@@ -45,7 +45,8 @@ export default function CryptoRadarPage() {
         setTickerData(data)
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch ticker data')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch ticker data'
+      setError(errorMessage)
       console.error('Error fetching ticker:', err)
     } finally {
       setLoading(false)
@@ -57,7 +58,9 @@ export default function CryptoRadarPage() {
     
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
-      fetchTickerData(selectedSymbol)
+      fetchTickerData(selectedSymbol).catch(err => {
+        console.error('Auto-refresh failed:', err)
+      })
     }, 30000)
     
     return () => clearInterval(interval)
@@ -155,7 +158,7 @@ export default function CryptoRadarPage() {
                 <span className="text-sm">Last Price</span>
               </div>
               <div className="text-3xl font-bold font-mono text-primary">
-                ${formatNumber(parseFloat(tickerData.lastPrice), 4)}
+                ${formatNumber(parseFloat(tickerData?.lastPrice || '0'), 4)}
               </div>
             </div>
 
@@ -165,9 +168,9 @@ export default function CryptoRadarPage() {
                 <span className="text-sm">24h Change</span>
               </div>
               <div className={`text-3xl font-bold font-mono ${
-                parseFloat(tickerData.riseFallRate) > 0 ? 'text-accent' : 'text-red-500'
+                parseFloat(tickerData?.riseFallRate || '0') > 0 ? 'text-accent' : 'text-red-500'
               }`}>
-                {formatPercent(parseFloat(tickerData.riseFallRate))}
+                {formatPercent(parseFloat(tickerData?.riseFallRate || '0'))}
               </div>
             </div>
 
@@ -177,9 +180,9 @@ export default function CryptoRadarPage() {
                 <span className="text-sm">Funding Rate</span>
               </div>
               <div className={`text-3xl font-bold font-mono ${
-                parseFloat(tickerData.fundingRate) > 0 ? 'text-red-500' : 'text-accent'
+                parseFloat(tickerData?.fundingRate || '0') > 0 ? 'text-red-500' : 'text-accent'
               }`}>
-                {formatPercent(parseFloat(tickerData.fundingRate))}
+                {formatPercent(parseFloat(tickerData?.fundingRate || '0'))}
               </div>
             </div>
 
@@ -189,7 +192,7 @@ export default function CryptoRadarPage() {
                 <span className="text-sm">Open Interest</span>
               </div>
               <div className="text-3xl font-bold font-mono text-secondary">
-                ${(parseFloat(tickerData.openInterest) / 1000000).toFixed(2)}M
+                ${(parseFloat(tickerData?.openInterest || '0') / 1000000).toFixed(2)}M
               </div>
             </div>
           </div>
@@ -201,42 +204,42 @@ export default function CryptoRadarPage() {
               <div>
                 <div className="text-sm text-gray-400 mb-1">Index Price</div>
                 <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData.indexPrice), 4)}
+                  ${formatNumber(parseFloat(tickerData?.indexPrice || '0'), 4)}
                 </div>
               </div>
               
               <div>
                 <div className="text-sm text-gray-400 mb-1">Fair Price (Mark)</div>
                 <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData.fairPrice), 4)}
+                  ${formatNumber(parseFloat(tickerData?.fairPrice || '0'), 4)}
                 </div>
               </div>
               
               <div>
                 <div className="text-sm text-gray-400 mb-1">24h Volume</div>
                 <div className="text-xl font-mono text-white">
-                  ${(parseFloat(tickerData.volume24) / 1000000).toFixed(2)}M
+                  ${(parseFloat(tickerData?.volume24 || '0') / 1000000).toFixed(2)}M
                 </div>
               </div>
               
               <div>
                 <div className="text-sm text-gray-400 mb-1">24h High</div>
                 <div className="text-xl font-mono text-accent">
-                  ${formatNumber(parseFloat(tickerData.high24Price), 4)}
+                  ${formatNumber(parseFloat(tickerData?.high24Price || '0'), 4)}
                 </div>
               </div>
               
               <div>
                 <div className="text-sm text-gray-400 mb-1">24h Low</div>
                 <div className="text-xl font-mono text-red-500">
-                  ${formatNumber(parseFloat(tickerData.low24Price), 4)}
+                  ${formatNumber(parseFloat(tickerData?.low24Price || '0'), 4)}
                 </div>
               </div>
               
               <div>
                 <div className="text-sm text-gray-400 mb-1">Basis</div>
                 <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData.lastPrice) - parseFloat(tickerData.indexPrice), 4)}
+                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') - parseFloat(tickerData?.indexPrice || '0'), 4)}
                 </div>
               </div>
             </div>
@@ -263,29 +266,36 @@ export default function CryptoRadarPage() {
               
               <div className="text-right">
                 <div className="text-sm text-gray-400">Confidence Score</div>
-                <div className="text-3xl font-bold text-primary">75%</div>
+                <div className="text-3xl font-bold text-primary">75%*</div>
               </div>
+            </div>
+            
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+              <p className="text-sm text-yellow-500">
+                ⚠️ <strong>Disclaimer:</strong> The values below are placeholder examples for UI demonstration purposes only. 
+                They are NOT real AI-generated trading signals. Actual AI prediction features will be implemented in Phase 2.
+              </p>
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <div className="text-sm text-gray-400 mb-2">Entry Price</div>
                 <div className="text-2xl font-mono font-bold text-white">
-                  ${formatNumber(parseFloat(tickerData.lastPrice), 4)}
+                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0'), 4)}
                 </div>
               </div>
               
               <div>
-                <div className="text-sm text-gray-400 mb-2">Stop Loss</div>
+                <div className="text-sm text-gray-400 mb-2">Stop Loss (Example)*</div>
                 <div className="text-2xl font-mono font-bold text-red-500">
-                  ${formatNumber(parseFloat(tickerData.lastPrice) * (direction === 'long' ? 0.97 : 1.03), 4)}
+                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') * (direction === 'long' ? 0.97 : 1.03), 4)}
                 </div>
               </div>
               
               <div>
-                <div className="text-sm text-gray-400 mb-2">Take Profit</div>
+                <div className="text-sm text-gray-400 mb-2">Take Profit (Example)*</div>
                 <div className="text-2xl font-mono font-bold text-accent">
-                  ${formatNumber(parseFloat(tickerData.lastPrice) * (direction === 'long' ? 1.05 : 0.95), 4)}
+                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') * (direction === 'long' ? 1.05 : 0.95), 4)}
                 </div>
               </div>
             </div>
@@ -293,15 +303,19 @@ export default function CryptoRadarPage() {
             <div className="mt-6 pt-6 border-t border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-gray-400">Suggested Leverage</div>
+                  <div className="text-sm text-gray-400">Suggested Leverage (Example)*</div>
                   <div className="text-xl font-bold text-secondary">5x - 10x</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-gray-400">Risk Level</div>
+                  <div className="text-sm text-gray-400">Risk Level (Example)*</div>
                   <div className="text-xl font-bold text-yellow-500">Medium</div>
                 </div>
               </div>
+            </div>
+            
+            <div className="mt-4 text-xs text-gray-500 text-center">
+              * Placeholder values for demonstration only. Not financial advice.
             </div>
           </div>
         </>
