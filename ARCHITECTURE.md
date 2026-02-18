@@ -7,7 +7,7 @@ AlphaSelect Premier F follows a modern microservices architecture with clear sep
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Frontend                             │
-│                    (Next.js 14 + TypeScript)                 │
+│                    (Next.js 15.2.9 + TypeScript)             │
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │ Crypto Radar │  │ AI Training  │  │ AI Predict   │      │
@@ -49,7 +49,7 @@ AlphaSelect Premier F follows a modern microservices architecture with clear sep
 
 ### Frontend Layer
 
-#### Next.js 14 Application
+#### Next.js 15.2.9 Application
 - **App Router**: Modern Next.js routing
 - **Server Components**: For better performance
 - **Client Components**: Interactive UI elements

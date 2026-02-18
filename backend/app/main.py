@@ -61,10 +61,22 @@ async def health_check():
 
 
 # Import and include routers
-from app.api.v1.endpoints import contract_market
+from app.api.v1.endpoints import contract_market, ai_training, ai_predict
 
 app.include_router(
     contract_market.router,
     prefix="/api/v1/contract",
     tags=["Contract Market"]
+)
+
+app.include_router(
+    ai_training.router,
+    prefix="/api/v1/ai/training",
+    tags=["AI Training"]
+)
+
+app.include_router(
+    ai_predict.router,
+    prefix="/api/v1/ai/predict",
+    tags=["AI Prediction"]
 )
