@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.1.0",
+    "next": "14.2.35",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.3.3",
@@ -22,7 +22,7 @@
     "zustand": "4.5.0",
     "react-i18next": "14.0.1",
     "i18next": "23.7.16",
-    "axios": "1.6.5",
+    "axios": "1.13.5",
     "socket.io-client": "4.6.1",
     "lightweight-charts": "4.1.1",
     "recharts": "2.10.4",
