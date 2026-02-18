@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Brain, TrendingUp, LineChart, Filter } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home } from 'lucide-react'
 
 export default function Navigation() {
   const pathname = usePathname()
   
   const navItems = [
-    { href: '/', label: 'Home', icon: Activity },
+    { href: '/', label: 'Home', icon: Home },
     { href: '/crypto-radar', label: 'Crypto Radar', icon: Activity },
     { href: '/ai-training', label: 'AI Training', icon: Brain },
     { href: '/ai-predictions', label: 'AI Predictions', icon: TrendingUp },
