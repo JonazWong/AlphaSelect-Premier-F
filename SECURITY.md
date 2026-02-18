@@ -206,7 +206,7 @@ Next.js 15 requires React 19. The following security fixes are included:
 
 ## Notes
 
-- Next.js was upgraded to 14.2.35 (not 15.x) to maintain stability and avoid breaking changes
+- Next.js was upgraded to 15.2.9 after validating stability and checking for breaking changes
 - All patches are backward compatible with existing code
 - No API changes required
 - No database migrations needed
