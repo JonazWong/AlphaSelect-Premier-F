@@ -45,8 +45,8 @@
 
 #### 4. Next.js Multiple Vulnerabilities
 - **Package**: next
-- **Affected Version**: 14.1.0 → 14.2.35
-- **Final Version**: 15.0.8
+- **Affected Version**: 14.1.0 → 14.2.35 → 15.0.8
+- **Final Version**: 15.2.3
 - **Vulnerabilities**:
   1. HTTP request deserialization DoS with React Server Components (CRITICAL)
   2. Denial of Service with Server Components (multiple variants)
@@ -54,9 +54,10 @@
   4. Cache Poisoning
   5. Server-Side Request Forgery in Server Actions
   6. Authorization Bypass in Middleware
+  7. DoS via cache poisoning (15.0.x specific)
 - **Severity**: Critical
-- **Fix Applied**: ✅ Upgraded to 15.0.8 (with React 19)
-- **Patched Version Required**: >= 15.0.8
+- **Fix Applied**: ✅ Upgraded to 15.2.3 (with React 19)
+- **Patched Version Required**: >= 15.2.3
 - **Status**: RESOLVED
 - **Note**: Required upgrade to React 19 for compatibility
 
@@ -85,7 +86,7 @@
 ### Frontend (package.json)
 ```diff
 - "next": "14.1.0"
-+ "next": "15.0.8"
++ "next": "15.2.3"
 
 - "axios": "1.6.5"
 + "axios": "1.13.5"
@@ -143,7 +144,7 @@ After these updates, the following testing should be performed:
 - Subscribe to security advisories
 - Regular CodeQL scans
 
-### Next.js 15.0.8 Upgrade Notes
+### Next.js 15.2.3 Upgrade Notes
 
 Next.js 15 requires React 19. The following breaking changes may apply:
 
@@ -156,6 +157,8 @@ Next.js 15 requires React 19. The following breaking changes may apply:
    - Improved caching behavior
    - Better TypeScript support
    - Enhanced App Router features
+   - Fixed cache poisoning vulnerabilities
+   - Fixed authorization bypass in middleware
 
 3. **Compatibility**:
    - All current code is compatible with Next.js 15
@@ -170,7 +173,7 @@ Next.js 15 requires React 19. The following breaking changes may apply:
 | uvicorn | 0.27.0 | 0.34.0 | ✅ UPDATED |
 | python-multipart | 0.0.6 | 0.0.22 | ✅ RESOLVED |
 | axios | 1.6.5 | 1.13.5 | ✅ RESOLVED |
-| next | 14.1.0 → 14.2.35 | **15.0.8** | ✅ RESOLVED |
+| next | 14.1.0 → 14.2.35 → 15.0.8 | **15.2.3** | ✅ RESOLVED |
 | react | 18.2.0 | 19.0.0 | ✅ UPDATED |
 | react-dom | 18.2.0 | 19.0.0 | ✅ UPDATED |
 | @types/react | 18.2.48 | 19.0.1 | ✅ UPDATED |
