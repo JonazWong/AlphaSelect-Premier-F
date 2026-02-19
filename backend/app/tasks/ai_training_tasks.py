@@ -2,32 +2,59 @@ from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
 from app.models.ai_model import AIModel
 from app.models.contract_market import ContractMarket
-from app.ai.training.trainer import ModelTrainer
-from app.ai.models.ensemble_model import EnsembleModel
+from app.services.ai_training_service import AITrainingService
+from app.ai.models import (
+    LSTMModel, XGBoostModel, RandomForestModel,
+    ARIMAModel, LinearRegressionModel, EnsembleModel
+)
 from typing import Dict, Any
 import pandas as pd
 import os
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 
 @celery_app.task(bind=True, name='train_single_model')
-def train_single_model_task(self, model_id: str, symbol: str, model_type: str, config: Dict[str, Any] = None):
+def train_single_model_task(self, session_id: str, model_id: str, symbol: str, model_type: str, config: Dict[str, Any] = None):
     """
-    Celery task to train a single AI model
+    Celery task to train a single AI model with WebSocket progress updates
     
     Args:
+        session_id: Training session ID for WebSocket updates
         model_id: Database ID of the AIModel record
         symbol: Trading symbol
-        model_type: Type of model (lstm, xgboost, etc.)
+        model_type: Type of model (lstm, xgboost, random_forest, arima, linear_regression)
         config: Model configuration
     """
     db = SessionLocal()
     
+    async def send_progress(status: str, progress: float = 0, **kwargs):
+        """Send progress update via WebSocket"""
+        from app.websocket import broadcast_training_progress
+        await broadcast_training_progress(session_id, {
+            'status': status,
+            'progress': progress,
+            'model_id': model_id,
+            'model_type': model_type,
+            **kwargs
+        })
+    
+    def sync_send_progress(status: str, progress: float = 0, **kwargs):
+        """Synchronous wrapper for progress updates"""
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(send_progress(status, progress, **kwargs))
+            loop.close()
+        except Exception as e:
+            logger.warning(f"Failed to send progress update: {e}")
+    
     try:
         # Update task progress
-        self.update_state(state='PROGRESS', meta={'status': 'Loading data...'})
+        self.update_state(state='PROGRESS', meta={'status': 'Loading data...', 'progress': 10})
+        sync_send_progress('Loading data...', 10)
         
         # Fetch contract data
         contract_data = db.query(ContractMarket).filter(
@@ -53,38 +80,63 @@ def train_single_model_task(self, model_id: str, symbol: str, model_type: str, c
         } for record in contract_data])
         
         # Update progress
-        self.update_state(state='PROGRESS', meta={'status': 'Training model...'})
+        self.update_state(state='PROGRESS', meta={'status': 'Training model...', 'progress': 30})
+        sync_send_progress('Training model...', 30)
         
-        # Train model
-        trainer = ModelTrainer(symbol)
-        result = trainer.train_model(df, model_type, config)
+        # Train model using service
+        training_service = AITrainingService()
+        result = training_service.train_model(symbol, model_type, df, config)
         
-        logger.info(f"Model training completed with metrics: {result['metrics']}")
+        logger.info(f"Model training completed with metrics: {result['train_metrics']}")
         
         # Update progress
-        self.update_state(state='PROGRESS', meta={'status': 'Saving model...'})
+        self.update_state(state='PROGRESS', meta={'status': 'Saving model...', 'progress': 80})
+        sync_send_progress('Saving model...', 80)
         
         # Save model
         model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
-        os.makedirs(model_dir, exist_ok=True)
-        file_path = trainer.save_model(result['model'], model_dir)
+        file_path = training_service.save_model(
+            result['model'],
+            model_dir,
+            symbol,
+            model_type
+        )
         
         # Update database record
         ai_model = db.query(AIModel).filter(AIModel.id == model_id).first()
         if ai_model:
             from datetime import datetime
             ai_model.status = 'trained'
-            ai_model.metrics = result['metrics']
+            ai_model.metrics = result['test_metrics']
             ai_model.file_path = file_path
             ai_model.training_completed_at = datetime.utcnow()
             db.commit()
             
         logger.info(f"Model {model_id} saved to {file_path}")
         
+        # Send completion
+        self.update_state(state='SUCCESS', meta={'status': 'Training completed', 'progress': 100})
+        sync_send_progress('Training completed', 100, metrics=result['test_metrics'])
+        
+        # Broadcast completion
+        try:
+            from app.websocket import broadcast_training_complete
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_training_complete(session_id, {
+                'model_id': model_id,
+                'model_type': model_type,
+                'metrics': result['test_metrics'],
+                'file_path': file_path
+            }))
+            loop.close()
+        except Exception as e:
+            logger.warning(f"Failed to broadcast completion: {e}")
+        
         return {
             'status': 'success',
             'model_id': model_id,
-            'metrics': result['metrics'],
+            'metrics': result['test_metrics'],
             'file_path': file_path
         }
         
@@ -102,26 +154,51 @@ def train_single_model_task(self, model_id: str, symbol: str, model_type: str, c
         except Exception as db_error:
             logger.error(f"Error updating failed status: {db_error}")
         
+        # Broadcast failure
+        try:
+            from app.websocket import broadcast_training_failed
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_training_failed(session_id, str(e)))
+            loop.close()
+        except Exception as ws_error:
+            logger.warning(f"Failed to broadcast failure: {ws_error}")
+        
         raise
     
     finally:
         db.close()
-
-
 @celery_app.task(bind=True, name='train_ensemble_models')
-def train_ensemble_models_task(self, symbol: str, model_configs: Dict[str, Dict[str, Any]]):
+def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs: Dict[str, Dict[str, Any]] = None):
     """
     Celery task to train multiple models for ensemble
     
     Args:
+        session_id: Training session ID for WebSocket updates
         symbol: Trading symbol
         model_configs: Dict mapping model_type to config
     """
     db = SessionLocal()
     results = {}
     
+    def sync_send_progress(status: str, progress: float = 0, **kwargs):
+        """Synchronous wrapper for progress updates"""
+        try:
+            from app.websocket import broadcast_training_progress
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_training_progress(session_id, {
+                'status': status,
+                'progress': progress,
+                **kwargs
+            }))
+            loop.close()
+        except Exception as e:
+            logger.warning(f"Failed to send progress update: {e}")
+    
     try:
         self.update_state(state='PROGRESS', meta={'status': 'Training ensemble models...'})
+        sync_send_progress('Loading data...', 5)
         
         # Fetch contract data once
         contract_data = db.query(ContractMarket).filter(
@@ -143,65 +220,104 @@ def train_ensemble_models_task(self, symbol: str, model_configs: Dict[str, Dict[
             'basis_rate': record.basis_rate
         } for record in contract_data])
         
-        # Train each model
-        trainer = ModelTrainer(symbol)
-        model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
-        os.makedirs(model_dir, exist_ok=True)
+        # Use AITrainingService for ensemble training
+        training_service = AITrainingService()
         
-        for model_type, config in model_configs.items():
-            try:
-                self.update_state(
-                    state='PROGRESS',
-                    meta={'status': f'Training {model_type}...', 'models_completed': len(results)}
-                )
-                
-                # Create database record
+        # Set default configs if not provided
+        if model_configs is None:
+            model_configs = {
+                'lstm': {'sequence_length': 60, 'epochs': 50},
+                'xgboost': {'n_estimators': 100},
+                'random_forest': {'n_estimators': 100},
+                'arima': {},
+                'linear_regression': {}
+            }
+        
+        sync_send_progress('Training ensemble models...', 10)
+        
+        # Train ensemble
+        ensemble_result = training_service.train_ensemble(symbol, df, model_configs)
+        
+        # Save ensemble model
+        model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
+        ensemble_path = training_service.save_model(
+            ensemble_result['ensemble'],
+            model_dir,
+            symbol,
+            'ensemble'
+        )
+        
+        sync_send_progress('Saving models...', 90)
+        
+        # Create database records for individual models
+        for model_type, result in ensemble_result['individual_results'].items():
+            if result['status'] == 'success':
                 from datetime import datetime
                 ai_model = AIModel(
                     symbol=symbol,
                     model_type=model_type,
-                    config=config or {},
-                    status='training',
-                    training_started_at=datetime.utcnow()
+                    config=model_configs.get(model_type, {}),
+                    status='trained',
+                    metrics=result['test_metrics'],
+                    training_started_at=datetime.utcnow(),
+                    training_completed_at=datetime.utcnow()
                 )
                 db.add(ai_model)
-                db.commit()
-                db.refresh(ai_model)
-                
-                # Train
-                result = trainer.train_model(df, model_type, config)
-                file_path = trainer.save_model(result['model'], model_dir)
-                
-                # Update record
-                ai_model.status = 'trained'
-                ai_model.metrics = result['metrics']
-                ai_model.file_path = file_path
-                ai_model.training_completed_at = datetime.utcnow()
-                db.commit()
-                
-                results[model_type] = {
-                    'status': 'success',
-                    'model_id': ai_model.id,
-                    'metrics': result['metrics']
-                }
-                
-                logger.info(f"✓ {model_type} completed")
-                
-            except Exception as e:
-                logger.error(f"✗ {model_type} failed: {e}")
-                results[model_type] = {
-                    'status': 'failed',
-                    'error': str(e)
-                }
+        
+        # Create ensemble model record
+        from datetime import datetime
+        ensemble_model = AIModel(
+            symbol=symbol,
+            model_type='ensemble',
+            config={'weights': ensemble_result['weights']},
+            status='trained',
+            metrics=ensemble_result['ensemble_metrics'],
+            file_path=ensemble_path,
+            training_started_at=datetime.utcnow(),
+            training_completed_at=datetime.utcnow()
+        )
+        db.add(ensemble_model)
+        db.commit()
+        
+        logger.info(f"Ensemble training completed for {symbol}")
+        
+        sync_send_progress('Training completed', 100)
+        
+        # Broadcast completion
+        try:
+            from app.websocket import broadcast_training_complete
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_training_complete(session_id, {
+                'ensemble_metrics': ensemble_result['ensemble_metrics'],
+                'weights': ensemble_result['weights'],
+                'individual_results': ensemble_result['individual_results']
+            }))
+            loop.close()
+        except Exception as e:
+            logger.warning(f"Failed to broadcast completion: {e}")
         
         return {
             'status': 'completed',
             'symbol': symbol,
-            'results': results
+            'ensemble_metrics': ensemble_result['ensemble_metrics'],
+            'weights': ensemble_result['weights'],
+            'results': ensemble_result['individual_results']
         }
         
     except Exception as e:
         logger.error(f"Error in ensemble training: {e}", exc_info=True)
+        
+        # Broadcast failure
+        try:
+            from app.websocket import broadcast_training_failed
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_training_failed(session_id, str(e)))
+            loop.close()
+        except Exception as ws_error:
+            logger.warning(f"Failed to broadcast failure: {ws_error}")
+        
         raise
     
     finally:
