@@ -112,6 +112,7 @@ export default function AITrainingPage() {
 
   useEffect(() => {
     fetchTrainedModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSymbol])
 
   // Start training
@@ -183,7 +184,12 @@ export default function AITrainingPage() {
                 disabled={isTraining}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedModel === model.id
-                    ? `border-${model.color}-500 bg-${model.color}-500/10`
+                    ? model.color === 'cyan' ? 'border-cyan-500 bg-cyan-500/10' :
+                      model.color === 'purple' ? 'border-purple-500 bg-purple-500/10' :
+                      model.color === 'green' ? 'border-green-500 bg-green-500/10' :
+                      model.color === 'blue' ? 'border-blue-500 bg-blue-500/10' :
+                      model.color === 'yellow' ? 'border-yellow-500 bg-yellow-500/10' :
+                      'border-red-500 bg-red-500/10'
                     : 'border-gray-600 hover:border-gray-500'
                 } ${isTraining ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >

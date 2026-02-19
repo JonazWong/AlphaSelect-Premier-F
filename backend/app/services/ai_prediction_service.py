@@ -107,7 +107,7 @@ class AIPredictionService:
                 'price_change': price_change,
                 'price_change_pct': price_change_pct,
                 'timestamp': datetime.utcnow().isoformat(),
-                'all_predictions': predictions.tolist() if len(predictions) > 1 else [current_prediction]
+                'all_predictions': predictions.tolist()
             }
             
             return result

@@ -11,7 +11,6 @@ class LinearRegressionModel(BaseModel):
         
         # Default configuration
         self.config.setdefault('fit_intercept', True)
-        self.config.setdefault('normalize', False)
         
     def build_model(self) -> None:
         """Build Linear Regression model"""
