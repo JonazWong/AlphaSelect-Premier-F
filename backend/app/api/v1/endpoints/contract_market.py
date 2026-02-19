@@ -376,23 +376,30 @@ async def get_contract_signals(
                     target2 = current_price * 0.95    # 5% target
                 
                 # Calculate confidence based on multiple factors
+                # Normalize price_change to percentage points so logic is consistent
+                normalized_change_pct = abs(price_change)
+                if normalized_change_pct <= 1:
+                    # Treat very small values as decimal fractions (e.g. 0.052 -> 5.2%)
+                    normalized_change_pct *= 100
+
                 base_confidence = 60
-                momentum_boost = min(20, abs(price_change) * 10)
+                # Momentum boost scales with normalized percentage move, capped to avoid extremes
+                momentum_boost = min(20, normalized_change_pct * 10)
                 confidence = min(95, base_confidence + momentum_boost)
                 
-                # Determine risk level
-                if abs(price_change) > 5:
+                # Determine risk level based on normalized percentage move
+                if normalized_change_pct > 5:
                     risk_level = 'High'
-                elif abs(price_change) > 2:
+                elif normalized_change_pct > 2:
                     risk_level = 'Medium'
                 else:
                     risk_level = 'Low'
                 
                 # Generate technical signals
                 technical_signals = []
-                if abs(price_change) > 3:
+                if normalized_change_pct > 3:
                     technical_signals.append('強勢動能' if direction.lower() == 'long' else '空頭動能')
-                if abs(price_change) > 2:
+                if normalized_change_pct > 2:
                     technical_signals.append('成交量放大')
                 else:
                     technical_signals.append('趨勢形成')
