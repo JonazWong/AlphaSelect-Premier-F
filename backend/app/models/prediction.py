@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer
+from sqlalchemy import Column, String, Float, DateTime, Integer, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 import uuid
@@ -6,6 +6,7 @@ from app.db.session import Base
 
 
 class Prediction(Base):
+    """AI 預測數據表"""
     __tablename__ = 'predictions'
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -19,8 +20,12 @@ class Prediction(Base):
     prediction_time = Column(DateTime, default=datetime.utcnow, index=True)
     target_time = Column(DateTime)  # When the prediction is for
     actual_value = Column(Float)  # Filled after target_time
-    metadata = Column(JSONB)  # Additional details
+    extra_data = Column(JSONB)  # 額外數據 (renamed from metadata to avoid SQLAlchemy conflict)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_symbol_prediction_time', 'symbol', 'prediction_time'),
+    )
 
     def __repr__(self):
         return f"<Prediction {self.symbol} {self.predicted_value} by {self.model_type}>"
