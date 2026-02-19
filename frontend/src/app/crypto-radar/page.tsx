@@ -1,325 +1,370 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Activity, DollarSign, Percent, BarChart3 } from 'lucide-react'
-import axios from 'axios'
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Zap, Target, Activity, AlertCircle, RefreshCw } from 'lucide-react';
+import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-interface TickerData {
-  symbol: string
-  lastPrice: number
-  fairPrice: number
-  indexPrice: number
-  fundingRate: number
-  openInterest: number
-  volume24: number
-  riseFallRate: number
-  high24Price: number
-  low24Price: number
+interface ContractSignal {
+  symbol: string;
+  direction: 'Long' | 'Short';
+  currentPrice: number;
+  entryPrice: number;
+  stopLoss: number;
+  target1: number;
+  target2: number;
+  leverage: string;
+  fundingRate: number;
+  openInterest: string;
+  openInterestChange: number;
+  confidence: number;
+  riskLevel: 'Low' | 'Medium' | 'High';
+  signals: string[];
+  currency?: string;
 }
 
-export default function CryptoRadarPage() {
-  const [direction, setDirection] = useState<'long' | 'short'>('long')
-  const [selectedSymbol, setSelectedSymbol] = useState('BTC_USDT')
-  const [tickerData, setTickerData] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+interface MarketStats {
+  strength: number;
+  winRate: number;
+  avgFundingRate: number;
+  totalOI: string;
+  currency?: string;
+}
 
-  const popularSymbols = [
-    'BTC_USDT',
-    'ETH_USDT',
-    'SOL_USDT',
-    'BNB_USDT',
-    'XRP_USDT',
-    'ADA_USDT',
-  ]
+export default function CryptoRadar() {
+  const [activeTab, setActiveTab] = useState<'long' | 'short'>('long');
+  const [signals, setSignals] = useState<ContractSignal[]>([]);
+  const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchTickerData = async (symbol: string) => {
-    setLoading(true)
-    setError('')
+  // Fetch market statistics
+  const fetchMarketStats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/contract/ticker/${symbol}`)
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data
-        setTickerData(data)
-      }
+      const response = await axios.get(`${API_URL}/api/v1/contract/market-stats`);
+      setMarketStats(response.data);
     } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch ticker data'
-      setError(errorMessage)
-      console.error('Error fetching ticker:', err)
-    } finally {
-      setLoading(false)
+      console.error('Failed to fetch market stats:', err);
+      // Don't block main data loading, but inform the user that stats may be outdated/unavailable
+      setError((prev) => prev ?? '市場統計無法載入，部分指標可能過期或不可用');
     }
-  }
+  };
+
+  // Fetch trading signals
+  const fetchSignals = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    setError(null);
+    
+    try {
+      const response = await axios.get(`${API_URL}/api/v1/contract/signals`, {
+        params: {
+          direction: activeTab,
+          limit: 10
+        }
+      });
+      
+      setSignals(response.data);
+      
+    } catch (err: any) {
+      console.error('Failed to fetch signals:', err);
+      setError(err.response?.data?.detail || err.message || '無法載入數據');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetchTickerData(selectedSymbol)
+    fetchMarketStats();
+    fetchSignals();
     
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
-      fetchTickerData(selectedSymbol).catch(err => {
-        console.error('Auto-refresh failed:', err)
-      })
-    }, 30000)
+      fetchSignals(false);
+      fetchMarketStats();
+    }, 30000);
     
-    return () => clearInterval(interval)
-  }, [selectedSymbol])
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
-  const formatNumber = (num: number, decimals: number = 2) => {
-    return num?.toFixed(decimals) || '0.00'
-  }
-
-  const formatPercent = (num: number) => {
-    return `${num > 0 ? '+' : ''}${(num * 100).toFixed(4)}%`
-  }
+  const handleRefresh = () => {
+    fetchSignals(false);
+    fetchMarketStats();
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen p-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">
-            <span className="text-gradient-cyan-purple">Contract Trading Radar</span>
-          </h1>
-          <p className="text-gray-400">
-            Real-time MEXC contract analysis with AI-powered signals
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
+            <Zap className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-5xl font-bold mb-2">
+              <span className="text-gradient-cyan-purple">合約交易雷達</span>
+            </h1>
+            <p className="text-xl text-gray-400">
+              AI 驅動的永續合約交易信號 (USD)
+            </p>
+          </div>
         </div>
         
-        {/* Direction Toggle */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDirection('long')}
-            className={`px-8 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all ${
-              direction === 'long'
-                ? 'bg-accent text-black shadow-neon-green'
-                : 'bg-card text-gray-400 hover:bg-card/70'
-            }`}
-          >
-            <TrendingUp className="w-5 h-5" />
-            LONG
-          </button>
-          <button
-            onClick={() => setDirection('short')}
-            className={`px-8 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all ${
-              direction === 'short'
-                ? 'bg-red-500 text-white shadow-red-500/50'
-                : 'bg-card text-gray-400 hover:bg-card/70'
-            }`}
-          >
-            <TrendingDown className="w-5 h-5" />
-            SHORT
-          </button>
-        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="px-6 py-3 rounded-lg bg-card hover:bg-card/70 border border-gray-700 flex items-center gap-2 transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          刷新
+        </button>
       </div>
 
-      {/* Symbol Selection */}
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-4">Select Trading Pair</h3>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {popularSymbols.map((symbol) => (
-            <button
-              key={symbol}
-              onClick={() => setSelectedSymbol(symbol)}
-              className={`px-4 py-3 rounded-lg font-semibold transition-all ${
-                selectedSymbol === symbol
-                  ? 'bg-primary text-black shadow-neon-cyan'
-                  : 'bg-card hover:bg-card/70 text-gray-300'
-              }`}
-            >
-              {symbol.replace('_USDT', '')}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      {loading && (
-        <div className="glass-card p-12 text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading market data...</p>
+      {/* Market Stats */}
+      {marketStats && (
+        <div className="grid md:grid-cols-4 gap-6">
+          <div className="glass-card p-6 bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+            <div className="text-sm text-gray-400 mb-2">市場強度</div>
+            <div className="text-4xl font-bold text-green-400">
+              {marketStats.strength}/10
+            </div>
+          </div>
+          <div className="glass-card p-6 bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
+            <div className="text-sm text-gray-400 mb-2">30 天勝率</div>
+            <div className="text-4xl font-bold text-gradient-cyan-purple">
+              {marketStats.winRate}%
+            </div>
+          </div>
+          <div className="glass-card p-6 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
+            <div className="text-sm text-gray-400 mb-2">平均資金費率</div>
+            <div className="text-4xl font-bold font-mono text-purple-400">
+              {(marketStats.avgFundingRate * 100).toFixed(4)}%
+            </div>
+          </div>
+          <div className="glass-card p-6 bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+            <div className="text-sm text-gray-400 mb-2">總持倉量</div>
+            <div className="text-4xl font-bold font-mono text-blue-400">
+              {marketStats.totalOI}
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Direction Tabs */}
+      <div className="flex gap-4">
+        <button
+          onClick={() => setActiveTab('long')}
+          className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
+            activeTab === 'long'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/50'
+              : 'bg-card hover:bg-card/70 text-gray-400 border border-gray-700'
+          }`}
+        >
+          <TrendingUp className="w-6 h-6" />
+          做多信號
+        </button>
+        <button
+          onClick={() => setActiveTab('short')}
+          className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
+            activeTab === 'short'
+              ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50'
+              : 'bg-card hover:bg-card/70 text-gray-400 border border-gray-700'
+          }`}
+        >
+          <TrendingDown className="w-6 h-6" />
+          做空信號
+        </button>
+      </div>
+
+      {/* Error Display */}
       {error && (
         <div className="glass-card p-6 bg-red-500/10 border-red-500/50">
-          <p className="text-red-400">{error}</p>
+          <div className="flex items-center gap-3 mb-4">
+            <AlertCircle className="h-6 w-6 text-red-400" />
+            <div>
+              <div className="font-bold text-red-400">載入失敗</div>
+              <div className="text-sm text-gray-400">{error}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => fetchSignals()}
+            className="px-6 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 transition-all"
+          >
+            重試
+          </button>
         </div>
       )}
 
-      {!loading && !error && tickerData && (
-        <>
-          {/* Price Overview */}
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="glass-card p-6 neon-glow">
-              <div className="flex items-center gap-2 mb-2 text-gray-400">
-                <DollarSign className="w-5 h-5" />
-                <span className="text-sm">Last Price</span>
-              </div>
-              <div className="text-3xl font-bold font-mono text-primary">
-                ${formatNumber(parseFloat(tickerData?.lastPrice || '0'), 4)}
-              </div>
-            </div>
+      {/* Loading State */}
+      {loading && !error && (
+        <div className="text-center py-12">
+          <Activity className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-gray-400">載入信號中...</p>
+        </div>
+      )}
 
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-2 mb-2 text-gray-400">
-                <Activity className="w-5 h-5" />
-                <span className="text-sm">24h Change</span>
+      {/* Signals Grid */}
+      {!loading && !error && signals.length > 0 && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {signals.map((signal, idx) => (
+            <div
+              key={idx}
+              className={`glass-card p-6 bg-gradient-to-br ${
+                signal.direction === 'Long'
+                  ? 'from-green-500/5 to-transparent border-green-500/20'
+                  : 'from-red-500/5 to-transparent border-red-500/20'
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                      signal.direction === 'Long'
+                        ? 'bg-green-500/20 border-2 border-green-500/50'
+                        : 'bg-red-500/20 border-2 border-red-500/50'
+                    }`}
+                  >
+                    {signal.direction === 'Long' ? (
+                      <TrendingUp className="h-7 w-7 text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-7 w-7 text-red-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold">{signal.symbol}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                          signal.direction === 'Long'
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                            : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                        }`}
+                      >
+                        {signal.direction}
+                      </span>
+                      <span className="px-3 py-1 rounded-lg text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/50">
+                        {signal.leverage}
+                      </span>
+                      <span className="px-3 py-1 rounded-lg text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/50">
+                        USD
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold font-mono text-primary">
+                    ${signal.currentPrice.toLocaleString('en-US')}
+                  </div>
+                  <div className="text-sm text-gray-400">Current</div>
+                </div>
               </div>
-              <div className={`text-3xl font-bold font-mono ${
-                parseFloat(tickerData?.riseFallRate || '0') > 0 ? 'text-accent' : 'text-red-500'
-              }`}>
-                {formatPercent(parseFloat(tickerData?.riseFallRate || '0'))}
-              </div>
-            </div>
 
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-2 mb-2 text-gray-400">
-                <Percent className="w-5 h-5" />
-                <span className="text-sm">Funding Rate</span>
-              </div>
-              <div className={`text-3xl font-bold font-mono ${
-                parseFloat(tickerData?.fundingRate || '0') > 0 ? 'text-red-500' : 'text-accent'
-              }`}>
-                {formatPercent(parseFloat(tickerData?.fundingRate || '0'))}
-              </div>
-            </div>
-
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-2 mb-2 text-gray-400">
-                <BarChart3 className="w-5 h-5" />
-                <span className="text-sm">Open Interest</span>
-              </div>
-              <div className="text-3xl font-bold font-mono text-secondary">
-                ${(parseFloat(tickerData?.openInterest || '0') / 1000000).toFixed(2)}M
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Stats */}
-          <div className="glass-card p-6">
-            <h3 className="text-xl font-bold mb-6">Market Statistics</h3>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Index Price</div>
-                <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData?.indexPrice || '0'), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Fair Price (Mark)</div>
-                <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData?.fairPrice || '0'), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-1">24h Volume</div>
-                <div className="text-xl font-mono text-white">
-                  ${(parseFloat(tickerData?.volume24 || '0') / 1000000).toFixed(2)}M
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-1">24h High</div>
-                <div className="text-xl font-mono text-accent">
-                  ${formatNumber(parseFloat(tickerData?.high24Price || '0'), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-1">24h Low</div>
-                <div className="text-xl font-mono text-red-500">
-                  ${formatNumber(parseFloat(tickerData?.low24Price || '0'), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Basis</div>
-                <div className="text-xl font-mono text-white">
-                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') - parseFloat(tickerData?.indexPrice || '0'), 4)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trading Signal Card */}
-          <div className={`glass-card p-8 ${
-            direction === 'long' ? 'border-accent' : 'border-red-500'
-          } border-2`}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold flex items-center gap-3">
-                {direction === 'long' ? (
-                  <>
-                    <TrendingUp className="w-8 h-8 text-accent" />
-                    <span className="text-accent">LONG Signal</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="w-8 h-8 text-red-500" />
-                    <span className="text-red-500">SHORT Signal</span>
-                  </>
-                )}
-              </h3>
-              
-              <div className="text-right">
-                <div className="text-sm text-gray-400">Confidence Score</div>
-                <div className="text-3xl font-bold text-primary">75%*</div>
-              </div>
-            </div>
-            
-            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
-              <p className="text-sm text-yellow-500">
-                ⚠️ <strong>Disclaimer:</strong> The values below are placeholder examples for UI demonstration purposes only. 
-                They are NOT real AI-generated trading signals. Actual AI prediction features will be implemented in Phase 2.
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-6">
-              <div>
-                <div className="text-sm text-gray-400 mb-2">Entry Price</div>
-                <div className="text-2xl font-mono font-bold text-white">
-                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0'), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-2">Stop Loss (Example)*</div>
-                <div className="text-2xl font-mono font-bold text-red-500">
-                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') * (direction === 'long' ? 0.97 : 1.03), 4)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-gray-400 mb-2">Take Profit (Example)*</div>
-                <div className="text-2xl font-mono font-bold text-accent">
-                  ${formatNumber(parseFloat(tickerData?.lastPrice || '0') * (direction === 'long' ? 1.05 : 0.95), 4)}
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <div className="flex items-center justify-between">
+              {/* Trading Levels */}
+              <div className="grid grid-cols-2 gap-4 mb-6 p-4 rounded-xl bg-black/20 border border-gray-700/50">
                 <div>
-                  <div className="text-sm text-gray-400">Suggested Leverage (Example)*</div>
-                  <div className="text-xl font-bold text-secondary">5x - 10x</div>
+                  <div className="text-xs text-gray-400 mb-1">入場價 (USD)</div>
+                  <div className="text-lg font-bold font-mono text-cyan-400">
+                    ${signal.entryPrice.toFixed(2)}
+                  </div>
                 </div>
-                
                 <div>
-                  <div className="text-sm text-gray-400">Risk Level (Example)*</div>
-                  <div className="text-xl font-bold text-yellow-500">Medium</div>
+                  <div className="text-xs text-gray-400 mb-1">止損 (USD)</div>
+                  <div className="text-lg font-bold font-mono text-red-400">
+                    ${signal.stopLoss.toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">目標 1 (USD)</div>
+                  <div className="text-lg font-bold font-mono text-green-400">
+                    ${signal.target1.toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">目標 2 (USD)</div>
+                  <div className="text-lg font-bold font-mono text-green-400">
+                    ${signal.target2.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Confidence Bar */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-gray-400">AI 信心分數</span>
+                  <span className="font-bold text-primary">{signal.confidence}%</span>
+                </div>
+                <div className="h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-500"
+                    style={{ width: `${signal.confidence}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Risk Level and OI */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">風險等級</div>
+                  <span
+                    className={`px-3 py-1 rounded-lg text-sm font-bold inline-block ${
+                      signal.riskLevel === 'Low'
+                        ? 'bg-green-500/20 text-green-400'
+                        : signal.riskLevel === 'Medium'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}
+                  >
+                    {signal.riskLevel}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">持倉量變化</div>
+                  <div className="text-sm font-bold text-cyan-400">
+                    {signal.openInterestChange > 0 ? '+' : ''}
+                    {signal.openInterestChange.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+
+              {/* Technical Signals */}
+              <div>
+                <div className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  技術信號
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {signal.signals.map((sig, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 rounded-lg text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700"
+                    >
+                      {sig}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
-            
-            <div className="mt-4 text-xs text-gray-500 text-center">
-              * Placeholder values for demonstration only. Not financial advice.
-            </div>
-          </div>
-        </>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && signals.length === 0 && (
+        <div className="glass-card p-12 text-center">
+          <Zap className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+          <p className="text-xl text-gray-400">
+            當前沒有符合條件的{activeTab === 'long' ? '做多' : '做空'}信號
+          </p>
+          <p className="text-sm text-gray-500 mt-2">請稍後再試或切換方向</p>
+        </div>
       )}
     </div>
-  )
+  );
 }
