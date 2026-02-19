@@ -12,13 +12,12 @@ python-socketio==5.11.0
 python-multipart==0.0.22
 
 # AI/ML
-tensorflow==2.15.0
+tensorflow==2.18.0
 xgboost==2.0.3
 scikit-learn==1.4.0
 statsmodels==0.14.1
 pandas==2.1.4
 numpy==1.26.3
-ta-lib==0.4.28
 
 # Utilities
 aiofiles==23.2.1

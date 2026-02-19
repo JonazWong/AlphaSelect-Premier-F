@@ -28,6 +28,7 @@ class TrainModelResponse(BaseModel):
     status: str
     model_id: str
     message: str
+    session_id: Optional[str] = None
 
 
 @router.post("/train", response_model=TrainModelResponse)
@@ -43,8 +44,11 @@ async def train_model(
         request: Training request parameters
     """
     try:
+        import uuid
+        from app.tasks.ai_training_tasks import train_single_model_task
+        
         # Validate model type
-        valid_types = ['lstm', 'xgboost']
+        valid_types = ['lstm', 'xgboost', 'random_forest', 'arima', 'linear_regression', 'ensemble']
         if request.model_type not in valid_types:
             raise HTTPException(
                 status_code=400,
@@ -62,6 +66,9 @@ async def train_model(
                 detail=f"Insufficient data. Need at least {request.min_data_points} data points, found {data_count}"
             )
         
+        # Generate session ID for WebSocket updates
+        session_id = str(uuid.uuid4())
+        
         # Create AI model record
         ai_model = AIModel(
             symbol=request.symbol,
@@ -74,19 +81,28 @@ async def train_model(
         db.commit()
         db.refresh(ai_model)
         
-        # Schedule training in background
-        background_tasks.add_task(
-            train_model_task,
-            model_id=ai_model.id,
-            symbol=request.symbol,
-            model_type=request.model_type,
-            config=request.config
-        )
+        # Schedule training as Celery task
+        if request.model_type == 'ensemble':
+            from app.tasks.ai_training_tasks import train_ensemble_models_task
+            train_ensemble_models_task.delay(
+                session_id=session_id,
+                symbol=request.symbol,
+                model_configs=request.config
+            )
+        else:
+            train_single_model_task.delay(
+                session_id=session_id,
+                model_id=ai_model.id,
+                symbol=request.symbol,
+                model_type=request.model_type,
+                config=request.config
+            )
         
         return TrainModelResponse(
             status='started',
             model_id=ai_model.id,
-            message=f'Training started for {request.model_type} model on {request.symbol}'
+            message=f'Training started for {request.model_type} model on {request.symbol}',
+            session_id=session_id
         )
         
     except HTTPException:
