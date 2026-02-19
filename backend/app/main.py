@@ -80,3 +80,16 @@ app.include_router(
     prefix="/api/v1/ai/predict",
     tags=["AI Prediction"]
 )
+
+# Mount WebSocket
+from app.websocket import sio
+import socketio
+
+# Create Socket.IO ASGI app
+socket_app = socketio.ASGIApp(
+    sio,
+    other_asgi_app=app,
+    socketio_path='/ws/socket.io'
+)
+
+logger.info("WebSocket server mounted at /ws/socket.io")
