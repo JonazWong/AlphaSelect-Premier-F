@@ -401,7 +401,7 @@ async def get_contract_signals(
                     technical_signals.append('強勢動能' if direction.lower() == 'long' else '空頭動能')
                 if normalized_change_pct > 2:
                     technical_signals.append('成交量放大')
-                else:
+                if normalized_change_pct <= 2:
                     technical_signals.append('趨勢形成')
                 
                 if abs(funding_rate) > 0.0005:
