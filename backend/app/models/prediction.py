@@ -19,7 +19,7 @@ class Prediction(Base):
     prediction_time = Column(DateTime, default=datetime.utcnow, index=True)
     target_time = Column(DateTime)  # When the prediction is for
     actual_value = Column(Float)  # Filled after target_time
-    metadata = Column(JSONB)  # Additional details
+    extra_data = Column(JSONB)  # Additional prediction details
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):

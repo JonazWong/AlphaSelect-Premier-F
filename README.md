@@ -55,14 +55,64 @@
 - **Database**: DigitalOcean Managed PostgreSQL 16
 - **Cache**: DigitalOcean Redis
 
+## 🎁 新手友好工具
+
+**完全不懂代碼？沒問題！** 我們為您準備了超級簡單的一鍵工具：
+
+### Windows 用戶（雙擊即可使用）
+
+| 工具 | 說明 | 使用方式 |
+|------|------|----------|
+| **📖 QUICKSTART.md** | 超詳細新手設置指南 | 按步驟操作，包含圖文說明 |
+| **✅ CONFIG_CHECKLIST.md** | 配置檢查清單 | 確保所有設置都正確 |
+| **🚀 start.bat** | 一鍵啟動平台 | 雙擊啟動所有服務 |
+| **🛑 stop.bat** | 一鍵停止平台 | 雙擊停止所有服務 |
+| **🔍 check-config.bat** | 配置自動檢查 | 雙擊自動檢查配置狀態 |
+| **🔌 check-ports.bat** | 端口占用檢查 | 查看哪些程式占用了端口 |
+| **🔒 DOCKER_SAFETY.md** | Docker 安全說明 | **重要！** 說明不會影響其他專案 |
+
+### 推薦新手使用流程
+
+1. **閱讀** [QUICKSTART.md](QUICKSTART.md) - 了解如何安裝 Docker 和設置環境
+2. **閱讀** [DOCKER_SAFETY.md](DOCKER_SAFETY.md) - **重要！** 了解為什麼不會影響其他專案
+3. **雙擊** `check-ports.bat` - 檢查端口是否被占用
+4. **雙擊** `start.bat` - 自動啟動整個平台
+5. **雙擊** `check-config.bat` - 檢查所有配置是否正確
+6. **打開瀏覽器** 訪問 http://localhost:3000 開始使用！
+
+**完全不需要輸入任何命令！** 🎉
+
+⚠️ **擔心影響其他專案？** 請先閱讀 [DOCKER_SAFETY.md](DOCKER_SAFETY.md)，保證100%安全！
+
 ## 🚀 Quick Start
 
-### Prerequisites
+### 方法一：超級簡單（推薦新手）
+
+**只需3步！**
+
+1. **安裝 Docker Desktop**
+   - 下載：https://www.docker.com/products/docker-desktop/
+   - 安裝並重啟電腦
+
+2. **雙擊啟動**
+   - 找到 `start.bat` 文件
+   - 雙擊運行
+   - 等待自動啟動完成
+
+3. **開始使用**
+   - 瀏覽器會自動打開 http://localhost:3000
+   - 開始探索功能！
+
+**詳細圖文教學請看** → [QUICKSTART.md](QUICKSTART.md)
+
+### 方法二：傳統方式（進階用戶）
+
+#### Prerequisites
 - Docker Desktop (for local development)
 - Git
 - MEXC API credentials (optional for testing)
 
-### Local Development with Docker
+#### Local Development with Docker
 
 1. **Clone the repository**
 ```bash
@@ -71,18 +121,29 @@ cd AlphaSelect-Premier-F
 ```
 
 2. **Set up environment variables**
-```bash
-# Copy example env files
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
 
-# Edit backend/.env with your configuration
-# At minimum, set a secure DB_PASSWORD
+**後端配置：**
+```bash
+# 複製示例配置文件
+cp backend/.env.example backend/.env
+
+# 編輯 backend/.env 並修改以下內容：
+# - SECRET_KEY（必須修改成複雜的隨機字串）
+# - DB_PASSWORD（建議修改）
+# - MEXC_API_KEY 和 MEXC_SECRET_KEY（如果要連接真實數據）
+```
+
+**前端配置：**
+```bash
+# 複製示例配置文件（注意是 .env.local）
+cp frontend/.env.example frontend/.env.local
+
+# 本地開發通常不需要修改
 ```
 
 3. **Start all services with Docker Compose**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This will start:
@@ -96,6 +157,38 @@ This will start:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
+
+5. **Stop services**
+```bash
+# 僅停止服務（保留數據）
+docker compose down
+
+# 停止並刪除所有數據
+docker compose down -v
+```
+
+#### 其他有用的命令
+
+```bash
+# 查看服務狀態
+docker compose ps
+
+# 查看日誌
+docker compose logs -f
+
+# 查看特定服務的日誌
+docker compose logs backend
+docker compose logs frontend
+
+# 重啟服務
+docker compose restart
+
+# 重新建置並啟動
+docker compose up -d --build
+
+# 進入容器內部（調試用）
+docker compose exec backend bash
+```
 
 ### Manual Installation (without Docker)
 
@@ -218,10 +311,19 @@ npm test
 
 ## 📚 Additional Documentation
 
-- [MEXC API Setup Guide](./MEXC_API_GUIDE.md) - Setting up MEXC API credentials
-- [AI Training Guide](./AI_TRAINING_GUIDE.md) - Training AI models
-- [Deployment Guide](./DEPLOYMENT.md) - Deploying to DigitalOcean
-- [Architecture](./ARCHITECTURE.md) - System architecture details
+### 🎓 新手指南（完全不懂代碼也能用）
+
+- **[🚀 QUICKSTART.md](./QUICKSTART.md)** - 超詳細新手設置指南（圖文並茂）
+- **[✅ CONFIG_CHECKLIST.md](./CONFIG_CHECKLIST.md)** - 配置檢查清單
+- **🔧 一鍵工具**：`start.bat`、`stop.bat`、`check-config.bat`（Windows 雙擊即可）
+
+### 📖 進階文檔
+
+- **[MEXC API Setup Guide](./MEXC_API_GUIDE.md)** - Setting up MEXC API credentials
+- **[AI Training Guide](./AI_TRAINING_GUIDE.md)** - Training AI models  
+- **[Deployment Guide](./DEPLOYMENT.md)** - Deploying to DigitalOcean
+- **[Architecture](./ARCHITECTURE.md)** - System architecture details
+- **[Security](./SECURITY.md)** - Security vulnerability tracking and best practices
 
 ## 🤝 Contributing
 

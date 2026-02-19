@@ -6,6 +6,21 @@
   body {
     @apply bg-gradient-to-br from-background via-[#0D1B2E] to-background;
   }
+  
+  /* 確保輸入框文字可見 */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    color: white !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(156, 163, 175) !important; /* gray-400 */
+  }
 }
 
 @layer components {

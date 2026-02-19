@@ -51,7 +51,7 @@ async def get_contract_ticker(
                 price_change_24h=float(data.get('riseFallRate', 0)),
                 high_24h=float(data.get('high24Price', 0)),
                 low_24h=float(data.get('low24Price', 0)),
-                metadata=data
+                extra_data=data
             )
             
             # Calculate basis

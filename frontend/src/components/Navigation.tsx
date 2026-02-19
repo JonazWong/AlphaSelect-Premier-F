@@ -2,18 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Brain, TrendingUp, LineChart, Filter, Home } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home, Globe } from 'lucide-react'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { language, setLanguage, t } = useLanguage()
   
   const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/crypto-radar', label: 'Crypto Radar', icon: Activity },
-    { href: '/ai-training', label: 'AI Training', icon: Brain },
-    { href: '/ai-predictions', label: 'AI Predictions', icon: TrendingUp },
-    { href: '/pattern-detection', label: 'Patterns', icon: LineChart },
-    { href: '/market-screener', label: 'Screener', icon: Filter },
+    { href: '/', label: t.nav.home, icon: Home },
+    { href: '/crypto-radar', label: t.nav.cryptoRadar, icon: Activity },
+    { href: '/ai-training', label: t.nav.aiTraining, icon: Brain },
+    { href: '/ai-predictions', label: t.nav.aiPredictions, icon: TrendingUp },
+    { href: '/pattern-detection', label: t.nav.patterns, icon: LineChart },
+    { href: '/market-screener', label: t.nav.screener, icon: Filter },
   ]
   
   return (
@@ -50,9 +52,29 @@ export default function Navigation() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="text-sm text-gray-400 hover:text-white transition-colors">
-              EN
-            </button>
+            <div className="flex items-center gap-2 bg-card/30 rounded-lg p-1">
+              <button 
+                onClick={() => setLanguage('zh')}
+                className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                  language === 'zh' 
+                    ? 'bg-primary text-white shadow-neon-cyan' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                中文
+              </button>
+              <button 
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                  language === 'en' 
+                    ? 'bg-primary text-white shadow-neon-cyan' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+            <Globe className="w-5 h-5 text-gray-400" />
           </div>
         </div>
       </div>

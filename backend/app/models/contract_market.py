@@ -22,7 +22,7 @@ class ContractMarket(Base):
     low_24h = Column(Float)
     basis = Column(Float)  # Contract price - Index price
     basis_rate = Column(Float)
-    metadata = Column(JSONB)
+    extra_data = Column(JSONB)  # Additional market data
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

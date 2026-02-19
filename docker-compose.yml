@@ -4,13 +4,13 @@ services:
     environment:
       POSTGRES_DB: alphaselect
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
+      POSTGRES_PASSWORD: dev_password_123
     ports:
-      - "5432:5432"
+      - "5433:5432"  # 使用 5433 避免與其他專案的 5432 衝突
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d alphaselect"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"  # 使用 6380 避免與其他專案的 6379 衝突
     volumes:
       - redis_data:/data
     healthcheck:
@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:dev_password_123@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -53,25 +53,26 @@ services:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  celery-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.tasks.celery_app worker --loglevel=info
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
-      REDIS_URL: redis://redis:6379
-      MEXC_API_KEY: ${MEXC_API_KEY:-}
-      MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
-      AI_MODEL_DIR: /app/ai_models
-    volumes:
-      - ./ai_models:/app/ai_models
-      - ./backend:/app
+  # Celery Worker - 暫時禁用（等核心功能正常後再啟用）
+  # celery-worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   command: celery -A app.tasks.celery_app worker --loglevel=info
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_URL: postgresql://admin:dev_password_123@postgres:5432/alphaselect
+  #     REDIS_URL: redis://redis:6379
+  #     MEXC_API_KEY: ${MEXC_API_KEY:-}
+  #     MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
+  #     AI_MODEL_DIR: /app/ai_models
+  #   volumes:
+  #     - ./ai_models:/app/ai_models
+  #     - ./backend:/app
 
   frontend:
     build:

@@ -41,41 +41,73 @@ export default function Home() {
               <Activity className="w-10 h-10 text-primary" />
               <h3 className="text-xl font-bold">Contract Radar</h3>
             </div>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               Real-time trading signals with AI-powered long/short analysis
             </p>
+            <span className="inline-block px-2 py-1 text-xs bg-green-500/20 text-green-500 rounded">
+              ✓ Available
+            </span>
+          </div>
+        </Link>
+
+        <Link href="/market-screener">
+          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
+            <div className="flex items-center gap-4 mb-4">
+              <Filter className="w-10 h-10 text-primary" />
+              <h3 className="text-xl font-bold">Market Screener</h3>
+            </div>
+            <p className="text-gray-400 mb-2">
+              Real-time overview of all MEXC perpetual contracts
+            </p>
+            <span className="inline-block px-2 py-1 text-xs bg-green-500/20 text-green-500 rounded">
+              ✓ Available
+            </span>
           </div>
         </Link>
 
         <Link href="/ai-training">
-          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
+          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform opacity-60">
             <div className="flex items-center gap-4 mb-4">
               <Brain className="w-10 h-10 text-secondary" />
               <h3 className="text-xl font-bold">AI Training</h3>
             </div>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               Train LSTM, XGBoost, and ensemble models for price prediction
             </p>
+            <span className="inline-block px-2 py-1 text-xs bg-yellow-500/20 text-yellow-500 rounded">
+              Phase 2
+            </span>
           </div>
         </Link>
 
         <Link href="/ai-predictions">
-          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
+          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform opacity-60">
             <div className="flex items-center gap-4 mb-4">
               <TrendingUp className="w-10 h-10 text-accent" />
               <h3 className="text-xl font-bold">AI Predictions</h3>
             </div>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               View price forecasts from trained AI models with confidence scores
             </p>
+            <span className="inline-block px-2 py-1 text-xs bg-yellow-500/20 text-yellow-500 rounded">
+              Phase 2
+            </span>
           </div>
         </Link>
+      </section>
 
+      {/* Additional Feature - Pattern Detection */}
+      <section className="grid md:grid-cols-1 gap-6">
         <Link href="/pattern-detection">
-          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
+          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform opacity-60">
             <div className="flex items-center gap-4 mb-4">
               <LineChart className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-bold">Pattern Detection</h3>
+              <div>
+                <h3 className="text-xl font-bold">Pattern Detection</h3>
+                <span className="inline-block px-2 py-1 text-xs bg-yellow-500/20 text-yellow-500 rounded mt-1">
+                  Phase 2
+                </span>
+              </div>
             </div>
             <p className="text-gray-400">
               Identify chart patterns and technical analysis signals
