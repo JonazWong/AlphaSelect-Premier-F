@@ -419,7 +419,7 @@ async def get_contract_signals(
                     'leverage': '10x',
                     'fundingRate': funding_rate,
                     'openInterest': str(open_interest),
-                    'openInterestChange': abs(price_change),
+                    'openInterestChange': None,
                     'confidence': confidence,
                     'riskLevel': risk_level,
                     'signals': technical_signals,
