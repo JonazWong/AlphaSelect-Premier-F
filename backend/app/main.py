@@ -92,4 +92,6 @@ socket_app = socketio.ASGIApp(
     socketio_path='/ws/socket.io'
 )
 
+# Expose the Socket.IO ASGI app as the main application entrypoint
+app = socket_app
 logger.info("WebSocket server mounted at /ws/socket.io")
