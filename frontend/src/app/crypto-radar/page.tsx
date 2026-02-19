@@ -260,7 +260,7 @@ export default function CryptoRadar() {
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold font-mono text-primary">
-                    ${signal.currentPrice.toLocaleString()}
+                    ${signal.currentPrice.toLocaleString('en-US')}
                   </div>
                   <div className="text-sm text-gray-400">Current</div>
                 </div>
