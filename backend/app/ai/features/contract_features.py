@@ -185,7 +185,8 @@ class ContractFeatures:
         """Calculate Stochastic Oscillator (%K and %D)"""
         lowest_low = low.rolling(window=k_period).min()
         highest_high = high.rolling(window=k_period).max()
-        stoch_k = 100 * (close - lowest_low) / (highest_high - lowest_low)
+        denom = (highest_high - lowest_low).replace(0, np.nan)
+        stoch_k = 100 * (close - lowest_low) / denom
         stoch_d = stoch_k.rolling(window=d_period).mean()
         return stoch_k, stoch_d
     
