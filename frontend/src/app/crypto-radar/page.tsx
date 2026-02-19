@@ -47,7 +47,8 @@ export default function CryptoRadar() {
       setMarketStats(response.data);
     } catch (err: any) {
       console.error('Failed to fetch market stats:', err);
-      // Don't block main data loading
+      // Don't block main data loading, but inform the user that stats may be outdated/unavailable
+      setError((prev) => prev ?? '市場統計無法載入，部分指標可能過期或不可用');
     }
   };
 
