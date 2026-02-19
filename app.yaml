@@ -93,6 +93,9 @@ services:
       - key: MEXC_SECRET_KEY
         scope: RUN_TIME
         value: ${MEXC_SECRET_KEY}
+      - key: SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
       - key: AI_MODEL_DIR
         scope: RUN_TIME
         value: "/app/ai_models"
