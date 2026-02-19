@@ -170,7 +170,7 @@ If you have existing data with the old `metadata` column:
 ALTER TABLE contract_markets RENAME COLUMN metadata TO extra_data;
 
 -- Rename metadata column in predictions
-ALTER TABLE predictions RENAME COLUMN extra_data TO extra_data;
+ALTER TABLE predictions RENAME COLUMN metadata TO extra_data;
 
 -- Add indexes if not exists
 CREATE INDEX IF NOT EXISTS idx_symbol_created ON contract_markets(symbol, created_at);

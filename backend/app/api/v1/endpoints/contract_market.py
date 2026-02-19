@@ -492,10 +492,14 @@ async def get_market_stats(db: Session = Depends(get_db)):
         else:
             strength = 5
         
-        # Simulated win rate (in production, calculate from historical predictions)
+        # TODO: Replace with actual historical prediction data
+        # Currently using placeholder calculation based on market strength
+        # In production: query predictions table and calculate actual win rate
         win_rate = 50.0 + (strength * 2.5)  # Scale with market strength
         
-        # Average funding rate (simulated, in production calculate from real data)
+        # TODO: Replace with actual average from funding_rate_history table
+        # This is a placeholder default value for demonstration
+        # In production: calculate average from recent funding rate data
         avg_funding_rate = 0.0001
         
         # Format total OI
