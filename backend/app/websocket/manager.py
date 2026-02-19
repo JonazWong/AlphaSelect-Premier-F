@@ -7,15 +7,19 @@ and prediction updates
 
 import socketio
 import logging
+import os
 
 logger = logging.getLogger(__name__)
+
+# Configure verbose Socket.IO / Engine.IO logging (overridable via env)
+WEBSOCKET_VERBOSE_LOGGING = os.getenv("WEBSOCKET_VERBOSE_LOGGING", "true").lower() == "true"
 
 # Create Socket.IO server
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
-    logger=True,
-    engineio_logger=True
+    logger=WEBSOCKET_VERBOSE_LOGGING,
+    engineio_logger=WEBSOCKET_VERBOSE_LOGGING
 )
 
 
