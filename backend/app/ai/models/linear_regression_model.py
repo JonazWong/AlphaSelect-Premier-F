@@ -8,6 +8,8 @@ class LinearRegressionModel(BaseModel):
     
     def __init__(self, symbol: str, config: Dict[str, Any] = None):
         super().__init__(symbol, config)
+        # Ensure model_type matches API/UI identifier
+        self.model_type = 'linear_regression'
         
         # Default configuration
         self.config.setdefault('fit_intercept', True)
