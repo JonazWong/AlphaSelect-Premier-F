@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
-
-const inter = Inter({ subsets: ['latin'] })
+import I18nProvider from '@/components/I18nProvider'
 
 export const metadata: Metadata = {
   title: 'AlphaSelect Premier F - MEXC AI Trading Platform',
@@ -17,11 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-background text-white min-h-screen`}>
-        <Navigation />
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
+      <body className="bg-background text-white min-h-screen font-sans">
+        <I18nProvider>
+          <Navigation />
+          <main className="container mx-auto px-4 py-8">
+            {children}
+          </main>
+        </I18nProvider>
       </body>
     </html>
   )
