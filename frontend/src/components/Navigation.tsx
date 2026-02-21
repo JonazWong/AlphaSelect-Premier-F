@@ -57,7 +57,7 @@ export default function Navigation() {
           <div className="flex items-center gap-4">
             <button
               onClick={toggleLanguage}
-              aria-label={language === 'en' ? 'Switch to Chinese' : '切换到英文'}
+              aria-label={language === 'en' ? t('nav.switchToChinese') : t('nav.switchToEnglish')}
               className="px-3 py-1 rounded-lg text-sm font-medium text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               {language === 'en' ? 'EN' : '中文'}

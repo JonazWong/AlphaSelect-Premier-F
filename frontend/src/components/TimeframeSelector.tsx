@@ -20,14 +20,12 @@ export default function TimeframeSelector({ value, onChange, className = '' }: T
   const [endDate, setEndDate] = useState('')
 
   const handlePreset = (tf: Timeframe) => {
-    if (tf !== 'custom') {
-      onChange(tf)
-    } else {
-      onChange(tf, startDate, endDate)
-    }
+    // For custom, only switch the mode; dates are applied via the Apply button
+    onChange(tf)
   }
 
   const handleApply = () => {
+    if (!startDate || !endDate) return
     onChange('custom', startDate, endDate)
   }
 

@@ -5,7 +5,9 @@
     "aiTraining": "AI 训练",
     "aiPredictions": "AI 预测",
     "patternDetection": "形态识别",
-    "marketScreener": "市场筛选"
+    "marketScreener": "市场筛选",
+    "switchToChinese": "切换到中文",
+    "switchToEnglish": "切换到英文"
   },
   "common": {
     "loading": "载入中...",
@@ -30,7 +32,12 @@
     "high": "最高",
     "low": "最低",
     "open": "开盘",
-    "close": "收盘"
+    "close": "收盘",
+    "levels": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    }
   },
   "timeframe": {
     "label": "时间周期",
@@ -142,10 +149,7 @@
     "wedge": "楔形",
     "channel": "通道形态",
     "noPatterns": "所选交易对未检测到形态",
-    "selectSymbolsHint": "选择交易对以检测形态",
-    "high": "高",
-    "medium": "中",
-    "low": "低"
+    "selectSymbolsHint": "选择交易对以检测形态"
   },
   "marketScreener": {
     "title": "市场筛选器",
@@ -163,9 +167,6 @@
     "fundingRate": "资金费率",
     "openInterest": "持仓量",
     "riskLevel": "风险等级",
-    "low": "低风险",
-    "medium": "中风险",
-    "high": "高风险",
     "allRisk": "全部",
     "noResults": "暂无符合条件的结果",
     "clearFilters": "清除筛选",

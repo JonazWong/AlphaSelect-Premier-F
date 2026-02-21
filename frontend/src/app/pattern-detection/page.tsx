@@ -164,7 +164,7 @@ export default function PatternDetectionPage() {
                     </div>
                     <div>
                       <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${RELIABILITY_COLORS[pat.reliability]}`}>
-                        {t(`patternDetection.reliability`)}: {t(`patternDetection.${pat.reliability}`)}
+                        {t(`patternDetection.reliability`)}: {t(`common.levels.${pat.reliability}`)}
                       </span>
                     </div>
                     <div>

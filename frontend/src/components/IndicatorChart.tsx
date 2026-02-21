@@ -63,29 +63,33 @@ function computeEMA(data: OHLCV[], period: number): (number | null)[] {
   return result
 }
 
-// Compute RSI
+// Compute RSI using Wilder's smoothing method
 function computeRSI(data: OHLCV[], period = 14): (number | null)[] {
   const result: (number | null)[] = []
-  let gains = 0, losses = 0
+  let avgGain = 0
+  let avgLoss = 0
   for (let i = 0; i < data.length; i++) {
     if (i === 0) { result.push(null); continue }
     const change = data[i].close - data[i - 1].close
-    if (i <= period) {
-      gains += change > 0 ? change : 0
-      losses += change < 0 ? -change : 0
-      if (i < period) { result.push(null); continue }
-      const avgGain = gains / period
-      const avgLoss = losses / period
-      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss
-      result.push(100 - 100 / (1 + rs))
+    const gain = change > 0 ? change : 0
+    const loss = change < 0 ? -change : 0
+    if (i < period) {
+      // Accumulate initial averages (divide as we go to avoid large sum then divide)
+      avgGain += gain / period
+      avgLoss += loss / period
+      result.push(null)
+    } else if (i === period) {
+      // Complete first average
+      avgGain += gain / period
+      avgLoss += loss / period
+      const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss
+      result.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs))
     } else {
-      const prevGain = (result[i - 1] != null ? ((100 - (result[i - 1] as number)) === 0 ? 100 : (result[i - 1] as number)) : 50)
-      const gain = change > 0 ? change : 0
-      const loss = change < 0 ? -change : 0
-      gains = (gains * (period - 1) + gain) / period
-      losses = (losses * (period - 1) + loss) / period
-      const rs2 = losses === 0 ? 100 : gains / losses
-      result.push(100 - 100 / (1 + rs2))
+      // Wilder's smoothing
+      avgGain = (avgGain * (period - 1) + gain) / period
+      avgLoss = (avgLoss * (period - 1) + loss) / period
+      const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss
+      result.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs))
     }
   }
   return result

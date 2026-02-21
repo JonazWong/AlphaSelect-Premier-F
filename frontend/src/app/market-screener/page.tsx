@@ -147,7 +147,7 @@ export default function MarketScreenerPage() {
                         : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
-                    {r === 'all' ? t('marketScreener.allRisk') : t(`marketScreener.${r}`)}
+                    {r === 'all' ? t('marketScreener.allRisk') : t(`common.levels.${r}`)}
                   </button>
                 ))}
               </div>
@@ -259,7 +259,7 @@ export default function MarketScreenerPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className={`px-2 py-0.5 rounded text-xs font-bold ${riskColors[row.riskLevel]}`}>
-                            {t(`marketScreener.${row.riskLevel}`)}
+                            {t(`common.levels.${row.riskLevel}`)}
                           </span>
                         </td>
                         <td className="px-4 py-3">

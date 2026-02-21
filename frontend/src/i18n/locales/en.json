@@ -5,7 +5,9 @@
     "aiTraining": "AI Training",
     "aiPredictions": "AI Predictions",
     "patternDetection": "Patterns",
-    "marketScreener": "Screener"
+    "marketScreener": "Screener",
+    "switchToChinese": "Switch to Chinese",
+    "switchToEnglish": "Switch to English"
   },
   "common": {
     "loading": "Loading...",
@@ -30,7 +32,12 @@
     "high": "High",
     "low": "Low",
     "open": "Open",
-    "close": "Close"
+    "close": "Close",
+    "levels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
   },
   "timeframe": {
     "label": "Timeframe",
@@ -142,10 +149,7 @@
     "wedge": "Wedge",
     "channel": "Channel",
     "noPatterns": "No patterns detected for selected symbols",
-    "selectSymbolsHint": "Select symbols to detect patterns",
-    "high": "High",
-    "medium": "Medium",
-    "low": "Low"
+    "selectSymbolsHint": "Select symbols to detect patterns"
   },
   "marketScreener": {
     "title": "Market Screener",
@@ -163,9 +167,6 @@
     "fundingRate": "Funding Rate",
     "openInterest": "Open Interest",
     "riskLevel": "Risk Level",
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High",
     "allRisk": "All",
     "noResults": "No results match your filters",
     "clearFilters": "Clear Filters",
