@@ -3,17 +3,22 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Activity, Brain, TrendingUp, LineChart, Filter, Home } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useLanguage } from '@/components/I18nProvider'
+import '@/i18n/config'
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { t } = useTranslation('common')
+  const { language, toggleLanguage } = useLanguage()
   
   const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/crypto-radar', label: 'Crypto Radar', icon: Activity },
-    { href: '/ai-training', label: 'AI Training', icon: Brain },
-    { href: '/ai-predictions', label: 'AI Predictions', icon: TrendingUp },
-    { href: '/pattern-detection', label: 'Patterns', icon: LineChart },
-    { href: '/market-screener', label: 'Screener', icon: Filter },
+    { href: '/', labelKey: 'nav.home', icon: Home },
+    { href: '/crypto-radar', labelKey: 'nav.cryptoRadar', icon: Activity },
+    { href: '/ai-training', labelKey: 'nav.aiTraining', icon: Brain },
+    { href: '/ai-predictions', labelKey: 'nav.aiPredictions', icon: TrendingUp },
+    { href: '/pattern-detection', labelKey: 'nav.patternDetection', icon: LineChart },
+    { href: '/market-screener', labelKey: 'nav.marketScreener', icon: Filter },
   ]
   
   return (
@@ -42,7 +47,7 @@ export default function Navigation() {
                       : 'hover:bg-card/50 text-gray-400 hover:text-white'
                   }`}>
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium">{t(item.labelKey)}</span>
                   </div>
                 </Link>
               )
@@ -50,8 +55,12 @@ export default function Navigation() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="text-sm text-gray-400 hover:text-white transition-colors">
-              EN
+            <button
+              onClick={toggleLanguage}
+              aria-label={language === 'en' ? t('nav.switchToChinese') : t('nav.switchToEnglish')}
+              className="px-3 py-1 rounded-lg text-sm font-medium text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+            >
+              {language === 'en' ? 'EN' : '中文'}
             </button>
           </div>
         </div>
