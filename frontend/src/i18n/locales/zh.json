@@ -146,7 +146,7 @@
     "bullishFlag": "看涨旗形",
     "bearishFlag": "看跌旗形",
     "cupHandle": "杯柄形态",
-    "wedge": "樔形",
+    "wedge": "楔形",
     "channel": "通道形态",
     "noPatterns": "所选交易对未检测到形态",
     "selectSymbolsHint": "选择交易对以检测形态"

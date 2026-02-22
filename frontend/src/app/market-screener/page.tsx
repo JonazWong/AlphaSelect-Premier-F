@@ -2,75 +2,89 @@
 
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, RefreshCw, TrendingUp, TrendingDown, ChevronUp, ChevronDown } from 'lucide-react'
+import { Filter, TrendingUp, TrendingDown, RefreshCw, ArrowUpDown } from 'lucide-react'
 import '@/i18n/config'
+import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
+import ComparisonSelector from '@/components/ComparisonSelector'
 import { SparklineChart } from '@/components/IndicatorChart'
 import { generateMockScreenerData, generateMockOHLCV, ScreenerResult } from '@/lib/mockData'
 
-type SortKey = 'confidence' | 'change24h'
-type SortDir = 'asc' | 'desc'
-
-const RISK_COLORS: Record<string, string> = {
-  low: 'text-green-400 bg-green-500/10 border-green-500/30',
-  medium: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-  high: 'text-red-400 bg-red-500/10 border-red-500/30',
-}
+type RiskFilter = 'all' | 'low' | 'medium' | 'high'
+type SideFilter = 'both' | 'long' | 'short'
+type SortField = 'confidence' | 'change24h' | 'volume24h' | 'fundingRate'
 
 export default function MarketScreenerPage() {
   const { t } = useTranslation('common')
-
-  // Filters
-  const [sideFilter, setSideFilter] = useState<'all' | 'long' | 'short'>('all')
-  const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all')
-  const [minConfidence, setMinConfidence] = useState(0)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [watchlistOnly, setWatchlistOnly] = useState(false)
-  const [watchedSymbols] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'])
-  const [sortKey, setSortKey] = useState<SortKey>('confidence')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [timeframe, setTimeframe] = useState<Timeframe>('1D')
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([])
+  const [comparison, setComparison] = useState<string[]>([])
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>('all')
+  const [sideFilter, setSideFilter] = useState<SideFilter>('both')
+  const [minConfidence, setMinConfidence] = useState(50)
+  const [sortField, setSortField] = useState<SortField>('confidence')
+  const [sortAsc, setSortAsc] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const rawData = useMemo(() => generateMockScreenerData(), [refreshKey])
+  const allData = useMemo(() => generateMockScreenerData(20), [refreshKey])
 
-  const filteredData = useMemo(() => {
-    let data = rawData
-    if (sideFilter !== 'all') data = data.filter((r) => r.side === sideFilter)
-    if (riskFilter !== 'all') data = data.filter((r) => r.risk === riskFilter)
-    if (minConfidence > 0) data = data.filter((r) => r.confidence >= minConfidence)
-    if (searchQuery.trim()) data = data.filter((r) => r.symbol.toLowerCase().includes(searchQuery.toLowerCase()))
-    if (watchlistOnly) data = data.filter((r) => watchedSymbols.includes(r.symbol))
+  const filtered = useMemo(() => {
+    let data = allData
+    if (selectedSymbols.length > 0) {
+      data = data.filter((r) => selectedSymbols.includes(r.symbol))
+    }
+    if (riskFilter !== 'all') {
+      data = data.filter((r) => r.riskLevel === riskFilter)
+    }
+    if (sideFilter !== 'both') {
+      data = data.filter((r) => r.side === sideFilter)
+    }
+    data = data.filter((r) => r.confidence >= minConfidence)
     data = [...data].sort((a, b) => {
-      const diff = a[sortKey] - b[sortKey]
-      return sortDir === 'asc' ? diff : -diff
+      const diff = a[sortField] - b[sortField]
+      return sortAsc ? diff : -diff
     })
     return data
-  }, [rawData, sideFilter, riskFilter, minConfidence, searchQuery, watchlistOnly, sortKey, sortDir])
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    else { setSortKey(key); setSortDir('desc') }
-  }
+  }, [allData, selectedSymbols, riskFilter, sideFilter, minConfidence, sortField, sortAsc])
 
   const handleRefresh = () => setRefreshKey((k) => k + 1)
+  const handleClearFilters = () => {
+    setSelectedSymbols([])
+    setRiskFilter('all')
+    setSideFilter('both')
+    setMinConfidence(50)
+  }
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortAsc((v) => !v)
+    } else {
+      setSortField(field)
+      setSortAsc(false)
+    }
+  }
 
-  const SortIcon = ({ k }: { k: SortKey }) =>
-    sortKey === k ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3 ml-0.5 inline" /> : <ChevronDown className="w-3 h-3 ml-0.5 inline" />) : null
+  const riskColors: Record<ScreenerResult['riskLevel'], string> = {
+    low: 'text-green-400 bg-green-500/10',
+    medium: 'text-yellow-400 bg-yellow-500/10',
+    high: 'text-red-400 bg-red-500/10',
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center shadow-lg shadow-green-500/30">
-            <Search className="h-7 w-7 text-white" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <Filter className="h-7 w-7 text-white" />
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-1">
               <span className="text-gradient-cyan-purple">{t('marketScreener.title')}</span>
               <span className="ml-3 text-2xl text-gray-500 font-normal">{t('marketScreener.subtitle')}</span>
             </h1>
-            <p className="text-gray-400 text-sm">{t('marketScreener.description')}</p>
+            <p className="text-gray-400 text-sm">
+              {t('marketScreener.description')} &nbsp;/&nbsp; {t('marketScreener.descriptionZh')}
+            </p>
           </div>
         </div>
         <button
@@ -84,76 +98,66 @@ export default function MarketScreenerPage() {
       </div>
 
       <div className="grid lg:grid-cols-4 gap-6">
-        {/* Sidebar filters */}
-        <aside className="lg:col-span-1 space-y-5">
-          <div className="glass-card p-5 space-y-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t('marketScreener.filters')}</h2>
+        {/* Filter sidebar */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="glass-card p-4 space-y-4">
+            <h2 className="font-semibold text-sm text-gray-300 flex items-center gap-2">
+              <Filter className="w-4 h-4" /> {t('marketScreener.filters')}
+            </h2>
 
-            {/* Search */}
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5">{t('common.search')}</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="BTC..."
-                  className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/30 border border-gray-700 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
-                />
-              </div>
-            </div>
+            <TimeframeSelector value={timeframe} onChange={setTimeframe} className="flex-col !items-start" />
 
-            {/* Side */}
+            <SymbolSelector multi value={selectedSymbols} onChange={setSelectedSymbols} label={t('trade.symbols')} />
+
+            {/* Side filter */}
             <div>
-              <label className="block text-xs text-gray-500 mb-2">{t('marketScreener.side.label')}</label>
-              <div className="grid grid-cols-3 gap-1">
-                {(['all', 'long', 'short'] as const).map((s) => (
+              <label className="block text-xs text-gray-400 mb-1">{t('trade.side')}</label>
+              <div className="flex gap-1">
+                {(['both', 'long', 'short'] as SideFilter[]).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSideFilter(s)}
                     aria-pressed={sideFilter === s}
-                    className={`py-1.5 rounded text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                    className={`flex-1 py-1 rounded text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 ${
                       sideFilter === s
-                        ? s === 'long' ? 'bg-green-500/20 text-green-400 border border-green-500/40'
-                          : s === 'short' ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                          : 'bg-primary/20 text-primary border border-primary/40'
-                        : 'bg-black/20 text-gray-500 border border-gray-700 hover:text-gray-300'
+                        ? s === 'long' ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                          : s === 'short' ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                          : 'bg-primary/20 text-primary border border-primary/50'
+                        : 'bg-card text-gray-500 border border-gray-700 hover:text-gray-300'
                     }`}
                   >
-                    {t(`marketScreener.side.${s}`)}
+                    {t(`trade.${s}`)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Risk */}
+            {/* Risk filter */}
             <div>
-              <label className="block text-xs text-gray-500 mb-2">{t('marketScreener.risk.label')}</label>
-              <div className="space-y-1">
-                {(['all', 'low', 'medium', 'high'] as const).map((r) => (
+              <label className="block text-xs text-gray-400 mb-1">{t('marketScreener.riskLevel')}</label>
+              <div className="flex flex-col gap-1">
+                {(['all', 'low', 'medium', 'high'] as RiskFilter[]).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRiskFilter(r)}
                     aria-pressed={riskFilter === r}
-                    className={`w-full text-left px-3 py-1.5 rounded text-xs transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                    className={`py-1 px-2 rounded text-xs text-left transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 ${
                       riskFilter === r
-                        ? 'bg-primary/20 text-primary border border-primary/40'
-                        : 'text-gray-500 hover:text-gray-300 hover:bg-black/20 border border-transparent'
+                        ? 'bg-primary/20 text-primary border border-primary/30'
+                        : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
-                    {t(`marketScreener.risk.${r}`)}
+                    {r === 'all' ? t('marketScreener.allRisk') : t(`common.levels.${r}`)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Min confidence slider */}
+            {/* Min confidence */}
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-gray-500">{t('marketScreener.minConfidence')}</span>
-                <span className="text-primary font-bold">{minConfidence}%</span>
-              </div>
+              <label className="block text-xs text-gray-400 mb-1">
+                {t('marketScreener.minConfidence')}: <span className="text-primary font-bold">{minConfidence}%</span>
+              </label>
               <input
                 type="range"
                 min={0}
@@ -161,135 +165,104 @@ export default function MarketScreenerPage() {
                 step={5}
                 value={minConfidence}
                 onChange={(e) => setMinConfidence(Number(e.target.value))}
-                className="w-full accent-cyan-400 cursor-pointer"
                 aria-label={t('marketScreener.minConfidence')}
+                className="w-full accent-primary"
               />
             </div>
 
-            {/* Watchlist only */}
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={watchlistOnly}
-                onChange={(e) => setWatchlistOnly(e.target.checked)}
-                className="accent-cyan-400 w-4 h-4 cursor-pointer"
-              />
-              <span className="text-xs text-gray-400 group-hover:text-white transition-colors">{t('marketScreener.watchlistOnly')}</span>
-            </label>
-          </div>
+            <ComparisonSelector items={comparison} onChange={setComparison} />
 
-          {/* Summary stats */}
-          <div className="glass-card p-4 grid grid-cols-2 gap-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{filteredData.length}</div>
-              <div className="text-xs text-gray-500">{t('marketScreener.results')}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">
-                {filteredData.filter((r) => r.side === 'long').length}
-              </div>
-              <div className="text-xs text-gray-500">{t('marketScreener.side.long')}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-400">
-                {filteredData.filter((r) => r.side === 'short').length}
-              </div>
-              <div className="text-xs text-gray-500">{t('marketScreener.side.short')}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400">
-                {filteredData.length > 0 ? Math.round(filteredData.reduce((a, r) => a + r.confidence, 0) / filteredData.length) : 0}%
-              </div>
-              <div className="text-xs text-gray-500">{t('common.avgConfidence')}</div>
-            </div>
+            <button
+              onClick={handleClearFilters}
+              className="w-full py-1.5 rounded-lg text-xs text-gray-400 border border-gray-700 hover:text-white hover:border-gray-500 transition-all focus:outline-none focus:ring-1 focus:ring-primary/50"
+            >
+              {t('marketScreener.clearFilters')}
+            </button>
           </div>
-        </aside>
+        </div>
 
         {/* Results table */}
-        <main className="lg:col-span-3">
+        <div className="lg:col-span-3">
           <div className="glass-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700/50 text-xs text-gray-500 uppercase tracking-widest">
-                    <th className="text-left py-3 px-4">{t('marketScreener.columns.symbol')}</th>
-                    <th className="text-left py-3 px-4">{t('marketScreener.columns.side')}</th>
-                    <th className="text-left py-3 px-4">{t('marketScreener.columns.risk')}</th>
-                    <th
-                      className="text-right py-3 px-4 cursor-pointer hover:text-primary select-none"
-                      onClick={() => toggleSort('confidence')}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && toggleSort('confidence')}
-                      aria-label={t('marketScreener.columns.confidence')}
-                    >
-                      {t('marketScreener.columns.confidence')}<SortIcon k="confidence" />
-                    </th>
-                    <th
-                      className="text-right py-3 px-4 cursor-pointer hover:text-primary select-none"
-                      onClick={() => toggleSort('change24h')}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && toggleSort('change24h')}
-                      aria-label={t('marketScreener.columns.change24h')}
-                    >
-                      {t('marketScreener.columns.change24h')}<SortIcon k="change24h" />
-                    </th>
-                    <th className="text-right py-3 px-4">{t('marketScreener.columns.volume')}</th>
-                    <th className="text-right py-3 px-4 w-24">{t('marketScreener.columns.sparkline')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-16 text-center text-gray-600">
-                        {t('common.noResults')}
-                      </td>
+            <div className="px-5 py-3 border-b border-gray-700/50 flex items-center justify-between">
+              <span className="text-sm text-gray-400">
+                {t('marketScreener.showing', { count: filtered.length })}
+              </span>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="p-12 text-center">
+                <Filter className="w-10 h-10 mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-500 text-sm">{t('marketScreener.noResults')}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700/50">
+                      <th className="px-4 py-3 text-left text-xs text-gray-500 font-medium">{t('trade.symbol')}</th>
+                      <th className="px-4 py-3 text-right text-xs text-gray-500 font-medium">{t('common.price')}</th>
+                      <th
+                        className="px-4 py-3 text-right text-xs text-gray-500 font-medium cursor-pointer hover:text-gray-300"
+                        onClick={() => toggleSort('change24h')}
+                      >
+                        <span className="flex items-center justify-end gap-1">
+                          {t('common.change')} 24h <ArrowUpDown className="w-3 h-3" />
+                        </span>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-right text-xs text-gray-500 font-medium cursor-pointer hover:text-gray-300"
+                        onClick={() => toggleSort('confidence')}
+                      >
+                        <span className="flex items-center justify-end gap-1">
+                          {t('common.confidence')} <ArrowUpDown className="w-3 h-3" />
+                        </span>
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs text-gray-500 font-medium">{t('trade.side')}</th>
+                      <th className="px-4 py-3 text-right text-xs text-gray-500 font-medium">{t('marketScreener.riskLevel')}</th>
+                      <th className="px-4 py-3 text-right text-xs text-gray-500 font-medium w-24">{t('common.price')}</th>
                     </tr>
-                  ) : (
-                    filteredData.map((row, idx) => (
+                  </thead>
+                  <tbody>
+                    {filtered.map((row) => (
                       <tr
                         key={row.symbol}
-                        className={`border-b border-gray-800/40 hover:bg-white/2 transition-colors ${
-                          idx % 2 === 0 ? 'bg-black/10' : ''
-                        }`}
+                        className="border-b border-gray-800/50 hover:bg-card/40 transition-colors"
                       >
-                        <td className="py-3 px-4 font-bold text-white">{row.symbol}</td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                            row.side === 'long' ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {row.side === 'long' ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {t(`marketScreener.side.${row.side}`)}
+                        <td className="px-4 py-3 font-bold text-white">{row.symbol}</td>
+                        <td className="px-4 py-3 text-right font-mono text-gray-200">
+                          ${row.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-mono font-bold ${row.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className="flex items-center justify-end gap-1">
+                            {row.change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            {row.change24h >= 0 ? '+' : ''}{row.change24h.toFixed(2)}%
                           </span>
                         </td>
-                        <td className="py-3 px-4">
-                          <span className={`text-xs font-semibold border px-1.5 py-0.5 rounded ${RISK_COLORS[row.risk]}`}>
-                            {t(`marketScreener.risk.${row.risk}`)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <div className="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow={row.confidence} aria-valuemin={0} aria-valuemax={100}>
+                            <div className="w-16 h-1.5 rounded-full bg-gray-800 overflow-hidden">
                               <div
                                 className="h-full bg-gradient-to-r from-cyan-500 to-purple-500"
                                 style={{ width: `${row.confidence}%` }}
                               />
                             </div>
-                            <span className="font-bold text-primary min-w-[2.5rem]">{row.confidence}%</span>
+                            <span className="font-bold text-primary text-xs">{row.confidence}%</span>
                           </div>
                         </td>
-                        <td className={`py-3 px-4 text-right font-mono font-bold ${
-                          row.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {row.change24h >= 0 ? '+' : ''}{row.change24h.toFixed(2)}%
+                        <td className="px-4 py-3 text-right">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            row.side === 'long' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
+                          }`}>
+                            {t(`trade.${row.side}`)}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-right text-gray-400 font-mono text-xs">
-                          {row.volume >= 1e9
-                            ? `$${(row.volume / 1e9).toFixed(2)}B`
-                            : `$${(row.volume / 1e6).toFixed(1)}M`}
+                        <td className="px-4 py-3 text-right">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${riskColors[row.riskLevel]}`}>
+                            {t(`common.levels.${row.riskLevel}`)}
+                          </span>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="px-4 py-3">
                           <div className="w-24 h-8">
                             <SparklineChart
                               data={generateMockOHLCV(row.symbol, 14)}
@@ -298,13 +271,13 @@ export default function MarketScreenerPage() {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   )

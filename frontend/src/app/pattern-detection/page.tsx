@@ -2,43 +2,40 @@
 
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Zap, RefreshCw, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { LineChart, TrendingUp, TrendingDown, RefreshCw, CheckCircle, Clock, XCircle } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
-import IndicatorChart, { SparklineChart } from '@/components/IndicatorChart'
+import ComparisonSelector from '@/components/ComparisonSelector'
+import IndicatorChart from '@/components/IndicatorChart'
+import { SparklineChart } from '@/components/IndicatorChart'
 import { generateMockPatterns, generateMockOHLCV, PatternResult } from '@/lib/mockData'
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT']
 
-const STATUS_ICONS: Record<PatternResult['status'], React.ElementType> = {
-  confirmed: CheckCircle,
-  forming: Clock,
-  failed: XCircle,
-}
-
-const RELIABILITY_COLORS: Record<string, string> = {
+const RELIABILITY_COLORS: Record<PatternResult['reliability'], string> = {
   high: 'text-green-400 bg-green-500/10 border-green-500/30',
   medium: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-  low: 'text-red-400 bg-red-500/10 border-red-500/30',
+  low: 'text-gray-400 bg-gray-500/10 border-gray-500/30',
 }
 
-const STATUS_COLORS: Record<PatternResult['status'], string> = {
-  confirmed: 'text-green-400',
-  forming: 'text-yellow-400',
-  failed: 'text-red-400',
+const STATUS_ICONS: Record<PatternResult['status'], React.ReactNode> = {
+  detected: <CheckCircle className="w-4 h-4 text-green-400" />,
+  pending: <Clock className="w-4 h-4 text-yellow-400" />,
+  failed: <XCircle className="w-4 h-4 text-red-400" />,
 }
 
 export default function PatternDetectionPage() {
   const { t } = useTranslation('common')
-  const [timeframe, setTimeframe] = useState<Timeframe>('1M')
+  const [timeframe, setTimeframe] = useState<Timeframe>('1W')
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
-  const [selectedSymbol, setSelectedSymbol] = useState<string>(DEFAULT_SYMBOLS[0])
+  const [comparison, setComparison] = useState<string[]>([])
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
   const [refreshKey, setRefreshKey] = useState(0)
 
   const patterns = useMemo(() => generateMockPatterns(symbols), [symbols, refreshKey])
   const chartData = useMemo(
-    () => generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90),
+    () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
     [selectedSymbol, timeframe, refreshKey]
   )
 
@@ -49,15 +46,17 @@ export default function PatternDetectionPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-            <Zap className="h-7 w-7 text-white" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <LineChart className="h-7 w-7 text-white" />
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-1">
               <span className="text-gradient-cyan-purple">{t('patternDetection.title')}</span>
               <span className="ml-3 text-2xl text-gray-500 font-normal">{t('patternDetection.subtitle')}</span>
             </h1>
-            <p className="text-gray-400 text-sm">{t('patternDetection.description')}</p>
+            <p className="text-gray-400 text-sm">
+              {t('patternDetection.description')} &nbsp;/&nbsp; {t('patternDetection.descriptionZh')}
+            </p>
           </div>
         </div>
         <button
@@ -73,100 +72,123 @@ export default function PatternDetectionPage() {
       {/* Controls */}
       <div className="glass-card p-4 space-y-4">
         <TimeframeSelector value={timeframe} onChange={setTimeframe} />
-        <SymbolSelector multi value={symbols} onChange={setSymbols} label={t('trade.symbols')} />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <SymbolSelector multi value={symbols} onChange={setSymbols} label={t('trade.symbols')} />
+          <ComparisonSelector items={comparison} onChange={setComparison} />
+        </div>
+        {symbols.length === 0 && (
+          <p className="text-xs text-yellow-400" role="alert">{t('trade.validation.symbolRequired')}</p>
+        )}
       </div>
 
       {symbols.length === 0 ? (
         <div className="glass-card p-12 text-center">
-          <Zap className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+          <LineChart className="w-12 h-12 mx-auto mb-4 text-gray-600" />
           <p className="text-gray-400">{t('patternDetection.selectSymbolsHint')}</p>
         </div>
       ) : (
         <div className="grid xl:grid-cols-3 gap-6">
-          {/* Chart - 2 cols */}
+          {/* Chart panel (left 2 columns) */}
           <div className="xl:col-span-2 space-y-4">
-            {/* Symbol switcher */}
-            <div className="flex gap-2">
-              {symbols.map((sym) => (
-                <button
-                  key={sym}
-                  onClick={() => setSelectedSymbol(sym)}
-                  aria-pressed={selectedSymbol === sym}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${
-                    selectedSymbol === sym
-                      ? 'bg-primary/20 text-primary border border-primary/50'
-                      : 'bg-card text-gray-400 border border-gray-700 hover:text-white'
-                  }`}
-                >
-                  {sym}
-                </button>
-              ))}
-            </div>
             <div className="glass-card p-5">
-              <IndicatorChart data={chartData} symbol={selectedSymbol} />
+              <div className="flex flex-wrap gap-2 mb-4">
+                {symbols.map((sym) => (
+                  <button
+                    key={sym}
+                    onClick={() => setSelectedSymbol(sym)}
+                    aria-pressed={selectedSymbol === sym}
+                    className={`px-3 py-1 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                      selectedSymbol === sym
+                        ? 'bg-primary/20 text-primary border border-primary/50'
+                        : 'bg-card text-gray-400 border border-gray-700 hover:text-white'
+                    }`}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+              {selectedSymbol && <IndicatorChart data={chartData} symbol={selectedSymbol} />}
             </div>
           </div>
 
-          {/* Pattern list - 1 col, scrollable */}
-          <div className="xl:col-span-1">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">
-              {t('patternDetection.detectedPatterns')} ({patterns.length})
-            </h2>
-            <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
-              {patterns.map((pat, idx) => {
-                const StatusIcon = STATUS_ICONS[pat.status]
-                return (
-                  <div
-                    key={idx}
-                    className="glass-card p-4 hover:border-gray-600/60 transition-all cursor-pointer"
-                    onClick={() => setSelectedSymbol(pat.symbol)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && setSelectedSymbol(pat.symbol)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <span className="text-xs font-mono text-gray-500">{pat.symbol}</span>
-                          <span className={`inline-flex items-center gap-0.5 text-xs font-semibold border px-1.5 py-0.5 rounded ml-1 ${RELIABILITY_COLORS[pat.reliability]}`}>
-                            {t(`patternDetection.reliability.${pat.reliability}`)}
-                          </span>
-                        </div>
-                        <div className="font-semibold text-sm text-white">{t(`patternDetection.patterns.${pat.pattern}`, { defaultValue: pat.pattern })}</div>
-                      </div>
-                      <StatusIcon className={`w-4 h-4 mt-0.5 ${STATUS_COLORS[pat.status]}`} />
+          {/* Pattern list (right column) */}
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+            {patterns.length === 0 ? (
+              <div className="glass-card p-8 text-center">
+                <p className="text-gray-500 text-sm">{t('patternDetection.noPatterns')}</p>
+              </div>
+            ) : (
+              patterns.map((pat, idx) => (
+                <div
+                  key={idx}
+                  className={`glass-card p-4 bg-gradient-to-r ${
+                    pat.direction === 'bullish' ? 'from-green-500/5' : 'from-red-500/5'
+                  } to-transparent border-l-2 ${pat.direction === 'bullish' ? 'border-l-green-500' : 'border-l-red-500'} cursor-pointer hover:bg-card/60 transition-all`}
+                  onClick={() => setSelectedSymbol(pat.symbol)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && setSelectedSymbol(pat.symbol)}
+                  aria-label={`${pat.symbol} ${pat.pattern}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {pat.direction === 'bullish' ? (
+                        <TrendingUp className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-red-400" />
+                      )}
+                      <span className="font-bold text-sm">{pat.symbol}</span>
                     </div>
-
-                    {/* Mini sparkline */}
-                    <div className="h-8 mb-2">
-                      <SparklineChart
-                        data={generateMockOHLCV(pat.symbol, 14)}
-                        color={pat.status === 'confirmed' ? '#22c55e' : pat.status === 'failed' ? '#ef4444' : '#eab308'}
-                      />
-                    </div>
-
-                    {/* Completion bar */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-500">{t('patternDetection.completion')}</span>
-                        <span className="font-bold" style={{ color: pat.status === 'confirmed' ? '#22c55e' : pat.status === 'failed' ? '#ef4444' : '#eab308' }}>
-                          {pat.completion}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden" role="progressbar" aria-valuenow={pat.completion} aria-valuemin={0} aria-valuemax={100}>
-                        <div
-                          className="h-full transition-all"
-                          style={{
-                            width: `${pat.completion}%`,
-                            backgroundColor: pat.status === 'confirmed' ? '#22c55e' : pat.status === 'failed' ? '#ef4444' : '#eab308',
-                          }}
-                        />
-                      </div>
+                    <div className="flex items-center gap-1">
+                      {STATUS_ICONS[pat.status]}
+                      <span className="text-xs text-gray-400">{t(`patternDetection.${pat.status}`)}</span>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+
+                  {/* Mini sparkline */}
+                  <div className="h-8 mb-2">
+                    <SparklineChart
+                      data={generateMockOHLCV(pat.symbol, 14)}
+                      color={pat.direction === 'bullish' ? '#22c55e' : '#ef4444'}
+                    />
+                  </div>
+
+                  <div className="text-xs font-semibold text-gray-200 mb-2">
+                    {t(`patternDetection.${pat.pattern}`)}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-500">{t('patternDetection.completion')}: </span>
+                      <span className="font-mono text-gray-200">{pat.completion}%</span>
+                    </div>
+                    <div>
+                      <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${RELIABILITY_COLORS[pat.reliability]}`}>
+                        {t(`patternDetection.reliability`)}: {t(`common.levels.${pat.reliability}`)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">{t('patternDetection.breakoutLevel')}: </span>
+                      <span className="font-mono text-cyan-400">${pat.breakoutLevel.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">{t('patternDetection.priceTarget')}: </span>
+                      <span className={`font-mono font-bold ${pat.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
+                        ${pat.targetPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Completion bar */}
+                  <div className="mt-2 h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${pat.direction === 'bullish' ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ width: `${pat.completion}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

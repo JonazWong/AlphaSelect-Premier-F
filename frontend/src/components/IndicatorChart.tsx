@@ -74,15 +74,18 @@ function computeRSI(data: OHLCV[], period = 14): (number | null)[] {
     const gain = change > 0 ? change : 0
     const loss = change < 0 ? -change : 0
     if (i < period) {
+      // Accumulate initial averages (divide as we go to avoid large sum then divide)
       avgGain += gain / period
       avgLoss += loss / period
       result.push(null)
     } else if (i === period) {
+      // Complete first average
       avgGain += gain / period
       avgLoss += loss / period
       const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss
       result.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs))
     } else {
+      // Wilder's smoothing
       avgGain = (avgGain * (period - 1) + gain) / period
       avgLoss = (avgLoss * (period - 1) + loss) / period
       const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss
@@ -100,6 +103,7 @@ function computeMACD(data: OHLCV[]): { macd: (number | null)[]; signal: (number 
     const a = ema12[i], b = ema26[i]
     return a != null && b != null ? a - b : null
   })
+  // Signal line: 9-period EMA of macd
   const validMacd = macdLine.filter((v) => v != null) as number[]
   const signalRaw: (number | null)[] = []
   let prevSignal: number | null = null
@@ -125,12 +129,12 @@ function computeMACD(data: OHLCV[]): { macd: (number | null)[]; signal: (number 
   return { macd: macdLine, signal: signalRaw, hist }
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className="glass-card p-3 text-xs space-y-1 min-w-[160px]">
       <div className="font-semibold text-gray-300 mb-1">{label}</div>
-      {payload.map((p) => (
+      {payload.map((p: any) => (
         <div key={p.name} className="flex justify-between gap-4" style={{ color: p.color }}>
           <span>{p.name}</span>
           <span className="font-mono">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}</span>
