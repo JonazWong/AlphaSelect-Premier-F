@@ -29,6 +29,11 @@ interface TrainedModel {
   created_at: string
 }
 
+interface ErrorState {
+  show: boolean
+  message: string
+}
+
 const MODEL_TYPES = [
   { id: 'lstm', name: 'LSTM', description: 'Deep learning for long-term trends', color: 'cyan' },
   { id: 'xgboost', name: 'XGBoost', description: 'Gradient boosting for accuracy', color: 'purple' },
@@ -46,20 +51,25 @@ export default function AITrainingPage() {
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress | null>(null)
   const [trainedModels, setTrainedModels] = useState<TrainedModel[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [error, setError] = useState<ErrorState>({ show: false, message: '' })
 
   // Initialize WebSocket connection
   useEffect(() => {
     const socketInstance = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8000', {
-      path: '/ws/socket.io',
+      path: '/socket.io',  // ✅ Socket.IO 默认路径
       transports: ['websocket', 'polling']
     })
 
     socketInstance.on('connect', () => {
-      console.log('WebSocket connected')
+      console.log('✅ WebSocket connected')
     })
 
     socketInstance.on('disconnect', () => {
-      console.log('WebSocket disconnected')
+      console.log('⚠️ WebSocket disconnected')
+    })
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('❌ WebSocket connection error:', error)
     })
 
     setSocket(socketInstance)
@@ -118,6 +128,8 @@ export default function AITrainingPage() {
   // Start training
   const startTraining = async () => {
     try {
+      console.log('🚀 Starting training...', { symbol: selectedSymbol, model: selectedModel })
+      setError({ show: false, message: '' })
       setIsTraining(true)
       setTrainingProgress({ status: 'Initializing...', progress: 0 })
 
@@ -127,18 +139,37 @@ export default function AITrainingPage() {
         body: JSON.stringify({
           symbol: selectedSymbol,
           model_type: selectedModel,
+          min_data_points: 100,
           config: {}
         })
       })
 
+      console.log('📡 Response status:', response.status)
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('❌ Training API error:', error)
+        throw new Error(error.detail || 'Training failed')
+      }
+
       const data = await response.json()
+      console.log('✅ Training started:', data)
+      
       if (data.session_id) {
         setSessionId(data.session_id)
+        setError({ show: true, message: `Training started! Session: ${data.session_id.substring(0, 8)}...` })
       }
-    } catch (error) {
-      console.error('Failed to start training:', error)
+    } catch (error: any) {
+      console.error('❌ Failed to start training:', error)
       setIsTraining(false)
-      setTrainingProgress({ status: 'Failed to start', progress: 0 })
+      setTrainingProgress({ 
+        status: `Failed: ${error.message || 'Unknown error'}`, 
+        progress: 0 
+      })
+      setError({ 
+        show: true, 
+        message: error.message || 'Failed to start training. Check console for details.'
+      })
     }
   }
 
@@ -153,6 +184,30 @@ export default function AITrainingPage() {
           Train AI models for cryptocurrency price prediction
         </p>
       </div>
+
+      {/* Error/Success Message */}
+      {error.show && (
+        <div className={`p-4 rounded-lg border-2 ${
+          error.message.includes('Failed') || error.message.includes('Insufficient') 
+            ? 'border-red-500 bg-red-500/10 text-red-400' 
+            : 'border-green-500 bg-green-500/10 text-green-400'
+        }`}>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="font-bold mb-1">
+                {error.message.includes('Failed') || error.message.includes('Insufficient') ? '⚠️ Error' : '✅ Success'}
+              </div>
+              <div className="text-sm">{error.message}</div>
+            </div>
+            <button
+              onClick={() => setError({ show: false, message: '' })}
+              className="text-gray-400 hover:text-white ml-4"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Training Configuration */}
       <div className="glass-card p-6 space-y-6">
@@ -233,24 +288,24 @@ export default function AITrainingPage() {
             </div>
           </div>
 
-          {trainingProgress.metrics && (
+          {trainingProgress.metrics && trainingProgress.metrics.r2_score !== undefined && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
               <div className="bg-dark-700 p-4 rounded-lg">
                 <div className="text-sm text-gray-400">R² Score</div>
-                <div className="text-2xl font-bold">{trainingProgress.metrics.r2_score.toFixed(4)}</div>
+                <div className="text-2xl font-bold">{trainingProgress.metrics.r2_score?.toFixed(4) || 'N/A'}</div>
               </div>
               <div className="bg-dark-700 p-4 rounded-lg">
                 <div className="text-sm text-gray-400">MAE</div>
-                <div className="text-2xl font-bold">{trainingProgress.metrics.mae.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{trainingProgress.metrics.mae?.toFixed(2) || 'N/A'}</div>
               </div>
               <div className="bg-dark-700 p-4 rounded-lg">
                 <div className="text-sm text-gray-400">RMSE</div>
-                <div className="text-2xl font-bold">{trainingProgress.metrics.rmse.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{trainingProgress.metrics.rmse?.toFixed(2) || 'N/A'}</div>
               </div>
-              {trainingProgress.metrics.directional_accuracy && (
+              {trainingProgress.metrics.directional_accuracy !== undefined && (
                 <div className="bg-dark-700 p-4 rounded-lg">
                   <div className="text-sm text-gray-400">Dir. Accuracy</div>
-                  <div className="text-2xl font-bold">{(trainingProgress.metrics.directional_accuracy * 100).toFixed(1)}%</div>
+                  <div className="text-2xl font-bold">{((trainingProgress.metrics.directional_accuracy || 0) * 100).toFixed(1)}%</div>
                 </div>
               )}
             </div>
@@ -283,15 +338,15 @@ export default function AITrainingPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
                   <div>
                     <div className="text-xs text-gray-400">R² Score</div>
-                    <div className="font-bold">{model.metrics.r2_score.toFixed(4)}</div>
+                    <div className="font-bold">{model.metrics?.r2_score?.toFixed(4) || 'N/A'}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-400">MAE</div>
-                    <div className="font-bold">{model.metrics.mae.toFixed(2)}</div>
+                    <div className="font-bold">{model.metrics?.mae?.toFixed(2) || 'N/A'}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-400">RMSE</div>
-                    <div className="font-bold">{model.metrics.rmse.toFixed(2)}</div>
+                    <div className="font-bold">{model.metrics?.rmse?.toFixed(2) || 'N/A'}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-400">Trained</div>

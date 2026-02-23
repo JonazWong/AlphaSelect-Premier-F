@@ -32,7 +32,8 @@ class MEXCContractAPI:
         self.api_key = api_key or settings.MEXC_API_KEY
         self.secret_key = secret_key or settings.MEXC_SECRET_KEY
         self.base_url = base_url or settings.MEXC_CONTRACT_BASE_URL
-        self.client = httpx.Client(timeout=30.0)
+        self.recv_window = settings.MEXC_RECV_WINDOW
+        self.client = httpx.Client(timeout=settings.MEXC_REQUEST_TIMEOUT)
         
     def _sign(self, params: Dict[str, Any]) -> str:
         """Generate signature for authenticated requests"""
@@ -70,6 +71,7 @@ class MEXCContractAPI:
         
         if signed:
             params['timestamp'] = int(time.time() * 1000)
+            params['recvWindow'] = self.recv_window  # MEXC要求的时间窗口
             params['signature'] = self._sign(params)
         
         for attempt in range(retry_count):
@@ -91,6 +93,14 @@ class MEXCContractAPI:
                 return data
                 
             except httpx.HTTPStatusError as e:
+                # 特殊处理 429 错误 - 读取 Retry-After 头
+                if e.response.status_code == 429:
+                    retry_after = e.response.headers.get('Retry-After', '60')
+                    wait_time = int(retry_after)
+                    logger.warning(f"Rate limit exceeded (429), waiting {wait_time} seconds")
+                    time.sleep(wait_time)
+                    continue
+                
                 logger.error(f"HTTP error on attempt {attempt + 1}: {e}")
                 if attempt == retry_count - 1:
                     raise
@@ -104,7 +114,7 @@ class MEXCContractAPI:
         
         raise Exception("Max retries exceeded")
     
-    @rate_limit(key_func=lambda self: "mexc_contract")
+    @rate_limit(key_func=lambda self, symbol: "mexc_contract")
     @circuit_breaker("mexc_contract")
     def get_contract_ticker(self, symbol: str) -> Dict:
         """
