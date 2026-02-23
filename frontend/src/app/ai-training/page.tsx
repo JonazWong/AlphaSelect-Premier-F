@@ -46,6 +46,21 @@ export default function AITrainingPage() {
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress | null>(null)
   const [trainedModels, setTrainedModels] = useState<TrainedModel[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  // Check backend health
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/health`, { signal: AbortSignal.timeout(3000) })
+        setBackendOnline(res.ok)
+      } catch {
+        setBackendOnline(false)
+      }
+    }
+    checkHealth()
+  }, [])
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -117,6 +132,7 @@ export default function AITrainingPage() {
 
   // Start training
   const startTraining = async () => {
+    setErrorMsg(null)
     try {
       setIsTraining(true)
       setTrainingProgress({ status: 'Initializing...', progress: 0 })
@@ -131,6 +147,11 @@ export default function AITrainingPage() {
         })
       })
 
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.detail || `Server error ${response.status}`)
+      }
+
       const data = await response.json()
       if (data.session_id) {
         setSessionId(data.session_id)
@@ -138,7 +159,8 @@ export default function AITrainingPage() {
     } catch (error) {
       console.error('Failed to start training:', error)
       setIsTraining(false)
-      setTrainingProgress({ status: 'Failed to start', progress: 0 })
+      setTrainingProgress(null)
+      setErrorMsg(error instanceof Error ? error.message : '無法連接後端，請確認 Docker 服務已啟動（localhost:8000）')
     }
   }
 
@@ -153,6 +175,31 @@ export default function AITrainingPage() {
           Train AI models for cryptocurrency price prediction
         </p>
       </div>
+
+      {/* Backend status banner */}
+      {backendOnline === false && (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" />
+          <span>
+            <strong>後端離線</strong> — 無法連接 <code className="bg-black/30 px-1 rounded">localhost:8000</code>。
+            請執行 <code className="bg-black/30 px-1 rounded">docker-compose up -d</code> 啟動後端服務後再試。
+          </span>
+        </div>
+      )}
+      {backendOnline === true && (
+        <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
+          後端已連線
+        </div>
+      )}
+
+      {/* Error message */}
+      {errorMsg && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-300 text-sm">
+          <span className="text-red-400 font-bold shrink-0">✕</span>
+          {errorMsg}
+        </div>
+      )}
 
       {/* Training Configuration */}
       <div className="glass-card p-6 space-y-6">
@@ -203,14 +250,18 @@ export default function AITrainingPage() {
         {/* Train Button */}
         <button
           onClick={startTraining}
-          disabled={isTraining}
+          disabled={isTraining || backendOnline === false}
           className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
-            isTraining
-              ? 'bg-gray-600 cursor-not-allowed'
+            isTraining || backendOnline === false
+              ? 'bg-gray-600 cursor-not-allowed opacity-60'
               : 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600'
           }`}
         >
-          {isTraining ? 'Training in Progress...' : `Train ${MODEL_TYPES.find(m => m.id === selectedModel)?.name} Model`}
+          {isTraining
+            ? 'Training in Progress...'
+            : backendOnline === false
+            ? '後端離線，無法訓練'
+            : `Train ${MODEL_TYPES.find(m => m.id === selectedModel)?.name} Model`}
         </button>
       </div>
 
