@@ -233,7 +233,7 @@ export default function AITrainingPage() {
           <select
             value={selectedSymbol}
             onChange={(e) => setSelectedSymbol(e.target.value)}
-            className="w-full bg-dark-700 border border-gray-600 rounded-lg px-4 py-2"
+            className="w-full bg-card text-white border border-gray-600 rounded-lg px-4 py-2"
             disabled={isTraining}
           >
             <option value="BTC_USDT">BTC/USDT</option>
@@ -308,20 +308,20 @@ export default function AITrainingPage() {
 
           {trainingProgress.metrics && trainingProgress.metrics.r2_score !== undefined && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              <div className="bg-dark-700 p-4 rounded-lg">
+              <div className="bg-card p-4 rounded-lg">
                 <div className="text-sm text-gray-400">R² Score</div>
                 <div className="text-2xl font-bold">{trainingProgress.metrics.r2_score?.toFixed(4) || 'N/A'}</div>
               </div>
-              <div className="bg-dark-700 p-4 rounded-lg">
+              <div className="bg-card p-4 rounded-lg">
                 <div className="text-sm text-gray-400">MAE</div>
                 <div className="text-2xl font-bold">{trainingProgress.metrics.mae?.toFixed(2) || 'N/A'}</div>
               </div>
-              <div className="bg-dark-700 p-4 rounded-lg">
+              <div className="bg-card p-4 rounded-lg">
                 <div className="text-sm text-gray-400">RMSE</div>
                 <div className="text-2xl font-bold">{trainingProgress.metrics.rmse?.toFixed(2) || 'N/A'}</div>
               </div>
               {trainingProgress.metrics.directional_accuracy !== undefined && (
-                <div className="bg-dark-700 p-4 rounded-lg">
+                <div className="bg-card p-4 rounded-lg">
                   <div className="text-sm text-gray-400">Dir. Accuracy</div>
                   <div className="text-2xl font-bold">{((trainingProgress.metrics.directional_accuracy || 0) * 100).toFixed(1)}%</div>
                 </div>
@@ -340,7 +340,7 @@ export default function AITrainingPage() {
         ) : (
           <div className="space-y-3">
             {trainedModels.map((model) => (
-              <div key={model.id} className="bg-dark-700 p-4 rounded-lg">
+              <div key={model.id} className="bg-card p-4 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="font-bold text-lg">{MODEL_TYPES.find(m => m.id === model.model_type)?.name || model.model_type}</div>
