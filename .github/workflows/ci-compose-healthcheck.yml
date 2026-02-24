@@ -1,0 +1,149 @@
+# CI pipeline: pre-deployment health check using Docker Compose.
+#
+# Purpose
+# -------
+# Acts as a gate before DigitalOcean App Platform auto-deploys:
+#   1. Verifies required files exist.
+#   2. Validates docker-compose configuration can be parsed.
+#   3. Builds and starts all services with `docker compose up -d --build`.
+#   4. Polls http://localhost:3000/health until it returns HTTP 2xx (≤5 min).
+#   5. Dumps logs and tears down on completion (success or failure).
+#
+# Local reproduction
+# ------------------
+#   cp backend/.env.example backend/.env   # set DB_PASSWORD, SECRET_KEY
+#   docker compose up -d --build
+#   # wait ~60s for services to start, then:
+#   curl -f http://localhost:3000/health    # should return {"status":"ok"}
+#   docker compose down -v
+
+name: CI – Docker Compose Health Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same branch/PR to avoid resource contention.
+concurrency:
+  group: ci-compose-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  healthcheck:
+    name: Build & Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      # ------------------------------------------------------------------ #
+      # 1. Checkout                                                          #
+      # ------------------------------------------------------------------ #
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------ #
+      # 2. Verify required files exist                                       #
+      # ------------------------------------------------------------------ #
+      - name: Check required files
+        run: |
+          MISSING=0
+
+          if [ ! -f "Dockerfile" ] && [ ! -f "backend/Dockerfile" ] && [ ! -f "frontend/Dockerfile" ]; then
+            echo "::error::No Dockerfile found in the repository root or backend/frontend subdirectories."
+            MISSING=1
+          else
+            echo "✅  Dockerfile(s) found."
+          fi
+
+          COMPOSE_FILE=""
+          if [ -f "docker-compose.yml" ]; then
+            COMPOSE_FILE="docker-compose.yml"
+          elif [ -f "docker-compose.yaml" ]; then
+            COMPOSE_FILE="docker-compose.yaml"
+          elif [ -f "compose.yml" ]; then
+            COMPOSE_FILE="compose.yml"
+          elif [ -f "compose.yaml" ]; then
+            COMPOSE_FILE="compose.yaml"
+          fi
+
+          if [ -z "$COMPOSE_FILE" ]; then
+            echo "::error::No compose file found (docker-compose.yml / compose.yml)."
+            MISSING=1
+          else
+            echo "✅  Compose file found: $COMPOSE_FILE"
+            echo "COMPOSE_FILE=$COMPOSE_FILE" >> "$GITHUB_ENV"
+          fi
+
+          [ "$MISSING" -eq 0 ] || exit 1
+
+      # ------------------------------------------------------------------ #
+      # 3. Validate compose configuration                                    #
+      # ------------------------------------------------------------------ #
+      - name: Validate docker compose config
+        run: |
+          echo "Running: docker compose -f $COMPOSE_FILE config"
+          docker compose -f "$COMPOSE_FILE" config --quiet
+          echo "✅  Compose configuration is valid."
+
+      # ------------------------------------------------------------------ #
+      # 4. Set up Docker Buildx                                              #
+      # ------------------------------------------------------------------ #
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ------------------------------------------------------------------ #
+      # 5. Build and start services                                          #
+      # ------------------------------------------------------------------ #
+      - name: Build and start services
+        env:
+          DB_PASSWORD: ci_test_password
+          SECRET_KEY: ci-secret-key-not-for-production
+        run: |
+          echo "Starting services with: docker compose -f $COMPOSE_FILE up -d --build"
+          docker compose -f "$COMPOSE_FILE" up -d --build
+
+      # ------------------------------------------------------------------ #
+      # 6. Wait for /health endpoint (max 5 min, retry every 10 s)          #
+      # ------------------------------------------------------------------ #
+      - name: Wait for frontend /health endpoint
+        run: |
+          HEALTH_URL="http://localhost:3000/health"
+          MAX_ATTEMPTS=30   # 30 × 10 s = 300 s = 5 min
+          ATTEMPT=0
+
+          echo "Polling $HEALTH_URL …"
+          until [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || true)
+            if echo "$STATUS" | grep -qE '^[23][0-9]{2}$'; then
+              echo "✅  Health check passed (HTTP $STATUS) after $((ATTEMPT * 10)) seconds."
+              exit 0
+            fi
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "  Attempt $ATTEMPT/$MAX_ATTEMPTS – got HTTP ${STATUS:-000}, retrying in 10 s …"
+            sleep 10
+          done
+
+          echo "::error::Health check timed out after $((MAX_ATTEMPTS * 10)) seconds."
+          exit 1
+
+      # ------------------------------------------------------------------ #
+      # 7. Dump logs on failure                                              #
+      # ------------------------------------------------------------------ #
+      - name: Dump compose logs (on failure)
+        if: failure()
+        run: |
+          echo "=== docker compose logs ==="
+          docker compose -f "$COMPOSE_FILE" logs --no-color
+
+      # ------------------------------------------------------------------ #
+      # 8. Teardown (always)                                                 #
+      # ------------------------------------------------------------------ #
+      - name: Teardown
+        if: always()
+        run: |
+          docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+          echo "✅  Teardown complete."

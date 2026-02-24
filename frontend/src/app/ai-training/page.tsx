@@ -29,11 +29,6 @@ interface TrainedModel {
   created_at: string
 }
 
-interface ErrorState {
-  show: boolean
-  message: string
-}
-
 const MODEL_TYPES = [
   { id: 'lstm', name: 'LSTM', description: 'Deep learning for long-term trends', color: 'cyan' },
   { id: 'xgboost', name: 'XGBoost', description: 'Gradient boosting for accuracy', color: 'purple' },
@@ -51,7 +46,22 @@ export default function AITrainingPage() {
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress | null>(null)
   const [trainedModels, setTrainedModels] = useState<TrainedModel[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [error, setError] = useState<ErrorState>({ show: false, message: '' })
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // Check backend health
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/health`, { signal: AbortSignal.timeout(3000) })
+        setBackendOnline(res.ok)
+      } catch {
+        setBackendOnline(false)
+      }
+    }
+    checkHealth()
+  }, [])
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -127,9 +137,10 @@ export default function AITrainingPage() {
 
   // Start training
   const startTraining = async () => {
+    setErrorMsg(null)
+    setSuccessMsg(null)
     try {
       console.log('🚀 Starting training...', { symbol: selectedSymbol, model: selectedModel })
-      setError({ show: false, message: '' })
       setIsTraining(true)
       setTrainingProgress({ status: 'Initializing...', progress: 0 })
 
@@ -147,29 +158,23 @@ export default function AITrainingPage() {
       console.log('📡 Response status:', response.status)
 
       if (!response.ok) {
-        const error = await response.json()
-        console.error('❌ Training API error:', error)
-        throw new Error(error.detail || 'Training failed')
+        const errData = await response.json().catch(() => ({}))
+        console.error('❌ Training API error:', errData)
+        throw new Error(errData.detail || `Server error ${response.status}`)
       }
 
       const data = await response.json()
       console.log('✅ Training started:', data)
-      
+
       if (data.session_id) {
         setSessionId(data.session_id)
-        setError({ show: true, message: `Training started! Session: ${data.session_id.substring(0, 8)}...` })
+        setSuccessMsg(`Training started! Session: ${data.session_id.substring(0, 8)}...`)
       }
     } catch (error: any) {
       console.error('❌ Failed to start training:', error)
       setIsTraining(false)
-      setTrainingProgress({ 
-        status: `Failed: ${error.message || 'Unknown error'}`, 
-        progress: 0 
-      })
-      setError({ 
-        show: true, 
-        message: error.message || 'Failed to start training. Check console for details.'
-      })
+      setTrainingProgress(null)
+      setErrorMsg(error instanceof Error ? error.message : '無法連接後端，請確認 Docker 服務已啟動（localhost:8000）')
     }
   }
 
@@ -185,27 +190,36 @@ export default function AITrainingPage() {
         </p>
       </div>
 
-      {/* Error/Success Message */}
-      {error.show && (
-        <div className={`p-4 rounded-lg border-2 ${
-          error.message.includes('Failed') || error.message.includes('Insufficient') 
-            ? 'border-red-500 bg-red-500/10 text-red-400' 
-            : 'border-green-500 bg-green-500/10 text-green-400'
-        }`}>
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="font-bold mb-1">
-                {error.message.includes('Failed') || error.message.includes('Insufficient') ? '⚠️ Error' : '✅ Success'}
-              </div>
-              <div className="text-sm">{error.message}</div>
-            </div>
-            <button
-              onClick={() => setError({ show: false, message: '' })}
-              className="text-gray-400 hover:text-white ml-4"
-            >
-              ✕
-            </button>
-          </div>
+      {/* Backend status banner */}
+      {backendOnline === false && (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" />
+          <span>
+            <strong>後端離線</strong> — 無法連接 <code className="bg-black/30 px-1 rounded">localhost:8000</code>。
+            請執行 <code className="bg-black/30 px-1 rounded">docker-compose up -d</code> 啟動後端服務後再試。
+          </span>
+        </div>
+      )}
+      {backendOnline === true && (
+        <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
+          後端已連線
+        </div>
+      )}
+
+      {/* Success message */}
+      {successMsg && (
+        <div className="flex items-center justify-between gap-3 px-5 py-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-300 text-sm">
+          <span>✅ {successMsg}</span>
+          <button onClick={() => setSuccessMsg(null)} className="text-gray-400 hover:text-white shrink-0">✕</button>
+        </div>
+      )}
+
+      {/* Error message */}
+      {errorMsg && (
+        <div className="flex items-center justify-between gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-300 text-sm">
+          <span><span className="font-bold mr-1">✕</span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className="text-gray-400 hover:text-white shrink-0">✕</button>
         </div>
       )}
 
@@ -258,14 +272,18 @@ export default function AITrainingPage() {
         {/* Train Button */}
         <button
           onClick={startTraining}
-          disabled={isTraining}
+          disabled={isTraining || backendOnline === false}
           className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
-            isTraining
-              ? 'bg-gray-600 cursor-not-allowed'
+            isTraining || backendOnline === false
+              ? 'bg-gray-600 cursor-not-allowed opacity-60'
               : 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600'
           }`}
         >
-          {isTraining ? 'Training in Progress...' : `Train ${MODEL_TYPES.find(m => m.id === selectedModel)?.name} Model`}
+          {isTraining
+            ? 'Training in Progress...'
+            : backendOnline === false
+            ? '後端離線，無法訓練'
+            : `Train ${MODEL_TYPES.find(m => m.id === selectedModel)?.name} Model`}
         </button>
       </div>
 
