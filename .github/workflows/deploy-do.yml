@@ -1,0 +1,117 @@
+# CD pipeline: Deploy to DigitalOcean App Platform.
+#
+# Trigger
+# -------
+# Runs automatically after the CI health-check workflow completes
+# successfully on the `main` branch.  This ensures code is never
+# deployed to production before local integration tests pass.
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions)
+# ---------------------------------------------------------------------
+#   DIGITALOCEAN_ACCESS_TOKEN  – Personal Access Token with write scope
+#   DIGITALOCEAN_APP_ID        – App ID from DO dashboard
+#                                (Dashboard → App → Settings → App ID,
+#                                 or: doctl apps list)
+#
+# Manual trigger
+# --------------
+# You can also trigger this workflow manually from the Actions tab
+# without pushing new code (useful for rollback / re-deploy).
+
+name: CD – Deploy to DigitalOcean
+
+on:
+  # Auto-trigger: only after CI health check passes on main
+  workflow_run:
+    workflows: ["CI – Docker Compose Health Check"]
+    branches: [main]
+    types: [completed]
+
+  # Manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deploy (optional)'
+        required: false
+        default: 'manual re-deploy'
+
+concurrency:
+  group: deploy-do-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to DigitalOcean App Platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    # For workflow_run: only deploy if CI passed; always run for manual trigger
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      # ------------------------------------------------------------------ #
+      # 1. Install doctl (DigitalOcean CLI)                                 #
+      # ------------------------------------------------------------------ #
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      # ------------------------------------------------------------------ #
+      # 2. Trigger new deployment on App Platform                           #
+      # ------------------------------------------------------------------ #
+      - name: Create deployment
+        id: deploy
+        run: |
+          echo "Triggering deployment for App ID: ${{ secrets.DIGITALOCEAN_APP_ID }}"
+          DEPLOY_JSON=$(doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }} --format ID,Phase --no-header --output json)
+          DEPLOY_ID=$(echo "$DEPLOY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['deployment']['id'])")
+          echo "deploy_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+          echo "✅  Deployment created: $DEPLOY_ID"
+
+      # ------------------------------------------------------------------ #
+      # 3. Wait for deployment to complete (max 12 min)                     #
+      # ------------------------------------------------------------------ #
+      - name: Wait for deployment to go live
+        run: |
+          APP_ID="${{ secrets.DIGITALOCEAN_APP_ID }}"
+          DEPLOY_ID="${{ steps.deploy.outputs.deploy_id }}"
+          MAX_ATTEMPTS=72   # 72 × 10 s = 720 s ≈ 12 min
+          ATTEMPT=0
+
+          echo "Polling deployment $DEPLOY_ID …"
+          while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
+            PHASE=$(doctl apps get-deployment "$APP_ID" "$DEPLOY_ID" --format Phase --no-header 2>/dev/null || echo "UNKNOWN")
+            echo "  Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS – Phase: $PHASE"
+
+            case "$PHASE" in
+              ACTIVE)
+                echo "✅  Deployment is ACTIVE."
+                exit 0
+                ;;
+              ERROR|CANCELED|SUPERSEDED)
+                echo "::error::Deployment ended with phase: $PHASE"
+                exit 1
+                ;;
+            esac
+
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 10
+          done
+
+          echo "::error::Deployment timed out after $((MAX_ATTEMPTS * 10)) seconds."
+          exit 1
+
+      # ------------------------------------------------------------------ #
+      # 4. Print App URL                                                     #
+      # ------------------------------------------------------------------ #
+      - name: Print live URL
+        if: success()
+        run: |
+          APP_URL=$(doctl apps get ${{ secrets.DIGITALOCEAN_APP_ID }} --format LiveURL --no-header)
+          echo "🚀  App is live at: $APP_URL"
+          echo "::notice title=Deployed::App is live at $APP_URL"

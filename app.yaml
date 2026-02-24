@@ -17,8 +17,8 @@ services:
     github:
       repo: JonazWong/AlphaSelect-Premier-F
       branch: main
-      deploy_on_push: true
-    source_dir: /backend
+      deploy_on_push: false
+    source_dir: backend
     dockerfile_path: backend/Dockerfile
     http_port: 8000
     instance_count: 2
@@ -55,8 +55,8 @@ services:
     github:
       repo: JonazWong/AlphaSelect-Premier-F
       branch: main
-      deploy_on_push: true
-    source_dir: /frontend
+      deploy_on_push: false
+    source_dir: frontend
     dockerfile_path: frontend/Dockerfile
     http_port: 3000
     instance_count: 2
@@ -75,8 +75,8 @@ services:
     github:
       repo: JonazWong/AlphaSelect-Premier-F
       branch: main
-      deploy_on_push: true
-    source_dir: /backend
+      deploy_on_push: false
+    source_dir: backend
     dockerfile_path: backend/Dockerfile
     instance_count: 1
     instance_size_slug: basic-xs

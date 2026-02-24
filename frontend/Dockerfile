@@ -1,18 +1,25 @@
-FROM node:20-alpine
-
+# ---- Build stage ----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
-# Install dependencies
-RUN npm install
-
-# Copy application files
 COPY . .
+RUN npm run build
 
-# Expose port
+# ---- Runtime stage ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
 EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Run in development mode
-CMD ["npm", "run", "dev"]
+CMD ["node", "server.js"]
