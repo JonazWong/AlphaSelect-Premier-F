@@ -70,8 +70,6 @@ services:
         value: ${backend.PUBLIC_URL}
     routes:
       - path: /
-    health_check:
-      http_path: /health
 
   - name: celery-worker
     github:

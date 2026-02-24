@@ -66,7 +66,7 @@ export default function AITrainingPage() {
   // Initialize WebSocket connection
   useEffect(() => {
     const socketInstance = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8000', {
-      path: '/socket.io',  // ✅ Socket.IO 默认路径
+      path: '/ws/socket.io',  // Align with backend Socket.IO mount path
       transports: ['websocket', 'polling']
     })
 
