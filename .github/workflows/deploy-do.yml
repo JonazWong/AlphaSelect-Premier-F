@@ -69,7 +69,7 @@ jobs:
         run: |
           echo "Triggering deployment for App ID: ${{ secrets.DIGITALOCEAN_APP_ID }}"
           DEPLOY_JSON=$(doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }} --format ID,Phase --no-header --output json)
-          DEPLOY_ID=$(echo "$DEPLOY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['deployment']['id'])")
+          DEPLOY_ID=$(echo "$DEPLOY_JSON" | python3 -c "import sys,json; data = json.load(sys.stdin); row = data[0] if isinstance(data, list) else data; print(row['ID'])")
           echo "deploy_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
           echo "✅  Deployment created: $DEPLOY_ID"
 
