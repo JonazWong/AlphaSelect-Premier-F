@@ -357,11 +357,9 @@ def get_contract_signals(
                 except Exception:
                     funding_rate = 0.0001
                 
-                try:
-                    oi_data = mexc_contract_api.get_open_interest(symbol)
-                    open_interest = oi_data.get('data', {}).get('openInterest', '0')
-                except Exception:
-                    open_interest = '0'
+                # Skip Open Interest API - MEXC returns 403 Forbidden
+                # This was causing significant delays (3 retries per symbol)
+                open_interest = '0'
                 
                 # Calculate trading levels
                 if direction.lower() == 'long':
@@ -419,7 +417,7 @@ def get_contract_signals(
                     'leverage': '10x',
                     'fundingRate': funding_rate,
                     'openInterest': str(open_interest),
-                    'openInterestChange': None,
+                    'openInterestChange': 0.0,  # ✅ 默认值，因为 MEXC OI API 返回 403
                     'confidence': confidence,
                     'riskLevel': risk_level,
                     'signals': technical_signals,
