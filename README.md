@@ -57,12 +57,40 @@
 
 ## 🚀 Quick Start
 
+### ⚡ 最快方式（Windows）
+
+```batch
+# 運行快速入門向導
+quick_start.bat
+```
+
+這個互動式向導將引導您：
+- ✅ 了解項目結構
+- ✅ 選擇使用方式（Docker 或本地開發）
+- ✅ 快速啟動服務
+- ✅ 解決常見問題
+
 ### Prerequisites
 - Docker Desktop (for local development)
 - Git
 - MEXC API credentials (optional for testing)
 
-### Local Development with Docker
+### Local Development with Docker (Windows)
+
+**一鍵啟動腳本** (推薦使用)
+
+```batch
+# 1. 配置 MEXC API（首次使用）
+config_mexc.bat
+
+# 2. 啟動所有服務
+一鍵啟動腳本 start.bat
+
+# 3. 停止服務
+一鍵停止腳本 stop.bat
+```
+
+**手動步驟**:
 
 1. **Clone the repository**
 ```bash
@@ -72,22 +100,26 @@ cd AlphaSelect-Premier-F
 
 2. **Set up environment variables**
 ```bash
-# Copy example env files
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+# 使用配置向導（推薦）
+config_mexc.bat
 
-# Edit backend/.env with your configuration
-# At minimum, set a secure DB_PASSWORD
+# 或手動設置
+copy .env.example .env
+# 編輯 .env 文件，設置 MEXC API 密鑰
 ```
 
 3. **Start all services with Docker Compose**
 ```bash
+# Windows: 使用批次腳本
+一鍵啟動腳本 start.bat
+
+# 或手動啟動
 docker-compose up -d
 ```
 
 This will start:
-- PostgreSQL 16 + TimescaleDB on port 5432
-- Redis 7 on port 6379
+- PostgreSQL 16 + TimescaleDB on port 5433
+- Redis 7 on port 6380
 - FastAPI backend on port 8000
 - Celery worker
 - Next.js frontend on port 3000
@@ -96,6 +128,55 @@ This will start:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
+
+## 🛠️ 管理工具
+
+### 啟動和停止
+
+| 工具 | 功能 | 用途 |
+|------|------|------|
+| `一鍵啟動腳本 start.bat` | 啟動所有服務 | 啟動 Docker 容器並檢查服務狀態 |
+| `一鍵停止腳本 stop.bat` | 停止所有服務 | 優雅地停止所有運行中的容器 |
+| `restart_backend.bat` | 重啟後端 | 僅重啟後端服務（快速） |
+| `rebuild_backend.bat` | 重建後端 | 重新構建後端鏡像（修復依賴問題） |
+
+### MEXC API 管理
+
+| 工具 | 功能 | 用途 |
+|------|------|------|
+| `config_mexc.bat` | 配置 MEXC API | 互動式設置 API 密鑰 |
+| `test_mexc.bat` | 測試 MEXC API | 驗證 API 連接和配置 |
+| `check_mexc_status.bat` | 檢查部署狀態 | 查看 MEXC API 集成狀態 |
+
+### 診斷和測試
+
+| 工具 | 功能 | 用途 |
+|------|------|------|
+| `diagnose_backend.bat` | 診斷後端問題 | 全面檢查後端狀態和錯誤 |
+| `view_backend_logs.bat` | 查看後端日誌 | 快速查看最新日誌 |
+| `test_backend.py` | 測試後端配置 | 驗證 Python 環境和導入 |
+| `test_mexc_api.py` | 測試 MEXC 集成 | 測試 API 客戶端和端點 |
+
+### 使用示例
+
+```batch
+# 首次設置
+1. config_mexc.bat          # 配置 MEXC API
+2. 一鍵啟動腳本 start.bat    # 啟動服務
+
+# 日常使用
+一鍵啟動腳本 start.bat      # 啟動
+一鍵停止腳本 stop.bat        # 停止
+
+# 問題診斷
+diagnose_backend.bat        # 診斷問題
+view_backend_logs.bat       # 查看日誌
+test_mexc.bat              # 測試 MEXC API
+
+# 重啟服務
+restart_backend.bat         # 快速重啟後端
+rebuild_backend.bat        # 重新構建後端
+```
 
 ### Manual Installation (without Docker)
 
@@ -218,6 +299,8 @@ npm test
 
 ## 📚 Additional Documentation
 
+- [MEXC API 部署文檔](./MEXC_API_DEPLOYMENT.md) - MEXC API 完整集成指南
+- [後端故障排除](./BACKEND_TROUBLESHOOTING.md) - 後端問題診斷和解決
 - [MEXC API Setup Guide](./MEXC_API_GUIDE.md) - Setting up MEXC API credentials
 - [AI Training Guide](./AI_TRAINING_GUIDE.md) - Training AI models
 - [Deployment Guide](./DEPLOYMENT.md) - Deploying to DigitalOcean
