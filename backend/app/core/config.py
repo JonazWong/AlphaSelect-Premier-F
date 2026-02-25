@@ -1,8 +1,8 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
-import os
+
 
 class Settings(BaseSettings):
+    # Database
     # Database
     DATABASE_URL: str = "postgresql://admin:Ken202318@postgres:5432/alphaselect"
     
