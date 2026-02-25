@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: Ken202318
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"  # ✅ 從 .env 讀取端口
+      - "${POSTGRES_PORT:-5432}:5432"  # ✅ 從 .env 讀取端口
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${REDIS_PORT:-6380}:6379"  # ✅ 從 .env 讀取端口
+      - "${REDIS_PORT:-6379}:6379"  # ✅ 從 .env 讀取端口
     volumes:
       - redis_data:/data
     healthcheck:
@@ -82,10 +82,8 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_WS_URL: http://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
