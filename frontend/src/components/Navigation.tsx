@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { Activity, Brain, TrendingUp, LineChart, Filter, Home } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home, LayoutDashboard, Globe, Lock, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLanguage } from '@/components/I18nProvider'
 import '@/i18n/config'
@@ -12,8 +11,6 @@ export default function Navigation() {
   const pathname = usePathname()
   const { t } = useTranslation('common')
   const { language, toggleLanguage } = useLanguage()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
   
   const navItems = [
     { href: '/', labelKey: 'nav.home', icon: Home },
@@ -22,6 +19,10 @@ export default function Navigation() {
     { href: '/ai-predictions', labelKey: 'nav.aiPredictions', icon: TrendingUp },
     { href: '/pattern-detection', labelKey: 'nav.patternDetection', icon: LineChart },
     { href: '/market-screener', labelKey: 'nav.marketScreener', icon: Filter },
+    { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { href: '/crawler-config', labelKey: 'nav.crawlerConfig', icon: Globe },
+    { href: '/blacklist', labelKey: 'nav.blacklist', icon: Lock },
+    { href: '/admin', labelKey: 'nav.admin', icon: Shield },
   ]
   
   return (
@@ -50,9 +51,7 @@ export default function Navigation() {
                       : 'hover:bg-card/50 text-gray-400 hover:text-white'
                   }`}>
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium" suppressHydrationWarning>
-                      {mounted ? t(item.labelKey) : item.labelKey.split('.')[1]}
-                    </span>
+                    <span className="font-medium">{t(item.labelKey)}</span>
                   </div>
                 </Link>
               )
@@ -64,9 +63,8 @@ export default function Navigation() {
               onClick={toggleLanguage}
               aria-label={language === 'en' ? t('nav.switchToChinese') : t('nav.switchToEnglish')}
               className="px-3 py-1 rounded-lg text-sm font-medium text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
-              suppressHydrationWarning
             >
-              {mounted ? (language === 'en' ? 'EN' : '中文') : 'EN'}
+              {language === 'en' ? 'EN' : '中文'}
             </button>
           </div>
         </div>
