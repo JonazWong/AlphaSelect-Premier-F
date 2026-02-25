@@ -5,10 +5,10 @@ from pydantic import field_validator
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql://admin:Ken202318@localhost:5432/alphaselect"
     
     # Redis
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379"
     
     # MEXC API
     MEXC_API_KEY: str = ""
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     DEFAULT_BATCH_SIZE: int = 32
     
     # Security
-    SECRET_KEY: str
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
     
     # CORS
@@ -41,8 +41,9 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 20
     
     class Config:
+        extra = "ignore"       # ← 加這行！允許 .env 有額外的 key（如 DB_PASSWORD）
         env_file = ".env"
-        case_sensitive = True
+        case_sensitive = False # ← 改成 False
 
     @field_validator('DATABASE_URL', 'REDIS_URL', 'SECRET_KEY')
     @classmethod

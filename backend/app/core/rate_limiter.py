@@ -1,9 +1,12 @@
 import time
+import logging
 from functools import wraps
 from collections import deque
 from typing import Callable
 import redis
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -15,38 +18,37 @@ class RateLimiter:
         self.max_requests = settings.RATE_LIMIT_PER_MINUTE
         
     def is_allowed(self, key: str) -> bool:
-        """Check if request is allowed under rate limit"""
-        now = time.time()
-        window_start = now - self.window
-        
-        # Use Redis sorted set for distributed rate limiting
-        pipe = self.redis_client.pipeline()
-        
-        # Remove old entries
-        pipe.zremrangebyscore(f"ratelimit:{key}", 0, window_start)
-        
-        # Count current requests in window
-        pipe.zcard(f"ratelimit:{key}")
-        
-        # Execute cleanup and count operations
-        results = pipe.execute()
-        request_count = results[1]
-        allowed = request_count < self.max_requests
-        
-        if allowed:
-            # Only record the request if it is allowed
+        """Check if request is allowed under rate limit (fail open on Redis error)"""
+        try:
+            now = time.time()
+            window_start = now - self.window
+
+            # Use Redis sorted set for distributed rate limiting
             pipe = self.redis_client.pipeline()
-            pipe.zadd(f"ratelimit:{key}", {str(now): now})
-            # Set expiry so the key is cleaned up when no longer needed
-            pipe.expire(f"ratelimit:{key}", self.window + 1)
-            pipe.execute()
-        
-        return allowed
+            pipe.zremrangebyscore(f"ratelimit:{key}", 0, window_start)
+            pipe.zcard(f"ratelimit:{key}")
+            results = pipe.execute()
+            request_count = results[1]
+            allowed = request_count < self.max_requests
+
+            if allowed:
+                pipe = self.redis_client.pipeline()
+                pipe.zadd(f"ratelimit:{key}", {str(now): now})
+                pipe.expire(f"ratelimit:{key}", self.window + 1)
+                pipe.execute()
+
+            return allowed
+        except Exception as e:
+            logger.warning(f"Redis rate limiter unavailable, allowing request: {e}")
+            return True
     
     def wait_if_needed(self, key: str):
-        """Wait if rate limit is exceeded"""
-        while not self.is_allowed(key):
-            time.sleep(0.1)
+        """Wait if rate limit is exceeded (fail open on Redis error)"""
+        try:
+            while not self.is_allowed(key):
+                time.sleep(0.1)
+        except Exception as e:
+            logger.warning(f"Rate limiter error (allowing request): {e}")
 
 
 def rate_limit(key_func: Callable = None):

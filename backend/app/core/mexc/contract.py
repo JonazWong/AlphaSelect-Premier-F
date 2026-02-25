@@ -32,7 +32,7 @@ class MEXCContractAPI:
         self.api_key = api_key or settings.MEXC_API_KEY
         self.secret_key = secret_key or settings.MEXC_SECRET_KEY
         self.base_url = base_url or settings.MEXC_CONTRACT_BASE_URL
-        self.client = httpx.Client(timeout=30.0)
+        self.client = httpx.Client(timeout=8.0)
         
     def _sign(self, params: Dict[str, Any]) -> str:
         """Generate signature for authenticated requests"""
@@ -50,7 +50,7 @@ class MEXCContractAPI:
         endpoint: str,
         params: Dict = None,
         signed: bool = False,
-        retry_count: int = 3
+        retry_count: int = 2
     ) -> Dict:
         """
         Make HTTP request with retry logic and error handling
