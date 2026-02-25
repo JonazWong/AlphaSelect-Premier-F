@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get("/ticker/{symbol}")
-async def get_contract_ticker(
+def get_contract_ticker(
     symbol: str,
     db: Session = Depends(get_db)
 ):
@@ -80,7 +80,7 @@ async def get_contract_ticker(
 
 
 @router.get("/tickers")
-async def get_all_tickers(
+def get_all_tickers(
     db: Session = Depends(get_db)
 ):
     """
@@ -102,7 +102,7 @@ async def get_all_tickers(
 
 
 @router.get("/klines/{symbol}")
-async def get_klines(
+def get_klines(
     symbol: str,
     interval: str = Query("Min60", description="Timeframe (Min1, Min5, Min15, Min30, Min60, Hour4, Hour8, Day1, Week1, Month1)"),
     limit: int = Query(100, ge=1, le=2000, description="Number of records")
@@ -137,7 +137,7 @@ async def get_klines(
 
 
 @router.get("/funding-rate/{symbol}")
-async def get_funding_rate(
+def get_funding_rate(
     symbol: str,
     db: Session = Depends(get_db)
 ):
@@ -175,7 +175,7 @@ async def get_funding_rate(
 
 
 @router.get("/funding-rate/history/{symbol}")
-async def get_funding_rate_history(
+def get_funding_rate_history(
     symbol: str,
     page_num: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -210,7 +210,7 @@ async def get_funding_rate_history(
 
 
 @router.get("/open-interest/{symbol}")
-async def get_open_interest(
+def get_open_interest(
     symbol: str,
     db: Session = Depends(get_db)
 ):
@@ -249,7 +249,7 @@ async def get_open_interest(
 
 
 @router.get("/depth/{symbol}")
-async def get_depth(
+def get_depth(
     symbol: str,
     limit: int = Query(20, description="Depth limit (5, 10, 20, 50, 100)")
 ):
@@ -275,7 +275,7 @@ async def get_depth(
 
 
 @router.get("/index-price/{symbol}")
-async def get_index_price(
+def get_index_price(
     symbol: str
 ):
     """
@@ -299,7 +299,7 @@ async def get_index_price(
 
 
 @router.get("/signals", response_model=List[ContractSignalResponse])
-async def get_contract_signals(
+def get_contract_signals(
     direction: str = Query("long", description="Trading direction (long or short)"),
     limit: int = Query(10, ge=1, le=50, description="Number of signals to return"),
     db: Session = Depends(get_db)
@@ -445,7 +445,7 @@ async def get_contract_signals(
 
 
 @router.get("/market-stats", response_model=MarketStatsResponse)
-async def get_market_stats(db: Session = Depends(get_db)):
+def get_market_stats(db: Session = Depends(get_db)):
     """
     Get market statistics for Crypto Radar dashboard
     Returns overall market strength, win rate, funding rate, and open interest
