@@ -117,6 +117,7 @@ export default function AITrainingPage() {
       socket.off('training_complete')
       socket.off('training_failed')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, sessionId])
 
   // Fetch trained models
