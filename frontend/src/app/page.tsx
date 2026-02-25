@@ -26,23 +26,20 @@ export default function Home() {
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/crypto-radar">
-              <button className="btn-primary flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Start Trading Radar
-              </button>
+            <Link href="/crypto-radar" className="btn-primary flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Start Trading Radar
             </Link>
-            <Link href="/dashboard">
-              <button className="btn-secondary flex items-center gap-2">
-                <LayoutDashboard className="w-5 h-5" />
-                Member Dashboard
-              </button>
+            <Link href="/dashboard" className="btn-secondary flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5" />
+              Member Dashboard
             </Link>
-            <Link href="/ai-training">
-              <button className="px-6 py-2.5 rounded-lg border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-all flex items-center gap-2">
-                <Brain className="w-5 h-5" />
-                AI Training Center
-              </button>
+            <Link
+              href="/ai-training"
+              className="px-6 py-2.5 rounded-lg border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-all flex items-center gap-2"
+            >
+              <Brain className="w-5 h-5" />
+              AI Training Center
             </Link>
           </div>
         </div>
