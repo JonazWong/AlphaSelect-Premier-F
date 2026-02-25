@@ -48,6 +48,7 @@ yarn-error.log*
 .next/
 out/
 .vercel
+*.tsbuildinfo
 
 # Testing
 .pytest_cache/

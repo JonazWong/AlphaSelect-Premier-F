@@ -74,9 +74,10 @@ export default function CryptoRadar() {
     } catch (err: unknown) {
       console.error('Failed to fetch signals:', err);
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.detail || err.message || '無法載入數據');
+        const data = err.response?.data as { detail?: string } | undefined;
+        setError(data?.detail || err.message || '無法載入數據');
       } else if (err instanceof Error) {
-        setError(err.message || '無法載入數據');
+        setError(err.message);
       } else {
         setError('無法載入數據');
       }

@@ -129,12 +129,24 @@ function computeMACD(data: OHLCV[]): { macd: (number | null)[]; signal: (number 
   return { macd: macdLine, signal: signalRaw, hist }
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number | string; color: string }[]; label?: string }) => {
+interface TooltipPayloadItem {
+  name: string
+  value: number | string
+  color: string
+}
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: TooltipPayloadItem[]
+  label?: string
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null
   return (
     <div className="glass-card p-3 text-xs space-y-1 min-w-[160px]">
       <div className="font-semibold text-gray-300 mb-1">{label}</div>
-      {payload.map((p: { name: string; value: number | string; color: string }) => (
+      {payload.map((p) => (
         <div key={p.name} className="flex justify-between gap-4" style={{ color: p.color }}>
           <span>{p.name}</span>
           <span className="font-mono">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}</span>
