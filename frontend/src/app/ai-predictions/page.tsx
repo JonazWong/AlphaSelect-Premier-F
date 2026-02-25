@@ -28,9 +28,12 @@ export default function AIPredictionsPage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const predictions = useMemo(() => generateMockPredictions(symbols), [symbols, refreshKey])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const chartData = useMemo(
     () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedSymbol, timeframe, refreshKey]
   )
 
