@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Activity, Brain, TrendingUp, LineChart, Filter, Home } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home, LayoutDashboard, Globe, Lock, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLanguage } from '@/components/I18nProvider'
 import '@/i18n/config'
@@ -22,6 +22,10 @@ export default function Navigation() {
     { href: '/ai-predictions', labelKey: 'nav.aiPredictions', icon: TrendingUp },
     { href: '/pattern-detection', labelKey: 'nav.patternDetection', icon: LineChart },
     { href: '/market-screener', labelKey: 'nav.marketScreener', icon: Filter },
+    { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { href: '/crawler-config', labelKey: 'nav.crawlerConfig', icon: Globe },
+    { href: '/blacklist', labelKey: 'nav.blacklist', icon: Lock },
+    { href: '/admin', labelKey: 'nav.admin', icon: Shield },
   ]
   
   return (
