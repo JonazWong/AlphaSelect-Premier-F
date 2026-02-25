@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, ChevronDown } from 'lucide-react'
 import '@/i18n/config'
@@ -39,6 +39,7 @@ export default function SymbolSelector({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const listboxId = useId()
 
   const ph = placeholder ?? (multi ? t('trade.selectSymbols') : t('trade.symbol'))
   const lbl = label ?? t('trade.symbols')
@@ -84,6 +85,7 @@ export default function SymbolSelector({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
         aria-haspopup="listbox"
+        aria-controls={listboxId}
         aria-expanded={open}
         aria-label={lbl}
         className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-card border border-gray-700 text-sm text-white hover:border-gray-500 focus:outline-none focus:border-primary transition-colors cursor-pointer"
@@ -117,6 +119,7 @@ export default function SymbolSelector({
       {open && (
         <div
           role="listbox"
+          id={listboxId}
           aria-multiselectable={multi}
           className="absolute z-50 mt-1 w-full rounded-lg bg-card border border-gray-700 shadow-xl overflow-hidden"
         >

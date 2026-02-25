@@ -100,13 +100,13 @@ export default function AITrainingPage() {
       setTrainingProgress(data)
     })
 
-    socket.on('training_complete', (data: any) => {
+    socket.on('training_complete', (data: { metrics?: ModelMetrics }) => {
       setIsTraining(false)
       setTrainingProgress({ status: 'Completed', progress: 100, metrics: data.metrics })
       fetchTrainedModels()
     })
 
-    socket.on('training_failed', (data: any) => {
+    socket.on('training_failed', (data: { error: string }) => {
       setIsTraining(false)
       setTrainingProgress({ status: `Failed: ${data.error}`, progress: 0 })
     })
@@ -117,6 +117,7 @@ export default function AITrainingPage() {
       socket.off('training_complete')
       socket.off('training_failed')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, sessionId])
 
   // Fetch trained models
@@ -170,7 +171,7 @@ export default function AITrainingPage() {
         setSessionId(data.session_id)
         setSuccessMsg(`Training started! Session: ${data.session_id.substring(0, 8)}...`)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Failed to start training:', error)
       setIsTraining(false)
       setTrainingProgress(null)
