@@ -1,7 +1,6 @@
 import time
 import logging
 from functools import wraps
-from collections import deque
 from typing import Callable
 import redis
 from app.core.config import settings
