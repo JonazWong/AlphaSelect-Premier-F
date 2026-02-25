@@ -1,8 +1,8 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
-import os
+
 
 class Settings(BaseSettings):
+    # Database
     # Database
     DATABASE_URL: str = "postgresql://admin:Ken202318@postgres:5432/alphaselect"
     
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     CIRCUIT_BREAKER_TIMEOUT: int = 60  # 断路器打开后的超时时间（秒）
     
     # Security
-    SECRET_KEY: str = "M5uUiaDN8n2rkppAN3hYDyctX2xQswfG3V6Az"
+    SECRET_KEY: str  # required; must be provided via environment or .env
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://frontend:3000"
     
     # App

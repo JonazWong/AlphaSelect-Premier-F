@@ -51,7 +51,7 @@ class MEXCContractAPI:
         endpoint: str,
         params: Dict = None,
         signed: bool = False,
-        retry_count: int = 3
+        retry_count: int = 2
     ) -> Dict:
         """
         Make HTTP request with retry logic and error handling

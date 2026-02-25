@@ -6,6 +6,10 @@
     "aiPredictions": "AI 预测",
     "patternDetection": "形态识别",
     "marketScreener": "市场筛选",
+    "dashboard": "儀表板",
+    "crawlerConfig": "爬蟲配置",
+    "blacklist": "黑名單",
+    "admin": "管理後台",
     "switchToChinese": "切换到中文",
     "switchToEnglish": "切换到英文"
   },
@@ -19,6 +23,9 @@
     "reset": "重置",
     "add": "添加",
     "remove": "移除",
+    "save": "保存",
+    "saved": "已保存！",
+    "cancel": "取消",
     "search": "搜索...",
     "select": "选择",
     "custom": "自定义",
@@ -171,5 +178,114 @@
     "noResults": "暂无符合条件的结果",
     "clearFilters": "清除筛选",
     "showing": "共 {{count}} 条结果"
+  },
+  "dashboard": {
+    "title": "會員儀表板",
+    "subtitle": "Member Dashboard",
+    "description": "您的個人化交易總覽與資產組合摘要",
+    "totalEquity": "總資產",
+    "unrealizedPnl": "未實現盈虧",
+    "winRate": "勝率",
+    "activeSignals": "活躍信號",
+    "today": "今日",
+    "openPositions": "個持倉",
+    "profitable": "盈利",
+    "lastUpdated": "更新於",
+    "recentPositions": "近期持倉",
+    "latestSignals": "最新信號",
+    "watchlist": "自選列表",
+    "entryPrice": "開倉價",
+    "tabs": {
+      "overview": "總覽",
+      "positions": "持倉",
+      "signals": "信號",
+      "watchlist": "自選"
+    }
+  },
+  "crawlerConfig": {
+    "title": "爬蟲配置",
+    "subtitle": "Crawler Config",
+    "description": "配置數據抓取來源、排程與目標",
+    "addSource": "新增來源",
+    "sources": "個來源",
+    "active": "個啟用",
+    "sourceName": "來源名稱",
+    "sourceNamePlaceholder": "例如 MEXC 行情",
+    "sourceUrl": "來源 URL",
+    "interval": "間隔",
+    "status": "狀態",
+    "lastRun": "上次執行",
+    "enabled": "啟用",
+    "neverRun": "從未執行",
+    "globalSettings": "全局設定",
+    "maxRetries": "最大重試次數",
+    "timeout": "超時",
+    "rateLimitDelay": "限速延遲",
+    "statusValues": {
+      "success": "正常",
+      "error": "錯誤",
+      "pending": "等待中"
+    }
+  },
+  "blacklist": {
+    "title": "黑名單",
+    "subtitle": "Blacklist",
+    "description": "管理交易對、地址與關鍵字黑名單",
+    "addEntry": "新增條目",
+    "entries": "條條目",
+    "allTypes": "全部類型",
+    "entryType": "類型",
+    "value": "內容",
+    "valuePlaceholder": "例如 SCAMTOKEN",
+    "reason": "原因",
+    "reasonPlaceholder": "例如 疑似詐騙",
+    "addedAt": "添加日期",
+    "noEntries": "暫無符合條件的條目",
+    "warning": "黑名單中的條目將從所有市場數據、信號和 AI 預測中排除。",
+    "types": {
+      "symbol": "交易對",
+      "address": "地址",
+      "keyword": "關鍵字"
+    }
+  },
+  "admin": {
+    "title": "管理後台",
+    "subtitle": "Admin",
+    "description": "平台管理、用戶管理與系統監控",
+    "totalUsers": "總用戶數",
+    "activeServices": "服務狀態",
+    "dbSize": "資料庫大小",
+    "uptime": "正常運行時間",
+    "thisWeek": "本週",
+    "needsAttention": "需要關注",
+    "days": "天",
+    "users": "位用戶",
+    "inviteUser": "邀請用戶",
+    "userName": "姓名",
+    "role": "角色",
+    "status": "狀態",
+    "lastLogin": "上次登入",
+    "systemStatus": "系統狀態",
+    "quickAccess": "快速訪問",
+    "platformSettings": "平台設定",
+    "tabs": {
+      "overview": "總覽",
+      "users": "用戶",
+      "system": "系統",
+      "settings": "設定"
+    },
+    "statusValues": {
+      "healthy": "正常",
+      "warning": "警告",
+      "error": "錯誤"
+    },
+    "settings": {
+      "maintenanceMode": "維護模式",
+      "maintenanceModeDesc": "暫時停止公開訪問平台",
+      "debugLogging": "除錯日誌",
+      "debugLoggingDesc": "啟用詳細日誌以進行故障排除",
+      "publicRegistration": "公開註冊",
+      "publicRegistrationDesc": "允許新用戶自行註冊"
+    }
   }
 }

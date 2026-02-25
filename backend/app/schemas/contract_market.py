@@ -36,7 +36,7 @@ class ContractSignalResponse(BaseModel):
     leverage: str = Field(..., description="Suggested leverage")
     funding_rate: float = Field(..., alias="fundingRate", description="Current funding rate")
     open_interest: str = Field(..., alias="openInterest", description="Open interest value")
-    open_interest_change: float = Field(..., alias="openInterestChange", description="OI change %")
+    open_interest_change: Optional[float] = Field(None, alias="openInterestChange", description="OI change %")
     confidence: float = Field(..., description="AI confidence score (0-100)")
     risk_level: str = Field(..., alias="riskLevel", description="Risk level (Low/Medium/High)")
     signals: List[str] = Field(..., description="Technical signals")
