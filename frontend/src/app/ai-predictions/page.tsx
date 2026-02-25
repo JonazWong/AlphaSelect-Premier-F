@@ -33,7 +33,6 @@ export default function AIPredictionsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const chartData = useMemo(
     () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedSymbol, timeframe, refreshKey]
   )
 
