@@ -4,9 +4,9 @@ services:
     environment:
       POSTGRES_DB: alphaselect
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: Ken202318
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"  # ✅ 從 .env 讀取端口
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${REDIS_PORT:-6379}:6379"  # ✅ 從 .env 讀取端口
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -37,17 +37,17 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://admin:Ken202318@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
-      SECRET_KEY: Zy-K)eDk_iXw2.2qLjm/C!Tk!HW"w"'_LHPIe]Pr7F>Gd+9`Kx
-      ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://frontend:3000
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
     volumes:
       - ./ai_models:/app/ai_models
       - ./backend:/app
@@ -64,7 +64,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://admin:Ken202318@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}

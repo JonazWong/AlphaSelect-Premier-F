@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode } from 'react'
 import '@/i18n/config'
 import i18n from '@/i18n/config'
 
@@ -18,23 +18,28 @@ export function useLanguage() {
   return useContext(LanguageContext)
 }
 
-export default function I18nProvider({ children }: { children: ReactNode }) {
-  // Always start with 'en' to match SSR output, then sync from localStorage after hydration
-  const [language, setLanguage] = useState<string>('en')
-
-  useEffect(() => {
+function getInitialLanguage(): string {
+  if (typeof window !== 'undefined') {
     const stored = window.localStorage.getItem('language')
     if (stored === 'en' || stored === 'zh') {
-      setLanguage(stored)
+      // Sync i18n instance with the stored preference immediately
       i18n.changeLanguage(stored)
+      return stored
     }
-  }, [])
+  }
+  return 'en'
+}
+
+export default function I18nProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<string>(getInitialLanguage)
 
   const toggleLanguage = () => {
     const next = language === 'en' ? 'zh' : 'en'
     setLanguage(next)
     i18n.changeLanguage(next)
-    window.localStorage.setItem('language', next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('language', next)
+    }
   }
 
   return (
