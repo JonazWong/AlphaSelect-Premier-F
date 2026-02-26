@@ -35,7 +35,7 @@ export default function PatternDetectionPage() {
 
 
     () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    [selectedSymbol, timeframe, refreshKey]
+    [selectedSymbol, timeframe,]
   )
 
   const handleRefresh = () => setRefreshKey((k) => k + 1)
