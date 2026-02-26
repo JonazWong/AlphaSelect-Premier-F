@@ -46,7 +46,8 @@ services:
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      # Required: set SECRET_KEY in your .env file (see .env.example) – no default is provided
+      SECRET_KEY: ${SECRET_KEY}
       ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://frontend:3000
     volumes:
       - ./ai_models:/app/ai_models
@@ -69,6 +70,7 @@ services:
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       AI_MODEL_DIR: /app/ai_models
+      SECRET_KEY: ${SECRET_KEY}
     volumes:
       - ./ai_models:/app/ai_models
       - ./backend:/app
@@ -140,7 +142,8 @@ services:
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      # Required: set SECRET_KEY in your .env file (see .env.example) – no default is provided
+      SECRET_KEY: ${SECRET_KEY}
       ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
     volumes:
       - ./ai_models:/app/ai_models
@@ -163,6 +166,7 @@ services:
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       AI_MODEL_DIR: /app/ai_models
+      SECRET_KEY: ${SECRET_KEY}
     volumes:
       - ./ai_models:/app/ai_models
       - ./backend:/app
