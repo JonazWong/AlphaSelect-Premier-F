@@ -4,9 +4,9 @@ services:
     environment:
       POSTGRES_DB: alphaselect
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Ken202318}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -37,9 +37,9 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-Ken202318}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -47,7 +47,7 @@ services:
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
+      ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://frontend:3000
     volumes:
       - ./ai_models:/app/ai_models
       - ./backend:/app
@@ -64,7 +64,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-Ken202318}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -80,8 +80,12 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_WS_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-8000}
+      NEXT_PUBLIC_WS_URL: http://localhost:${BACKEND_PORT:-8000}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       - backend
 
