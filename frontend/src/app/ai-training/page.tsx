@@ -78,7 +78,7 @@ export default function AITrainingPage() {
       console.log('⚠️ WebSocket disconnected')
     })
 
-    socketInstance.on('connect_error', (error) => {
+    socketInstance.on('connect_error', (unknown) => {
       console.error('❌ WebSocket connection error:', error)
     })
 
@@ -106,9 +106,9 @@ export default function AITrainingPage() {
       fetchTrainedModels()
     })
 
-    socket.on('training_failed', (data: { error: string }) => {
+    socket.on('training_failed', (data: { error: TrainingFailedData }) => {
       setIsTraining(false)
-      setTrainingProgress({ status: `Failed: ${data.error}`, progress: 0 })
+      setTrainingProgress({ status: `Failed: ${Data.error}`, progress: 0 })
     })
 
     return () => {
@@ -126,7 +126,7 @@ export default function AITrainingPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/ai/training/models/${selectedSymbol}`)
       const data = await response.json()
       setTrainedModels(data.models || [])
-    } catch (error) {
+    } catch (error:unknown) {
       console.error('Failed to fetch trained models:', error)
     }
   }
@@ -160,7 +160,7 @@ export default function AITrainingPage() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        console.error('❌ Training API error:', errData)
+        console.error('❌ Training API error:', TrainingData)
         throw new Error(errData.detail || `Server error ${response.status}`)
       }
 
