@@ -57,15 +57,23 @@ from typing import Optional
 import os
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = 'postgresql://admin:Ken202318@postgres:5432/alphaselect'
-    REDIS_URL: str = 'redis://redis:6379'
-    MEXC_API_KEY: str = ''
-    MEXC_SECRET_KEY: str = ''
+    # Required settings: must be provided via environment variables or .env
+    DATABASE_URL: str
+    REDIS_URL: str
+    SECRET_KEY: str
+
+    # Optional API keys (read-only in this project); loaded from env if present
+    MEXC_API_KEY: Optional[str] = None
+    MEXC_SECRET_KEY: Optional[str] = None
+
+    # Non-sensitive defaults
     MEXC_CONTRACT_BASE_URL: str = 'https://contract.mexc.com'
     MEXC_SPOT_BASE_URL: str = 'https://api.mexc.com'
     AI_MODEL_DIR: str = '/app/ai_models'
-    SECRET_KEY: str = 'M5uUiaDN8n2rkppAN3hYDyctX2xQswfG3V6Az'
-    ALLOWED_ORIGINS: str = 'http://localhost:3000,http://frontend:3000'
+    ALLOWED_ORIGINS: str = os.getenv(
+        'ALLOWED_ORIGINS',
+        'http://localhost:3000,http://frontend:3000',
+    )
     APP_NAME: str = 'AlphaSelect Premier F'
     APP_VERSION: str = '2.0.0'
     DEBUG: bool = True
