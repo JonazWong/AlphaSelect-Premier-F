@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     DEFAULT_BATCH_SIZE: int = 32
 
     # Security
-    SECRET_KEY: str = "change-this-in-production"
+    SECRET_KEY: str = Field(min_length=32)
     ALGORITHM: str = "HS256"
 
     # CORS
