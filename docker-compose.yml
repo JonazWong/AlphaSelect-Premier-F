@@ -1,16 +1,16 @@
-services:
+
   postgres:
     image: timescale/timescaledb:latest-pg16
     environment:
       POSTGRES_DB: alphaselect
-      POSTGRES_USER: admin
+      POSTGRES_USER: alphaselect_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U alphaselect_user"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://alphaselect_user:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -64,7 +64,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://alphaselect_user:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -88,4 +88,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+
 
