@@ -78,7 +78,7 @@ export default function AITrainingPage() {
       console.log('⚠️ WebSocket disconnected')
     })
 
-    socketInstance.on('connect_error', (unknown) => {
+    socketInstance.on('connect_error', (error) => {
       console.error('❌ WebSocket connection error:', error)
     })
 
@@ -106,9 +106,9 @@ export default function AITrainingPage() {
       fetchTrainedModels()
     })
 
-    socket.on('training_failed', (data: { error: TrainingFailedData }) => {
+    socket.on('training_failed', (data: { error: string }) => {
       setIsTraining(false)
-      setTrainingProgress({ status: `Failed: ${Data.error}`, progress: 0 })
+      setTrainingProgress({ status: `Failed: ${data.error}`, progress: 0 })
     })
 
     return () => {
@@ -160,7 +160,7 @@ export default function AITrainingPage() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        console.error('❌ Training API error:', TrainingData)
+        console.error('❌ Training API error:', errData)
         throw new Error(errData.detail || `Server error ${response.status}`)
       }
 

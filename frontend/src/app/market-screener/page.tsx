@@ -24,9 +24,7 @@ export default function MarketScreenerPage() {
   const [minConfidence, setMinConfidence] = useState(50)
   const [sortField, setSortField] = useState<SortField>('confidence')
   const [sortAsc, setSortAsc] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  const allData = useMemo(() => generateMockScreenerData(20), [refreshKey])
+  const [allData, setAllData] = useState<ScreenerResult[]>(() => generateMockScreenerData(20))
 
   const filtered = useMemo(() => {
     let data = allData
@@ -47,7 +45,7 @@ export default function MarketScreenerPage() {
     return data
   }, [allData, selectedSymbols, riskFilter, sideFilter, minConfidence, sortField, sortAsc])
 
-  const handleRefresh = () => setRefreshKey((k) => k + 1)
+  const handleRefresh = () => setAllData(generateMockScreenerData(20))
   const handleClearFilters = () => {
     setSelectedSymbols([])
     setRiskFilter('all')
