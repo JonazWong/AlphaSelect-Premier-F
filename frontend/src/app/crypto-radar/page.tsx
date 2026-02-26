@@ -45,7 +45,7 @@ export default function CryptoRadar() {
     try {
       const response = await axios.get(`${API_URL}/api/v1/contract/market-stats`);
       setMarketStats(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch market stats:', err);
       // Don't block main data loading, but inform the user that stats may be outdated/unavailable
       setError((prev) => prev ?? '市場統計無法載入，部分指標可能過期或不可用');
@@ -71,9 +71,16 @@ export default function CryptoRadar() {
       
       setSignals(response.data);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch signals:', err);
-      setError(err.response?.data?.detail || err.message || '無法載入數據');
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { detail?: string } | undefined;
+        setError(data?.detail || err.message || '無法載入數據');
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('無法載入數據');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -91,6 +98,7 @@ export default function CryptoRadar() {
     }, 30000);
     
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const handleRefresh = () => {
