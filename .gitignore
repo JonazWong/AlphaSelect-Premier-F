@@ -83,3 +83,6 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Backup directories created by fix scripts
+backup_fix_*/
