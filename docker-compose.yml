@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: alphaselect
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-Ken202318}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -39,13 +39,14 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-Ken202318}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       # Required: set SECRET_KEY in your .env file (see .env.example) – no default is provided
       SECRET_KEY: ${SECRET_KEY}
       ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://frontend:3000
@@ -65,7 +66,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-Ken202318}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://admin:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
