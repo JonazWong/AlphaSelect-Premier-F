@@ -28,7 +28,7 @@ echo 数据收集完成！
 echo.
 echo 检查已保存的数据量...
 timeout /t 2 /nobreak >nul
-docker-compose exec -T postgres psql -U admin -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets GROUP BY symbol ORDER BY count DESC LIMIT 10;"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets GROUP BY symbol ORDER BY count DESC LIMIT 10;"
 echo.
 echo ========================================
 echo.

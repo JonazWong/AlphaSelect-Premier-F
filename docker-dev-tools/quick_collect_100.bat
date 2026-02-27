@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul
 echo ========================================
 echo   快速收集 100+ 条训练数据
@@ -30,7 +31,7 @@ echo ========================================
 echo ✅ 数据收集完成！
 echo.
 echo 检查数据库中的数据量...
-docker-compose exec -T postgres psql -U admin -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol='BTC_USDT' GROUP BY symbol;"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol='BTC_USDT' GROUP BY symbol;"
 echo.
 echo ========================================
 echo 现在可以开始训练 AI 模型了！

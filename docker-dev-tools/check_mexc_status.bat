@@ -65,7 +65,7 @@ echo.
 
 :: 5. 檢查服務狀態
 echo [5/6] 檢查服務狀態...
-docker-compose ps backend 2>nul | findstr "Up" >nul
+docker compose ps backend 2>nul | findstr "Up" >nul
 if %errorlevel% equ 0 (
     echo ✅ Backend 服務正在運行
     
@@ -164,7 +164,7 @@ if not exist ".env" (
 
 echo.
 
-docker-compose ps backend 2>nul | findstr "Up" >nul
+docker compose ps backend 2>nul | findstr "Up" >nul
 if not %errorlevel% equ 0 (
     echo 💡 提示: 服務未運行，請運行 一鍵啟動腳本 start.bat
     echo.

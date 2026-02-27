@@ -15,7 +15,7 @@ timeout /t 2 /nobreak >nul
 echo.
 
 echo [3] 檢查資料庫...
-docker exec alphaselect-premier-f-postgres-1 psql -U postgres -d alpha_select -c "SELECT symbol, last_price, timestamp FROM contract_markets WHERE symbol = 'BTC_USDT' ORDER BY timestamp DESC LIMIT 5;"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT symbol, last_price, timestamp FROM contract_markets WHERE symbol = 'BTC_USDT' ORDER BY timestamp DESC LIMIT 5;"
 echo.
 
 echo [4] 再次調用 API 確認...
@@ -24,7 +24,7 @@ echo.
 echo.
 
 echo [5] 最後檢查資料庫...
-docker exec alphaselect-premier-f-postgres-1 psql -U postgres -d alpha_select -c "SELECT COUNT(*) as total_count FROM contract_markets WHERE symbol = 'BTC_USDT';"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT COUNT(*) as total_count FROM contract_markets WHERE symbol = 'BTC_USDT';"
 echo.
 
 pause

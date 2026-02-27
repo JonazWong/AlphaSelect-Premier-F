@@ -10,15 +10,15 @@ echo.
 pause
 
 echo [1/4] 停止 Backend...
-docker-compose stop backend
+docker compose stop backend
 echo.
 
 echo [2/4] 重新構建 Backend 鏡像...
-docker-compose build backend --no-cache
+docker compose build backend --no-cache
 echo.
 
 echo [3/4] 啟動 Backend...
-docker-compose up -d backend
+docker compose up -d backend
 echo.
 
 echo [4/4] 等待 Backend 啟動...
@@ -43,7 +43,7 @@ if %attempts% lss 10 (
 echo ❌ Backend 啟動失敗
 echo.
 echo 💡 查看錯誤:
-echo    docker-compose logs backend
+echo    docker compose logs backend
 :end
 echo.
 pause
