@@ -170,7 +170,7 @@ if not exist backend\.env (
         (
             echo # Backend 環境變數
             echo DATABASE_URL=postgresql://alphaselect_user:dev_password_123@postgres:5432/alphaselect
-            echo REDIS_URL=redis://localhost:6379
+            echo REDIS_URL=redis://redis:6379
             echo MEXC_API_KEY=
             echo MEXC_SECRET_KEY=
             echo MEXC_CONTRACT_BASE_URL=https://contract.mexc.com
