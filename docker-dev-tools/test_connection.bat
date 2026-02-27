@@ -24,7 +24,7 @@ echo.
 
 :: 測試 PostgreSQL
 echo [1/2] 測試 PostgreSQL 連接...
-docker exec alphaselect-premier-f-postgres-1 pg_isready -U admin >nul 2>&1
+docker compose exec -T postgres pg_isready -U alphaselect_user >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ PostgreSQL 運行正常
 ) else (
@@ -34,7 +34,7 @@ if %errorlevel% equ 0 (
 :: 測試 Redis
 echo.
 echo [2/2] 測試 Redis 連接...
-docker exec alphaselect-premier-f-redis-1 redis-cli ping >nul 2>&1
+docker compose exec -T redis redis-cli ping >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ Redis 運行正常
 ) else (
@@ -50,8 +50,8 @@ echo PostgreSQL:
 echo   Host: localhost
 echo   Port: %POSTGRES_PORT%
 echo   Database: alphaselect
-echo   User: admin
-echo   Password: Ken202318
+echo   User: alphaselect_user
+echo   Password: (see .env file)
 echo.
 echo Redis:
 echo   Host: localhost

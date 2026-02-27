@@ -7,14 +7,14 @@ echo.
 
 :: 1. 檢查 docker-compose.yml
 echo [1/5] 檢查 docker-compose.yml...
-docker-compose config >nul 2>&1
+docker compose config >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ docker-compose.yml 語法正確
 ) else (
     echo ❌ docker-compose.yml 語法錯誤
     echo.
     echo 詳細錯誤:
-    docker-compose config
+    docker compose config
     echo.
     pause
     exit /b 1
