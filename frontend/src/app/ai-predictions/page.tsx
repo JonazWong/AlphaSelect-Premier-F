@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react'
+import { Brain, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
@@ -26,16 +26,11 @@ export default function AIPredictionsPage() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
   const [comparison, setComparison] = useState<string[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
-  const [refreshKey, setRefreshKey] = useState(0)
-
-
   const predictions = useMemo(() => generateMockPredictions(symbols), [symbols,])
   const chartData = useMemo(
     () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
     [selectedSymbol, timeframe,]
   )
-
-  const handleRefresh = () => setRefreshKey((k) => k + 1)
 
   return (
     <div className="space-y-6">
@@ -55,14 +50,6 @@ export default function AIPredictionsPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          aria-label={t('common.refresh')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <RefreshCw className="w-4 h-4" />
-          {t('common.refresh')}
-        </button>
       </div>
 
       {/* Controls */}
