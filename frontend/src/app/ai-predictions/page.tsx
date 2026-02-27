@@ -29,11 +29,11 @@ export default function AIPredictionsPage() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const predictions = useMemo(() => generateMockPredictions(symbols), [symbols, refreshKey])
+  const predictions = useMemo(() => generateMockPredictions(symbols), [symbols,])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const chartData = useMemo(
     () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    [selectedSymbol, timeframe, refreshKey]
+    [selectedSymbol, timeframe,]
   )
 
   const handleRefresh = () => setRefreshKey((k) => k + 1)
