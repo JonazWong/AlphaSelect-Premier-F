@@ -43,7 +43,7 @@ export default function PatternDetectionPage() {
     return generateMockOHLCV(selectedSymbol, days)
 }, [selectedSymbol, timeframe, refreshKey])
 const patterns = useMemo(() => {
-  return generateMockPatterns(symbols, timeframe)
+  return generateMockPatterns(symbols)
 }, [symbols, timeframe, refreshKey])
 
 const handleRefresh = () => setRefreshKey((k) => k + 1)
