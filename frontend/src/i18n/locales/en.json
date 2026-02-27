@@ -6,10 +6,6 @@
     "aiPredictions": "AI Predictions",
     "patternDetection": "Patterns",
     "marketScreener": "Screener",
-    "dashboard": "Dashboard",
-    "crawlerConfig": "Crawler",
-    "blacklist": "Blacklist",
-    "admin": "Admin",
     "switchToChinese": "Switch to Chinese",
     "switchToEnglish": "Switch to English"
   },
@@ -178,114 +174,5 @@
     "noResults": "No results match your filters",
     "clearFilters": "Clear Filters",
     "showing": "Showing {{count}} results"
-  },
-  "dashboard": {
-    "title": "Member Dashboard",
-    "subtitle": "會員儀表板",
-    "description": "Your personalized trading overview and portfolio summary",
-    "totalEquity": "Total Equity",
-    "unrealizedPnl": "Unrealized PnL",
-    "winRate": "Win Rate",
-    "activeSignals": "Active Signals",
-    "today": "today",
-    "openPositions": "open positions",
-    "profitable": "profitable",
-    "lastUpdated": "Updated",
-    "recentPositions": "Recent Positions",
-    "latestSignals": "Latest Signals",
-    "watchlist": "Watchlist",
-    "entryPrice": "Entry Price",
-    "tabs": {
-      "overview": "Overview",
-      "positions": "Positions",
-      "signals": "Signals",
-      "watchlist": "Watchlist"
-    }
-  },
-  "crawlerConfig": {
-    "title": "Crawler Config",
-    "subtitle": "爬蟲配置",
-    "description": "Configure data crawling sources, schedules, and targets",
-    "addSource": "Add Source",
-    "sources": "sources",
-    "active": "active",
-    "sourceName": "Source Name",
-    "sourceNamePlaceholder": "e.g. MEXC Tickers",
-    "sourceUrl": "Source URL",
-    "interval": "Interval",
-    "status": "Status",
-    "lastRun": "Last Run",
-    "enabled": "Enabled",
-    "neverRun": "Never",
-    "globalSettings": "Global Settings",
-    "maxRetries": "Max Retries",
-    "timeout": "Timeout",
-    "rateLimitDelay": "Rate Limit Delay",
-    "statusValues": {
-      "success": "OK",
-      "error": "Error",
-      "pending": "Pending"
-    }
-  },
-  "blacklist": {
-    "title": "Blacklist",
-    "subtitle": "黑名單管理",
-    "description": "Manage symbol, address, and keyword blacklists",
-    "addEntry": "Add Entry",
-    "entries": "entries",
-    "allTypes": "All Types",
-    "entryType": "Type",
-    "value": "Value",
-    "valuePlaceholder": "e.g. SCAMTOKEN",
-    "reason": "Reason",
-    "reasonPlaceholder": "e.g. Suspected scam",
-    "addedAt": "Added",
-    "noEntries": "No entries match your filters",
-    "warning": "Entries on this blacklist will be excluded from all market data, signals, and AI predictions.",
-    "types": {
-      "symbol": "Symbol",
-      "address": "Address",
-      "keyword": "Keyword"
-    }
-  },
-  "admin": {
-    "title": "Admin",
-    "subtitle": "管理後台",
-    "description": "Platform administration, user management, and system monitoring",
-    "totalUsers": "Total Users",
-    "activeServices": "Services",
-    "dbSize": "DB Size",
-    "uptime": "Uptime",
-    "thisWeek": "this week",
-    "needsAttention": "need attention",
-    "days": "days",
-    "users": "users",
-    "inviteUser": "Invite User",
-    "userName": "Name",
-    "role": "Role",
-    "status": "Status",
-    "lastLogin": "Last Login",
-    "systemStatus": "System Status",
-    "quickAccess": "Quick Access",
-    "platformSettings": "Platform Settings",
-    "tabs": {
-      "overview": "Overview",
-      "users": "Users",
-      "system": "System",
-      "settings": "Settings"
-    },
-    "statusValues": {
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "error": "Error"
-    },
-    "settings": {
-      "maintenanceMode": "Maintenance Mode",
-      "maintenanceModeDesc": "Temporarily disable public access to the platform",
-      "debugLogging": "Debug Logging",
-      "debugLoggingDesc": "Enable verbose logging for troubleshooting",
-      "publicRegistration": "Public Registration",
-      "publicRegistrationDesc": "Allow new users to self-register"
-    }
   }
 }
