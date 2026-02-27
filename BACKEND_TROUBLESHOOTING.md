@@ -197,7 +197,7 @@ curl http://localhost:8000/api/v1/contract/tickers
 
 3. **檢查 Python 環境**:
    ```batch
-   docker compose exec backend python test_backend.py
+   python docker-dev-tools/test_backend.py
    ```
 
 ---
