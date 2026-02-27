@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul
 echo ====================================
 echo   AlphaSelect Premier F - 一鍵配置
@@ -22,7 +23,7 @@ if /i "%clean%"=="y" (
     
     :: 停止並刪除容器和卷
     echo [清理 1/6] 停止 Docker 容器...
-    docker-compose down -v >nul 2>&1
+    docker compose down -v >nul 2>&1
     
     :: 刪除環境配置文件
     echo [清理 2/6] 刪除環境配置文件...
@@ -136,7 +137,7 @@ if not exist .env (
         echo # 生成時間: %date% %time%
         echo.
         echo # 數據庫密碼
-        echo DB_PASSWORD=Ken202318
+        echo DB_PASSWORD=your_db_password_here
         echo.
         echo # SECRET_KEY ^(自動生成^)
         echo SECRET_KEY=%SECRET_KEY%
@@ -168,7 +169,7 @@ if not exist backend\.env (
         :: 創建默認配置
         (
             echo # Backend 環境變數
-            echo DATABASE_URL=postgresql://admin:Ken202318@localhost:5432/alphaselect
+            echo DATABASE_URL=postgresql://alphaselect_user:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
             echo REDIS_URL=redis://localhost:6379
             echo MEXC_API_KEY=
             echo MEXC_SECRET_KEY=
@@ -216,12 +217,12 @@ if not exist ai_models (
 :: 檢查 docker-compose.yml 語法
 echo.
 echo [7/7] 檢查 docker-compose.yml 語法...
-docker-compose config >nul 2>&1
+docker compose config >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ docker-compose.yml 語法錯誤
     echo.
     echo 詳細錯誤:
-    docker-compose config
+    docker compose config
     echo.
     pause
     exit /b 1
@@ -252,4 +253,4 @@ echo    - ���啟服務: restart.bat
 echo    - 停止服務: stop.bat
 echo    - 完全清理: clean.bat
 echo.
-pause@echo
+pause

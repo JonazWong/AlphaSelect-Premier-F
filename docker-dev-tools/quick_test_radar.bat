@@ -23,6 +23,6 @@ echo.
 echo ========================================
 echo 如果上面显示数据，说明后端正常
 echo 如果显示错误，查看详细日志：
-echo   docker-compose logs backend --tail=30
+echo   docker compose logs backend --tail=30
 echo ========================================
 pause

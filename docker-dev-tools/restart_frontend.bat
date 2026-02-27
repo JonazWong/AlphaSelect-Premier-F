@@ -6,7 +6,7 @@ echo ========================================
 echo.
 
 echo [1] 重啟 Frontend 容器...
-docker-compose restart frontend
+docker compose restart frontend
 echo.
 echo 等待 Frontend 啟動 (15秒)...
 timeout /t 15 /nobreak >nul

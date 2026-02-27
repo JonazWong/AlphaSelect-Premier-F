@@ -20,7 +20,7 @@ if /i "%confirm%"=="y" (
     
     :: 停止容器
     echo [1/4] 停止 Docker 容器...
-    docker-compose down -v
+    docker compose down -v
     
     :: 清空 AI 模型（但保留目錄結構）
     echo.

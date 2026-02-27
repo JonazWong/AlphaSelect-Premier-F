@@ -6,11 +6,11 @@ echo ========================================
 echo.
 
 echo [1] 檢查資料庫中的訓練數據...
-docker exec alphaselect-premier-f-postgres-1 psql -U admin -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets GROUP BY symbol ORDER BY count DESC;"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets GROUP BY symbol ORDER BY count DESC;"
 echo.
 
 echo [2] 檢查是否有已訓練的模型...
-docker exec alphaselect-premier-f-postgres-1 psql -U admin -d alphaselect -c "SELECT model_type, symbol, status FROM ai_models ORDER BY created_at DESC LIMIT 5;"
+docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT model_type, symbol, status FROM ai_models ORDER BY created_at DESC LIMIT 5;"
 echo.
 
 echo [3] 測試模型列表 API...

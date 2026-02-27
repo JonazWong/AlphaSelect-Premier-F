@@ -22,6 +22,6 @@ echo ========================================
 echo 测试完成！
 echo.
 echo 如果看到 500 错误，请查看 backend 日志：
-echo   docker-compose logs backend --tail=50
+echo   docker compose logs backend --tail=50
 echo ========================================
 pause

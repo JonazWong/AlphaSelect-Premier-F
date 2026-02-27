@@ -10,7 +10,7 @@ curl -v http://localhost:8000/socket.io/?EIO=4^&transport=polling 2>&1 | findstr
 echo.
 
 echo [2] 檢查 Backend 日誌（最後 30 行）...
-docker logs alphaselect-premier-f-backend-1 --tail 30
+docker compose logs backend --tail 30
 echo.
 
 echo [3] 檢查 Frontend 容器狀態...
