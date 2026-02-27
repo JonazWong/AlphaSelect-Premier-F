@@ -27,7 +27,7 @@ if /i "%confirm%"=="YES" (
     docker compose down
     
     echo.
-    echo [2/8] 刪除 Docker 卷（���據庫數據將丟失）...
+    echo [2/8] 刪除 Docker 卷（資料庫數據將丟失）...
     docker compose down -v
     
     echo.
