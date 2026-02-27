@@ -169,7 +169,7 @@ if not exist backend\.env (
         :: 創建默認配置
         (
             echo # Backend 環境變數
-            echo DATABASE_URL=postgresql://alphaselect_user:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+            echo DATABASE_URL=postgresql://alphaselect_user:dev_password_123@postgres:5432/alphaselect
             echo REDIS_URL=redis://localhost:6379
             echo MEXC_API_KEY=
             echo MEXC_SECRET_KEY=
