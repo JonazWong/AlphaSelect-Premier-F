@@ -26,7 +26,7 @@ docker ps --filter name=frontend
 echo.
 
 echo [5] 檢查 Frontend 日誌...
-docker logs alphaselect-premier-f-frontend-1 --tail 30
+docker compose logs frontend --tail 30
 echo.
 
 echo ========================================

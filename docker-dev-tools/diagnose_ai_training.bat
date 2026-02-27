@@ -24,7 +24,7 @@ echo.
 echo.
 
 echo [5] 檢查 Frontend 環境變數...
-docker exec alphaselect-premier-f-frontend-1 printenv | findstr NEXT_PUBLIC
+docker compose exec -T frontend printenv | findstr NEXT_PUBLIC
 echo.
 
 echo [6] 檢查 Backend 是否需要 MEXC API Key...

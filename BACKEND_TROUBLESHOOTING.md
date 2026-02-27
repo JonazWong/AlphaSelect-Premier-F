@@ -67,16 +67,16 @@ diagnose_backend.bat
 ### 3. 手動命令
 ```bash
 # 查看實時日誌
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # 檢查容器狀態
-docker-compose ps
+docker compose ps
 
 # 進入容器調試
-docker-compose exec backend bash
+docker compose exec backend bash
 
 # 測試 Python 導入
-docker-compose exec backend python -c "from app.main import app; print('OK')"
+docker compose exec backend python -c "from app.main import app; print('OK')"
 ```
 
 ---
@@ -95,10 +95,10 @@ docker-compose exec backend python -c "from app.main import app; print('OK')"
 **解決步驟**:
 ```batch
 # 1. 查看日誌
-docker-compose logs backend
+docker compose logs backend
 
 # 2. 檢查數據庫
-docker-compose exec postgres pg_isready -U admin
+docker compose exec postgres pg_isready -U alphaselect_user
 
 # 3. 檢查端口
 netstat -ano | findstr :8000
@@ -114,8 +114,8 @@ rebuild_backend.bat
 **解決方案**:
 ```batch
 # 重新構建鏡像（清除緩存）
-docker-compose build backend --no-cache
-docker-compose up -d backend
+docker compose build backend --no-cache
+docker compose up -d backend
 ```
 
 ### 問題 3: 數據庫連接錯誤
@@ -125,26 +125,26 @@ docker-compose up -d backend
 **解決方案**:
 ```batch
 # 1. 確保 PostgreSQL 啟動
-docker-compose up -d postgres
+docker compose up -d postgres
 
 # 2. 等待30秒讓數據庫完全啟動
 timeout /t 30
 
 # 3. 重啟 Backend
-docker-compose restart backend
+docker compose restart backend
 ```
 
 ### 問題 4: 容器不斷重啟
 
-**症狀**: `docker-compose ps` 顯示 Backend 狀態為 "Restarting"
+**症狀**: `docker compose ps` 顯示 Backend 狀態為 "Restarting"
 
 **解決方案**:
 ```batch
 # 1. 停止容器
-docker-compose stop backend
+docker compose stop backend
 
 # 2. 查看詳細日誌
-docker-compose logs backend
+docker compose logs backend
 
 # 3. 根據錯誤信息修復代碼
 
@@ -192,12 +192,12 @@ curl http://localhost:8000/api/v1/contract/tickers
 
 2. **查看完整日誌**:
    ```batch
-   docker-compose logs backend > backend_logs.txt
+   docker compose logs backend > backend_logs.txt
    ```
 
 3. **檢查 Python 環境**:
    ```batch
-   docker-compose exec backend python test_backend.py
+   docker compose exec backend python test_backend.py
    ```
 
 ---
