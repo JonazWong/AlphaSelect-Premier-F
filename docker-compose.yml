@@ -1,91 +1,137 @@
+version: '3.9'
+
 services:
   postgres:
     image: timescale/timescaledb:latest-pg16
+    container_name: alphaselect-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: alphaselect
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
+      POSTGRES_DB: ${DB_NAME:-alphaselect}
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Ken202318}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - alphaselect-network
 
   redis:
     image: redis:7-alpine
+    container_name: alphaselect-redis
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    networks:
+      - alphaselect-network
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
+      cache_from:
+        - type=registry,ref=localhost/alphaselect-backend:latest
+    container_name: alphaselect-backend
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-Ken202318}@postgres:5432/${DB_NAME:-alphaselect}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
+      ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://frontend:3000
+      DEBUG: ${DEBUG:-false}
     volumes:
-      - ./ai_models:/app/ai_models
+      - ./ai_models:/app/ai_models:ro
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - alphaselect-network
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - __pycache__
 
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A app.tasks.celery_app worker --loglevel=info
+    container_name: alphaselect-celery
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://admin:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-Ken202318}@postgres:5432/${DB_NAME:-alphaselect}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       AI_MODEL_DIR: /app/ai_models
+      DEBUG: ${DEBUG:-false}
     volumes:
-      - ./ai_models:/app/ai_models
+      - ./ai_models:/app/ai_models:ro
       - ./backend:/app
+    networks:
+      - alphaselect-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      cache_from:
+        - type=registry,ref=localhost/alphaselect-frontend:latest
+    container_name: alphaselect-frontend
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_WS_URL: http://localhost:8000
-    depends_on:
-      - backend
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://localhost:8000}
+    networks:
+      - alphaselect-network
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /app/src
+        - action: sync
+          path: ./frontend/public
+          target: /app/public
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
 
+networks:
+  alphaselect-network:
+    driver: bridge
