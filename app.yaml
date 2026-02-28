@@ -49,7 +49,7 @@ services:
         scope: RUN_TIME
         value: "/app/ai_models"
     health_check:
-      http_path: /api/v1/health
+      http_path: /health
 
   - name: frontend
     github:
