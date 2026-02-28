@@ -123,7 +123,7 @@ async def make_prediction(
             prediction_horizon=request.horizon,
             prediction_time=prediction_result['prediction_time'],
             target_time=prediction_result['target_time'],
-            metadata=prediction_result.get('metadata', {})
+            extra_data=prediction_result.get('metadata', {})
         )
         db.add(prediction)
         db.commit()
@@ -246,7 +246,7 @@ async def get_predictions(
                 'prediction_time': pred.prediction_time,
                 'target_time': pred.target_time,
                 'actual_value': pred.actual_value,
-                'metadata': pred.metadata
+                'metadata': pred.extra_data
             } for pred in predictions]
         }
     except Exception as e:
@@ -279,7 +279,7 @@ async def get_prediction_details(
             'prediction_time': prediction.prediction_time,
             'target_time': prediction.target_time,
             'actual_value': prediction.actual_value,
-            'metadata': prediction.metadata
+            'metadata': prediction.extra_data
         }
     except HTTPException:
         raise

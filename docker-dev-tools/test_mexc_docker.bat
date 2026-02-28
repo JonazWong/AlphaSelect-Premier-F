@@ -6,7 +6,7 @@ echo ====================================
 echo.
 
 :: 檢查 Backend 容器是否運行
-docker-compose ps backend | findstr "Up" >nul
+docker compose ps backend | findstr "Up" >nul
 if %errorlevel% neq 0 (
     echo ❌ Backend 容器未運行
     echo.
@@ -25,15 +25,15 @@ echo ─────────────────────────
 echo.
 
 echo [1/3] 測試配置導入...
-docker-compose exec -T backend python -c "from app.core.config import settings; print('✅ 配置OK:', settings.MEXC_CONTRACT_BASE_URL)"
+docker compose exec -T backend python -c "from app.core.config import settings; print('✅ 配置OK:', settings.MEXC_CONTRACT_BASE_URL)"
 
 echo.
 echo [2/3] 測試 MEXC API 客戶端...
-docker-compose exec -T backend python -c "from app.core.mexc.contract import mexc_contract_api; print('✅ MEXC API 客戶端OK')"
+docker compose exec -T backend python -c "from app.core.mexc.contract import mexc_contract_api; print('✅ MEXC API 客戶端OK')"
 
 echo.
 echo [3/3] 測試 FastAPI 應用...
-docker-compose exec -T backend python -c "from app.main import app; print('✅ FastAPI 應用OK')"
+docker compose exec -T backend python -c "from app.main import app; print('✅ FastAPI 應用OK')"
 
 echo.
 echo ─────────────────────────────────────

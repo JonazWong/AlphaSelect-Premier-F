@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -9,12 +9,27 @@ import os
 from app.db.session import get_db
 from app.models.ai_model import AIModel
 from app.models.contract_market import ContractMarket
-from app.ai.training.trainer import ModelTrainer
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.get("/data-status")
+async def get_data_status(
+    symbol: str = Query("BTC_USDT"),
+    min_required: int = Query(100),
+    db: Session = Depends(get_db)
+):
+    """Return current data count for a symbol and whether it meets the training threshold"""
+    count = db.query(ContractMarket).filter(ContractMarket.symbol == symbol).count()
+    return {
+        "symbol": symbol,
+        "count": count,
+        "min_required": min_required,
+        "ready": count >= min_required,
+        "missing": max(0, min_required - count),
+    }
 
 
 class TrainModelRequest(BaseModel):
@@ -87,7 +102,8 @@ async def train_model(
             train_ensemble_models_task.delay(
                 session_id=session_id,
                 symbol=request.symbol,
-                model_configs=request.config
+                model_configs=request.config,
+                model_id=ai_model.id
             )
         else:
             train_single_model_task.delay(
@@ -112,66 +128,52 @@ async def train_model(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def train_model_task(model_id: str, symbol: str, model_type: str, config: Dict[str, Any] = None):
-    """Background task to train model"""
-    from app.db.session import SessionLocal
-    
-    db = SessionLocal()
-    
+@router.get("/models")
+async def get_all_models(
+    symbol: Optional[str] = Query(None, description="Filter by symbol"),
+    status: Optional[str] = Query(None, description="Filter by status: training, trained, failed"),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """Get all AI models with optional filters — used by the monitor dashboard"""
     try:
-        # Fetch contract data
-        contract_data = db.query(ContractMarket).filter(
-            ContractMarket.symbol == symbol
-        ).order_by(ContractMarket.created_at).all()
-        
-        # Convert to DataFrame
-        df = pd.DataFrame([{
-            'created_at': record.created_at,
-            'last_price': record.last_price,
-            'fair_price': record.fair_price,
-            'index_price': record.index_price,
-            'funding_rate': record.funding_rate,
-            'open_interest': record.open_interest,
-            'volume_24h': record.volume_24h,
-            'price_change_24h': record.price_change_24h,
-            'high_24h': record.high_24h,
-            'low_24h': record.low_24h,
-            'basis': record.basis,
-            'basis_rate': record.basis_rate
-        } for record in contract_data])
-        
-        # Train model
-        trainer = ModelTrainer(symbol)
-        result = trainer.train_model(df, model_type, config)
-        
-        # Save model
-        model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
-        os.makedirs(model_dir, exist_ok=True)
-        file_path = trainer.save_model(result['model'], model_dir)
-        
-        # Update database record
-        ai_model = db.query(AIModel).filter(AIModel.id == model_id).first()
-        if ai_model:
-            ai_model.status = 'trained'
-            ai_model.metrics = result['metrics']
-            ai_model.file_path = file_path
-            ai_model.training_completed_at = datetime.utcnow()
-            db.commit()
-            
-        logger.info(f"Model {model_id} training completed successfully")
-        
+        q = db.query(AIModel)
+        if symbol:
+            q = q.filter(AIModel.symbol == symbol)
+        if status:
+            q = q.filter(AIModel.status == status)
+        models = q.order_by(AIModel.created_at.desc()).limit(limit).all()
+
+        total = db.query(AIModel).count()
+        trained = db.query(AIModel).filter(AIModel.status == 'trained').count()
+        training = db.query(AIModel).filter(AIModel.status == 'training').count()
+        failed = db.query(AIModel).filter(AIModel.status == 'failed').count()
+
+        return {
+            'summary': {
+                'total': total,
+                'trained': trained,
+                'training': training,
+                'failed': failed,
+            },
+            'models': [{
+                'id': m.id,
+                'symbol': m.symbol,
+                'model_type': m.model_type,
+                'version': m.version,
+                'status': m.status,
+                'metrics': m.metrics,
+                'config': m.config,
+                'file_path': m.file_path,
+                'training_started_at': m.training_started_at,
+                'training_completed_at': m.training_completed_at,
+                'created_at': m.created_at,
+                'updated_at': m.updated_at,
+            } for m in models]
+        }
     except Exception as e:
-        logger.error(f"Error training model {model_id}: {e}")
-        
-        # Update status to failed
-        ai_model = db.query(AIModel).filter(AIModel.id == model_id).first()
-        if ai_model:
-            ai_model.status = 'failed'
-            ai_model.training_completed_at = datetime.utcnow()
-            db.commit()
-    
-    finally:
-        db.close()
+        logger.error(f"Error fetching all models: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/models/{symbol}")

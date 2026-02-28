@@ -10,7 +10,7 @@ curl -s http://localhost:8000/health | findstr "healthy"
 if %ERRORLEVEL% EQU 0 (
     echo ✅ 后端运行正常
 ) else (
-    echo ❌ 后端未运行，请执行: docker-compose restart backend
+    echo ❌ 后端未运行，请执行: docker compose restart backend
 )
 echo.
 
@@ -52,6 +52,6 @@ echo 测试完成！
 echo.
 echo 下一步：
 echo   1. 如果所有测试通过，访问: http://localhost:3000/crypto-radar
-echo   2. 如果有失败，运行: show_backend_logs.bat
+echo   2. 如果有失败，运行: view_backend_logs.bat
 echo ========================================
 pause

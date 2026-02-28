@@ -24,15 +24,15 @@ if /i "%confirm%"=="YES" (
     :: 1. 停止並刪除 Docker 資源
     echo.
     echo [1/8] 停止 Docker 容器...
-    docker-compose down
+    docker compose down
     
     echo.
-    echo [2/8] 刪除 Docker 卷（���據庫數據將丟失）...
-    docker-compose down -v
+    echo [2/8] 刪除 Docker 卷（資料庫數據將丟失）...
+    docker compose down -v
     
     echo.
     echo [3/8] 刪除 Docker 鏡像...
-    docker-compose down --rmi all
+    docker compose down --rmi all
     
     :: 2. 刪除環境配置
     echo.

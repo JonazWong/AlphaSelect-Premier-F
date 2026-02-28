@@ -78,4 +78,9 @@ async def health_check():
     }
 
 # WebSocket集成 - 將FastAPI應用包裝在Socket.IO中
-app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)
+# 配置自定義 Socket.IO 路徑以與前端 /ws/socket.io 對齊，避免 403 拒絕
+app = socketio.ASGIApp(
+    sio,
+    other_asgi_app=fastapi_app,
+    socketio_path="ws/socket.io"
+)

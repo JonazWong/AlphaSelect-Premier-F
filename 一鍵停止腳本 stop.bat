@@ -5,7 +5,7 @@ echo   停止 AlphaSelect Premier F
 echo ====================================
 echo.
 
-docker-compose down
+docker compose down
 
 echo.
 echo ✅ 所有服務已停止

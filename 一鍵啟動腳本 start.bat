@@ -16,20 +16,17 @@ if %errorlevel% neq 0 (
 )
 
 :: 停止舊容器
-echo [1/4] 停止舊容器...
-docker-compose down >nul 2>&1
+echo [1/3] 停止舊容器...
+docker compose down >nul 2>&1
 
-:: 構建鏡像
-echo.
-echo [2/4] ��建 Docker 鏡像...
 :: 啟動服務
 echo.
-echo [3/4] 啟動服務...
-docker-compose up -d
+echo [2/3] 啟動服務...
+docker compose up -d
 
 :: 等待數據庫和Redis啟動
 echo.
-echo [4/4] 等待數據庫啟動...
+echo [3/3] 等待數據庫啟動...
 timeout /t 15 /nobreak >nul
 
 :: 檢查服務狀態
@@ -37,7 +34,7 @@ echo.
 echo ====================================
 echo   服務狀態
 echo ====================================
-docker-compose ps
+docker compose ps
 
 :: 等待 Backend 啟動（最多嘗試10次，每次等待3秒）
 echo.
@@ -81,8 +78,8 @@ echo    Backend API: http://localhost:8000
 echo    API Docs: http://localhost:8000/docs
 echo.
 echo 📝 查看日誌:
-echo    docker-compose logs -f backend
-echo    docker-compose logs -f frontend
+echo    docker compose logs -f backend
+echo    docker compose logs -f frontend
 echo.
 echo 🔧 診斷工具:
 echo    diagnose_backend.bat - 診斷後端問題

@@ -6,11 +6,11 @@ echo ====================================
 echo.
 
 echo [1/3] 停止 Backend 容器...
-docker-compose stop backend
+docker compose stop backend
 echo.
 
 echo [2/3] 重新啟動 Backend...
-docker-compose up -d backend
+docker compose up -d backend
 echo.
 
 echo [3/3] 等待 Backend 啟動...
@@ -35,7 +35,7 @@ if %attempts% lss 10 (
 echo ❌ Backend 重啟失敗
 echo.
 echo 💡 查看錯誤:
-echo    docker-compose logs backend
+echo    docker compose logs backend
 :end
 echo.
 pause

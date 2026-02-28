@@ -6,7 +6,7 @@ echo ========================================
 echo.
 
 echo [1] 重啟 Frontend 容器...
-docker-compose restart frontend
+docker compose restart frontend
 echo.
 echo 等待 Frontend 啟動 (15秒)...
 timeout /t 15 /nobreak >nul
@@ -17,7 +17,7 @@ docker ps --filter name=frontend
 echo.
 
 echo [3] 檢查 Frontend 日誌（最後 20 行）...
-docker logs alphaselect-premier-f-frontend-1 --tail 20
+docker compose logs frontend --tail 20
 echo.
 
 echo ========================================

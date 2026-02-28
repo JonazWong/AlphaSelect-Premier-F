@@ -94,7 +94,7 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
         sync_send_progress('Saving model...', 80)
         
         # Save model
-        model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
+        model_dir = os.getenv('AI_MODEL_DIR', '/app/ai_models')
         file_path = training_service.save_model(
             result['model'],
             model_dir,
@@ -169,7 +169,7 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
     finally:
         db.close()
 @celery_app.task(bind=True, name='train_ensemble_models')
-def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs: Dict[str, Dict[str, Any]] = None):
+def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs: Dict[str, Dict[str, Any]] = None, model_id: str = None):
     """
     Celery task to train multiple models for ensemble
     
@@ -177,6 +177,7 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         session_id: Training session ID for WebSocket updates
         symbol: Trading symbol
         model_configs: Dict mapping model_type to config
+        model_id: Pre-created AIModel record ID to update (optional)
     """
     db = SessionLocal()
     results = {}
@@ -239,7 +240,7 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         ensemble_result = training_service.train_ensemble(symbol, df, model_configs)
         
         # Save ensemble model
-        model_dir = os.getenv('AI_MODELS_PATH', 'ai_models')
+        model_dir = os.getenv('AI_MODEL_DIR', '/app/ai_models')
         ensemble_path = training_service.save_model(
             ensemble_result['ensemble'],
             model_dir,
@@ -253,7 +254,7 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         for model_type, result in ensemble_result['individual_results'].items():
             if result['status'] == 'success':
                 from datetime import datetime
-                ai_model = AIModel(
+                ai_model_record = AIModel(
                     symbol=symbol,
                     model_type=model_type,
                     config=model_configs.get(model_type, {}),
@@ -262,21 +263,37 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
                     training_started_at=datetime.utcnow(),
                     training_completed_at=datetime.utcnow()
                 )
-                db.add(ai_model)
+                db.add(ai_model_record)
         
-        # Create ensemble model record
+        # Update pre-created ensemble AIModel record (or create new one if not provided)
         from datetime import datetime
-        ensemble_model = AIModel(
-            symbol=symbol,
-            model_type='ensemble',
-            config={'weights': ensemble_result['weights']},
-            status='trained',
-            metrics=ensemble_result['ensemble_metrics'],
-            file_path=ensemble_path,
-            training_started_at=datetime.utcnow(),
-            training_completed_at=datetime.utcnow()
-        )
-        db.add(ensemble_model)
+        if model_id:
+            ensemble_model = db.query(AIModel).filter(AIModel.id == model_id).first()
+            if ensemble_model:
+                ensemble_model.status = 'trained'
+                ensemble_model.metrics = ensemble_result['ensemble_metrics']
+                ensemble_model.config = {'weights': ensemble_result['weights']}
+                ensemble_model.file_path = ensemble_path
+                ensemble_model.training_completed_at = datetime.utcnow()
+            else:
+                # Fallback: create new record
+                db.add(AIModel(
+                    symbol=symbol, model_type='ensemble',
+                    config={'weights': ensemble_result['weights']},
+                    status='trained', metrics=ensemble_result['ensemble_metrics'],
+                    file_path=ensemble_path,
+                    training_started_at=datetime.utcnow(),
+                    training_completed_at=datetime.utcnow()
+                ))
+        else:
+            db.add(AIModel(
+                symbol=symbol, model_type='ensemble',
+                config={'weights': ensemble_result['weights']},
+                status='trained', metrics=ensemble_result['ensemble_metrics'],
+                file_path=ensemble_path,
+                training_started_at=datetime.utcnow(),
+                training_completed_at=datetime.utcnow()
+            ))
         db.commit()
         
         logger.info(f"Ensemble training completed for {symbol}")

@@ -6,15 +6,15 @@ echo ========================================
 echo.
 
 echo [1] 停止 Frontend 容器...
-docker-compose stop frontend
+docker compose stop frontend
 echo.
 
 echo [2] 重建 Frontend...
-docker-compose build frontend
+docker compose build frontend
 echo.
 
 echo [3] 啟動 Frontend...
-docker-compose up -d frontend
+docker compose up -d frontend
 echo.
 
 echo 等待 Frontend 啟動 (20秒)...
@@ -26,7 +26,7 @@ docker ps --filter name=frontend
 echo.
 
 echo [5] 檢查 Frontend 日誌...
-docker logs alphaselect-premier-f-frontend-1 --tail 30
+docker compose logs frontend --tail 30
 echo.
 
 echo ========================================

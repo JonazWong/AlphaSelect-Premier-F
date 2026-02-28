@@ -20,62 +20,106 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    """Convert value to float safely, return default on None/error"""
+    try:
+        return float(value) if value is not None else default
+    except (TypeError, ValueError):
+        return default
+
+
+@router.get("/diagnose")
+def diagnose(
+    symbol: str = Query("BTC_USDT"),
+    db: Session = Depends(get_db)
+):
+    """
+    Diagnostic endpoint: shows raw MEXC API response and current DB record count.
+    Use this to debug data collection issues.
+    """
+    result: dict = {"symbol": symbol, "db_count": 0, "mexc_raw": None, "mexc_error": None}
+    try:
+        result["db_count"] = db.query(ContractMarket).filter(
+            ContractMarket.symbol == symbol
+        ).count()
+    except Exception as e:
+        result["db_error"] = str(e)
+
+    try:
+        raw = mexc_contract_api.get_contract_ticker(symbol)
+        result["mexc_raw"] = raw
+        result["mexc_type"] = type(raw).__name__
+        if isinstance(raw, dict):
+            inner = raw.get("data", raw)
+            result["parsed_lastPrice"] = inner.get("lastPrice") if isinstance(inner, dict) else None
+    except Exception as e:
+        result["mexc_error"] = str(e)
+
+    return result
+
+
 @router.get("/ticker/{symbol}")
 def get_contract_ticker(
     symbol: str,
     db: Session = Depends(get_db)
 ):
     """
-    Get contract ticker for a specific symbol
-    
+    Get contract ticker for a specific symbol and save to DB.
+
     Args:
         symbol: Trading pair symbol (e.g., 'BTC_USDT')
     """
     try:
         # Fetch from MEXC API
         ticker_data = mexc_contract_api.get_contract_ticker(symbol)
-        
+
         # Store in database
         if ticker_data and isinstance(ticker_data, dict):
             data = ticker_data.get('data', ticker_data)
-            
-            # Check if record exists
-            existing = db.query(ContractMarket).filter(
-                ContractMarket.symbol == symbol
-            ).order_by(ContractMarket.created_at.desc()).first()
-            
-            # Create new record
-            contract_market = ContractMarket(
-                symbol=symbol,
-                last_price=float(data.get('lastPrice', 0)),
-                fair_price=float(data.get('fairPrice', 0)),
-                index_price=float(data.get('indexPrice', 0)),
-                funding_rate=float(data.get('fundingRate', 0)),
-                open_interest=float(data.get('openInterest', 0)),
-                volume_24h=float(data.get('volume24', 0)),
-                price_change_24h=float(data.get('riseFallRate', 0)),
-                high_24h=float(data.get('high24Price', 0)),
-                low_24h=float(data.get('low24Price', 0)),
-                extra_data=data
-            )
-            
-            # Calculate basis
-            if contract_market.last_price and contract_market.index_price:
-                contract_market.basis = contract_market.last_price - contract_market.index_price
-                contract_market.basis_rate = (contract_market.basis / contract_market.index_price) * 100
-            
-            db.add(contract_market)
-            db.commit()
-            db.refresh(contract_market)
-        
+            if not isinstance(data, dict):
+                logger.warning(f"Unexpected ticker data structure for {symbol}: {type(data)}")
+            else:
+                try:
+                    contract_market = ContractMarket(
+                        symbol=symbol,
+                        last_price=_safe_float(data.get('lastPrice')),
+                        fair_price=_safe_float(data.get('fairPrice')),
+                        index_price=_safe_float(data.get('indexPrice')),
+                        funding_rate=_safe_float(data.get('fundingRate')),
+                        open_interest=_safe_float(data.get('openInterest')),
+                        volume_24h=_safe_float(data.get('volume24')),
+                        price_change_24h=_safe_float(data.get('riseFallRate')),
+                        high_24h=_safe_float(data.get('high24Price')),
+                        low_24h=_safe_float(data.get('low24Price')),
+                        extra_data=data
+                    )
+
+                    # Calculate basis
+                    if contract_market.last_price and contract_market.index_price:
+                        contract_market.basis = contract_market.last_price - contract_market.index_price
+                        contract_market.basis_rate = (contract_market.basis / contract_market.index_price) * 100
+
+                    db.add(contract_market)
+                    db.commit()
+                    db.refresh(contract_market)
+                    logger.info(f"Saved ticker for {symbol}: last_price={contract_market.last_price}")
+                except Exception as db_err:
+                    db.rollback()
+                    logger.error(f"DB write failed for {symbol}: {db_err}", exc_info=True)
+                    raise HTTPException(status_code=500, detail=f"DB write error: {db_err}")
+        else:
+            logger.warning(f"No valid ticker_data for {symbol}: got {type(ticker_data)} = {ticker_data!r}")
+
         return {
             "success": True,
             "data": ticker_data,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching ticker for {symbol}: {e}")
+        logger.error(f"Error fetching ticker for {symbol}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -419,7 +463,7 @@ def get_contract_signals(
                     'leverage': '10x',
                     'fundingRate': funding_rate,
                     'openInterest': str(open_interest),
-                    'openInterestChange': None,
+                    'openInterestChange': 0.0,
                     'confidence': confidence,
                     'riskLevel': risk_level,
                     'signals': technical_signals,
