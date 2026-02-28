@@ -104,7 +104,7 @@ class MEXCContractAPI:
         
         raise Exception("Max retries exceeded")
     
-    @rate_limit(key_func=lambda self: "mexc_contract")
+    @rate_limit(key_func=lambda self, symbol: "mexc_contract")
     @circuit_breaker("mexc_contract")
     def get_contract_ticker(self, symbol: str) -> Dict:
         """

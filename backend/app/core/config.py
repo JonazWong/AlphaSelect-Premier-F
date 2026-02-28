@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     DEFAULT_BATCH_SIZE: int = 32
 
     # Security
-    SECRET_KEY: str = Field(min_length=32)
+    # WARNING: override in production via SECRET_KEY env var (must be >= 32 chars)
+    SECRET_KEY: str = Field(default="dev-secret-key-change-me-in-production!", min_length=32)
     ALGORITHM: str = "HS256"
 
     # CORS

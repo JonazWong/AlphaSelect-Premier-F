@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
+import Link from 'next/link'
+import { Database, ChevronRight } from 'lucide-react'
 
 interface ModelMetrics {
   r2_score: number
@@ -54,7 +56,7 @@ export default function AITrainingPage() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/health`, { signal: AbortSignal.timeout(3000) })
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/health`, { signal: AbortSignal.timeout(3000) })
         setBackendOnline(res.ok)
       } catch {
         setBackendOnline(false)
@@ -190,6 +192,22 @@ export default function AITrainingPage() {
           Train AI models for cryptocurrency price prediction
         </p>
       </div>
+
+      {/* Monitor Link Card */}
+      <Link href="/ai-training-monitor">
+        <div className="flex items-center justify-between px-5 py-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all cursor-pointer group">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+              <Database className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <div className="font-semibold text-cyan-400">AI 訓練記錄監察板</div>
+              <div className="text-xs text-gray-400">查看所有模型狀態、效能指標及資料庫記錄</div>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+        </div>
+      </Link>
 
       {/* Backend status banner */}
       {backendOnline === false && (

@@ -13,15 +13,15 @@ pause
 set /a total=0
 
 FOR /L %%i IN (1,1,120) DO (
-    echo [%%i/120] 收集 BTC_USDT 数据...
-    curl -s http://localhost:8000/api/v1/contract/ticker/BTC_USDT >nul
-    
-    REM 每 10 条显示一次进度
-    set /a mod=%%i %% 10
-    if !mod! EQU 0 (
-        echo ✅ 已收集 %%i 条数据
+    REM 顯示 HTTP 狀態碼，若非 200 則打印錯誤
+    for /f %%s in ('curl -s -o nul -w "%%{http_code}" http://localhost:8000/api/v1/contract/ticker/BTC_USDT') do (
+        if %%s NEQ 200 (
+            echo [%%i/120] ❌ HTTP %%s - 寫入失敗！請執行 diagnose_data_collection.bat 查看原因
+        ) else (
+            echo [%%i/120] ✅ HTTP %%s - 已收集
+        )
     )
-    
+
     REM 短暂延迟避免触发速率限制
     timeout /t 1 /nobreak >nul
 )

@@ -335,8 +335,8 @@ export default function CryptoRadar() {
                 <div>
                   <div className="text-xs text-gray-400 mb-1">持倉量變化</div>
                   <div className="text-sm font-bold text-cyan-400">
-                    {signal.openInterestChange > 0 ? '+' : ''}
-                    {signal.openInterestChange.toFixed(2)}%
+                    {(signal.openInterestChange ?? 0) > 0 ? '+' : ''}
+                    {(signal.openInterestChange ?? 0).toFixed(2)}%
                   </div>
                 </div>
               </div>
