@@ -23,7 +23,7 @@
     "react-i18next": "14.0.1",
     "i18next": "23.7.16",
     "axios": "1.13.5",
-    "socket.io-client": "4.6.1",
+    "socket.io-client": "4.8.3",
     "lightweight-charts": "4.1.1",
     "recharts": "2.10.4",
     "clsx": "2.1.0",
