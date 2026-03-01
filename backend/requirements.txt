@@ -8,7 +8,7 @@ python-dotenv==1.0.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
 httpx==0.26.0
-python-socketio==5.11.0
+python-socketio==5.14.0
 python-multipart==0.0.22
 
 # AI/ML
