@@ -1,5 +1,66 @@
 # AlphaSelect – Complete Deployment Guide
 
+## Handover Verification Checklist
+
+Work through every item below **before** merging to `main` and triggering a production deploy.
+
+### 1 · App Spec (`.do/app.yaml`)
+
+- [ ] `ingress.rules` lists `/api` → `backend`, `/ws` → `backend`, `/` → `frontend` (in that order)
+- [ ] `celery-worker` is declared under the top-level `workers:` key (not `services:`)
+- [ ] `DATABASE_URL` / `REDIS_URL` in every component use `${postgres-db.DATABASE_URL}` / `${redis-cache.REDIS_URL}` — never `type: SECRET` — so App Platform auto-wires managed databases
+- [ ] `MEXC_API_KEY`, `MEXC_SECRET_KEY`, `SECRET_KEY` are all `type: SECRET` (entered manually in App Platform UI after creation)
+- [ ] No component contains both `routes:` and the app-level `ingress:` block
+- [ ] Validate locally: `doctl apps spec validate .do/app.yaml`
+
+### 2 · Dockerfiles
+
+- [ ] `backend/Dockerfile` HEALTHCHECK targets `/health` (not `/api/v1/health`)
+- [ ] Both Dockerfiles build successfully: `docker compose build`
+
+### 3 · Environment Variables
+
+| Variable | Where to set | Expected value |
+|---|---|---|
+| `DATABASE_URL` | Auto-injected by App Platform | `${postgres-db.DATABASE_URL}` |
+| `REDIS_URL` | Auto-injected by App Platform | `${redis-cache.REDIS_URL}` |
+| `SECRET_KEY` | App Platform secret UI | ≥ 32 random chars |
+| `MEXC_API_KEY` | App Platform secret UI | Your MEXC read-only key |
+| `MEXC_SECRET_KEY` | App Platform secret UI | Your MEXC secret |
+| `NEXT_PUBLIC_API_URL` | Set to `${backend.PUBLIC_URL}` in spec | App's public URL |
+| `NEXT_PUBLIC_WS_URL` | Set to `${backend.PUBLIC_URL}` in spec | App's public URL |
+| `ALLOWED_ORIGINS` | Set to `${frontend.PUBLIC_URL}` in spec | App's public URL |
+
+### 4 · Post-Deployment Smoke Tests
+
+```bash
+APP_URL=https://<your-app>.ondigitalocean.app
+
+# Frontend loads
+curl -fsS "$APP_URL/" | grep -q "AlphaSelect"
+
+# Backend health endpoint (DO App Platform health checker calls this directly)
+curl -fsS "$APP_URL/health"   # → {"status":"healthy",...}
+
+# Backend API reachable through ingress
+curl -fsS "$APP_URL/api/v1/contract/tickers" | python3 -m json.tool | head -20
+
+# WebSocket path accepted (HTTP 400 = correct WS upgrade expected)
+curl -o /dev/null -w "%{http_code}" "$APP_URL/ws/socket.io/?EIO=4&transport=polling"
+```
+
+### 5 · DigitalOcean Dashboard Checks
+
+- [ ] App status: **Active**
+- [ ] `postgres-db` database: **Available**
+- [ ] `redis-cache` database: **Available**
+- [ ] Both `backend` and `frontend` service health checks show **Passing**
+- [ ] `celery-worker` worker shows **Running**
+- [ ] No errors in component logs: `doctl apps logs <app-id> --service=backend`
+
+---
+
+
 ## Overview
 
 Your project now has a **production-ready CI/CD pipeline** with:
