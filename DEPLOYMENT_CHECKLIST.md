@@ -39,8 +39,8 @@ APP_URL=https://<your-app>.ondigitalocean.app
 # Frontend loads
 curl -fsS "$APP_URL/" | grep -q "AlphaSelect"
 
-# Backend health endpoint (DO App Platform health checker calls this directly)
-curl -fsS "$APP_URL/health"   # → {"status":"healthy",...}
+# Backend health endpoint via ingress
+curl -fsS "$APP_URL/api/v1/health"   # → {"status":"healthy",...}
 
 # Backend API reachable through ingress
 curl -fsS "$APP_URL/api/v1/contract/tickers" | python3 -m json.tool | head -20
