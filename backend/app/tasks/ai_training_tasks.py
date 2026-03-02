@@ -237,9 +237,10 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         training_service = AITrainingService()
         
         # Set default configs if not provided
+        # LSTM is excluded by default: requires large data (>1000 rows) and long training time.
+        # Add 'lstm': {'sequence_length': 60, 'epochs': 50} manually once sufficient data is collected.
         if model_configs is None:
             model_configs = {
-                'lstm': {'sequence_length': 60, 'epochs': 50},
                 'xgboost': {'n_estimators': 100},
                 'random_forest': {'n_estimators': 100},
                 'arima': {},

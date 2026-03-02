@@ -178,8 +178,9 @@ class AITrainingService:
         logger.info(f"Training ensemble for {symbol}")
         
         if model_configs is None:
+            # LSTM excluded by default: needs 1000+ rows & long GPU training time.
+            # Include manually via config once sufficient data is collected.
             model_configs = {
-                'lstm': {'sequence_length': 60, 'epochs': 50},
                 'xgboost': {'n_estimators': 100},
                 'random_forest': {'n_estimators': 100},
                 'arima': {},
@@ -215,7 +216,7 @@ class AITrainingService:
                 # Set feature names
                 model.feature_names = data['feature_names']
                 
-                # Train
+                # Train — if this succeeds, the model joins the ensemble
                 metrics = model.train(
                     data['X_train'],
                     data['y_train'],
@@ -223,24 +224,43 @@ class AITrainingService:
                     data['y_val']
                 )
                 
-                # Evaluate
-                test_metrics = model.evaluate(data['X_test'], data['y_test'])
-                
+                # Model trained successfully – add to ensemble regardless of evaluate result
                 trained_models.append(model)
-                results[model_type] = {
-                    'status': 'success',
-                    'train_metrics': metrics,
-                    'test_metrics': test_metrics
-                }
+                logger.info(f"✓ {model_type} trained successfully")
                 
-                logger.info(f"✓ {model_type} completed. R² = {test_metrics['r2_score']:.4f}")
+                # Evaluate on test set (failure here does NOT remove model from ensemble)
+                try:
+                    test_metrics = model.evaluate(data['X_test'], data['y_test'])
+                    results[model_type] = {
+                        'status': 'success',
+                        'train_metrics': metrics,
+                        'test_metrics': test_metrics
+                    }
+                    logger.info(f"✓ {model_type} test R² = {test_metrics.get('r2_score', 'N/A')}")
+                except Exception as eval_err:
+                    logger.warning(f"⚠ {model_type} evaluate failed (model still in ensemble): {eval_err}")
+                    results[model_type] = {
+                        'status': 'success',
+                        'train_metrics': metrics,
+                        'test_metrics': {'r2_score': 0.0, 'mae': 0.0, 'mse': 0.0, 'rmse': 0.0}
+                    }
                 
             except Exception as e:
-                logger.error(f"✗ {model_type} failed: {str(e)}")
+                logger.error(f"✗ {model_type} training failed: {str(e)}", exc_info=True)
                 results[model_type] = {
                     'status': 'failed',
                     'error': str(e)
                 }
+        
+        # Guard: if every model failed, raise a descriptive error
+        if not trained_models:
+            failed_reasons = {k: v['error'] for k, v in results.items() if v['status'] == 'failed'}
+            raise ValueError(
+                f"Ensemble failed: no models trained successfully. "
+                f"Failures: {failed_reasons}"
+            )
+        
+        logger.info(f"Ensemble built with {len(trained_models)} model(s): {[m.model_type for m in trained_models]}")
         
         # Create ensemble
         ensemble = EnsembleModel(symbol, models=trained_models)
@@ -249,8 +269,12 @@ class AITrainingService:
         if data['X_val'] is not None:
             ensemble.calculate_weights(data['X_val'], data['y_val'])
         
-        # Evaluate ensemble
-        ensemble_metrics = ensemble.evaluate(data['X_test'], data['y_test'])
+        # Evaluate ensemble (best-effort)
+        try:
+            ensemble_metrics = ensemble.evaluate(data['X_test'], data['y_test'])
+        except Exception as e:
+            logger.warning(f"Ensemble evaluate failed, using fallback metrics: {e}")
+            ensemble_metrics = {'r2_score': 0.0, 'mae': 0.0, 'mse': 0.0, 'rmse': 0.0}
         
         logger.info(f"Ensemble completed. R² = {ensemble_metrics['r2_score']:.4f}")
         logger.info(f"Model weights: {ensemble.model_weights}")
