@@ -27,7 +27,7 @@
     "lightweight-charts": "4.1.1",
     "recharts": "2.10.4",
     "clsx": "2.1.0",
-    "lucide-react": "^0.312.0"
+    "lucide-react": "^0.469.0"
   },
   "devDependencies": {
     "eslint": "8.56.0",
