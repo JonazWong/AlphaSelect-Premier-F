@@ -1,8 +1,6 @@
 name: alphaselect-premier-f
 region: sgp
 
-# Top-level ingress routes all traffic through a single domain.
-# More-specific prefixes must appear before the catch-all "/" rule.
 ingress:
   rules:
     - component:
@@ -25,33 +23,12 @@ databases:
   - name: postgres-db
     engine: PG
     version: "16"
-    production: false  # Set to true only when pointing at an existing cluster_name
+    production: false
 
   - name: redis-cache
     engine: REDIS
     version: "7"
-    production: true
-    cluster_name: redis-cache
-
-# Top-level ingress routes all traffic through a single domain.
-# More-specific prefixes must appear before the catch-all "/" rule.
-ingress:
-  rules:
-    - component:
-        name: backend
-      match:
-        path:
-          prefix: /api
-    - component:
-        name: backend
-      match:
-        path:
-          prefix: /ws
-    - component:
-        name: frontend
-      match:
-        path:
-          prefix: /
+    production: false
 
 services:
   - name: backend
