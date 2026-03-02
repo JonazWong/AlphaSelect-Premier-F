@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import Link from 'next/link'
 import { Database, ChevronRight } from 'lucide-react'
@@ -26,7 +26,7 @@ interface TrainedModel {
   model_type: string
   version: string
   status: string
-  metrics: ModelMetrics
+  metrics: ModelMetrics | null
   training_completed_at: string
   created_at: string
 }
@@ -51,6 +51,8 @@ export default function AITrainingPage() {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
   // Check backend health
   useEffect(() => {
@@ -91,6 +93,17 @@ export default function AITrainingPage() {
     }
   }, [])
 
+  // Fetch trained models
+  const fetchTrainedModels = useCallback(async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/v1/ai/training/models/${selectedSymbol}`)
+      const data = await response.json()
+      setTrainedModels(data.models || [])
+    } catch (error:unknown) {
+      console.error('Failed to fetch trained models:', error)
+    }
+  }, [selectedSymbol, apiUrl])
+
   // Subscribe to training updates
   useEffect(() => {
     if (!socket || !sessionId) return
@@ -119,24 +132,11 @@ export default function AITrainingPage() {
       socket.off('training_complete')
       socket.off('training_failed')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, sessionId])
-
-  // Fetch trained models
-  const fetchTrainedModels = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/ai/training/models/${selectedSymbol}`)
-      const data = await response.json()
-      setTrainedModels(data.models || [])
-    } catch (error:unknown) {
-      console.error('Failed to fetch trained models:', error)
-    }
-  }
+  }, [socket, sessionId, fetchTrainedModels])
 
   useEffect(() => {
     fetchTrainedModels()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSymbol])
+  }, [fetchTrainedModels])
 
   // Start training
   const startTraining = async () => {
@@ -177,7 +177,7 @@ export default function AITrainingPage() {
       console.error('❌ Failed to start training:', error)
       setIsTraining(false)
       setTrainingProgress(null)
-      setErrorMsg(error instanceof Error ? error.message : '無法連接後端，請確認 Docker 服務已啟動（localhost:8000）')
+      setErrorMsg(error instanceof Error ? error.message : `無法連接後端（${apiUrl}），請確認服務已啟動`)
     }
   }
 
@@ -214,8 +214,11 @@ export default function AITrainingPage() {
         <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-sm">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" />
           <span>
-            <strong>後端離線</strong> — 無法連接 <code className="bg-black/30 px-1 rounded">localhost:8000</code>。
-            請執行 <code className="bg-black/30 px-1 rounded">docker-compose up -d</code> 啟動後端服務後再試。
+            <strong>後端離線</strong> — 無法連接 <code className="bg-black/30 px-1 rounded">{apiUrl}</code>。
+            {apiUrl.includes('localhost')
+              ? <> 請執行 <code className="bg-black/30 px-1 rounded">docker-compose up -d</code> 啟動後端服務後再試。</>
+              : <> 請確認 DigitalOcean 後端服務正常運行。</>
+            }
           </span>
         </div>
       )}
