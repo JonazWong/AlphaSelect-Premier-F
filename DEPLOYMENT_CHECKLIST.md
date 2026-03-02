@@ -60,7 +60,6 @@ curl -o /dev/null -w "%{http_code}" "$APP_URL/ws/socket.io/?EIO=4&transport=poll
 
 ---
 
-
 ## Overview
 
 Your project now has a **production-ready CI/CD pipeline** with:
