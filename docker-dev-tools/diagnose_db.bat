@@ -10,19 +10,19 @@ docker ps --filter name=alphaselect
 echo.
 
 echo [2] 檢查資料庫連接...
-docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "\dt"
+docker compose exec -T postgres psql -U postgres -d premier -c "\dt"
 echo.
 
 echo [3] 檢查 contract_markets 表結構...
-docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "\d contract_markets"
+docker compose exec -T postgres psql -U postgres -d premier -c "\d contract_markets"
 echo.
 
 echo [4] 檢查資料庫中所有資料...
-docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT COUNT(*) FROM contract_markets;"
+docker compose exec -T postgres psql -U postgres -d premier -c "SELECT COUNT(*) FROM contract_markets;"
 echo.
 
 echo [5] 檢查最近的資料...
-docker compose exec -T postgres psql -U alphaselect_user -d alphaselect -c "SELECT * FROM contract_markets ORDER BY created_at DESC LIMIT 3;"
+docker compose exec -T postgres psql -U postgres -d premier -c "SELECT * FROM contract_markets ORDER BY created_at DESC LIMIT 3;"
 echo.
 
 echo [6] 測試 Backend 健康狀態...

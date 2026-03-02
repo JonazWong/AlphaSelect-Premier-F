@@ -7,7 +7,10 @@
 
 ## 🎯 Overview
 
-**AlphaSelect Premier F** is an AI-driven cryptocurrency analysis monitoring platform specifically designed for MEXC contract trading pairs. It integrates deep learning prediction models (LSTM, XGBoost, Random Forest, ARIMA, Linear Regression, and Ensemble) with professional technical analysis to provide real-time trading insights.
+
+
+
+
 
 ## ✨ Features
 
@@ -118,8 +121,8 @@ docker-compose up -d
 ```
 
 This will start:
-- PostgreSQL 16 + TimescaleDB on port 5433
-- Redis 7 on port 6380
+- PostgreSQL 16 + TimescaleDB on port 5432
+- Redis 7 on port 6379
 - FastAPI backend on port 8000
 - Celery worker
 - Next.js frontend on port 3000

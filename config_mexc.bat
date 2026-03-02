@@ -146,8 +146,8 @@ echo.
 echo 🔧 其他配置選項（可選）:
 echo    - BACKEND_PORT=8000 （後端端口）
 echo    - FRONTEND_PORT=3000 （前端端口）
-echo    - POSTGRES_PORT=5433 （數據庫端口）
-echo    - REDIS_PORT=6380 （Redis 端口）
+echo    - POSTGRES_PORT=5432 （數據庫端口）
+echo    - REDIS_PORT=6379 （Redis 端口）
 echo.
 echo 💡 如需修改這些配置，請直接編輯 .env 文件
 echo.

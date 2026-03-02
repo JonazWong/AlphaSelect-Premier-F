@@ -14,8 +14,8 @@ if exist .env (
 )
 
 :: 設置默認值
-if not defined POSTGRES_PORT set POSTGRES_PORT=5433
-if not defined REDIS_PORT set REDIS_PORT=6380
+if not defined POSTGRES_PORT set POSTGRES_PORT=5432
+if not defined REDIS_PORT set REDIS_PORT=6379
 
 echo 配置:
 echo   PostgreSQL 端口: %POSTGRES_PORT%
@@ -24,7 +24,7 @@ echo.
 
 :: 測試 PostgreSQL
 echo [1/2] 測試 PostgreSQL 連接...
-docker compose exec -T postgres pg_isready -U alphaselect_user >nul 2>&1
+docker compose exec -T postgres pg_isready -U postgres >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ PostgreSQL 運行正常
 ) else (
@@ -50,7 +50,7 @@ echo PostgreSQL:
 echo   Host: localhost
 echo   Port: %POSTGRES_PORT%
 echo   Database: alphaselect
-echo   User: alphaselect_user
+echo   User: postgres
 echo   Password: (see .env file)
 echo.
 echo Redis:

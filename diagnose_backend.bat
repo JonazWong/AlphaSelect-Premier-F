@@ -20,7 +20,7 @@ echo ─────────────────────────
 echo.
 
 echo [4/5] 檢查 PostgreSQL 連接...
-docker compose exec -T postgres pg_isready -U alphaselect_user
+docker compose exec -T postgres pg_isready -U postgres
 if %errorlevel% equ 0 (
     echo ✅ PostgreSQL 運行正常
 ) else (
