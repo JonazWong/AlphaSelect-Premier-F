@@ -14,10 +14,16 @@ logger = logging.getLogger(__name__)
 # Configure verbose Socket.IO / Engine.IO logging (overridable via env)
 WEBSOCKET_VERBOSE_LOGGING = os.getenv("WEBSOCKET_VERBOSE_LOGGING", "true").lower() == "true"
 
-# Create Socket.IO server
+# Redis URL for cross-process Socket.IO broadcasting (Celery → FastAPI → Browser)
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+# Create Socket.IO server with Redis client manager
+# This allows Celery workers (separate process/container) to emit events
+# that get forwarded to all connected browser clients
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
+    client_manager=socketio.AsyncRedisManager(REDIS_URL),
     logger=WEBSOCKET_VERBOSE_LOGGING,
     engineio_logger=WEBSOCKET_VERBOSE_LOGGING
 )

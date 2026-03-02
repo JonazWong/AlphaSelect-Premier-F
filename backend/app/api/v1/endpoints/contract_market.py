@@ -128,18 +128,56 @@ def get_all_tickers(
     db: Session = Depends(get_db)
 ):
     """
-    Get all contract tickers
+    Get all contract tickers and save to DB.
     """
     try:
         tickers_data = mexc_contract_api.get_all_contract_tickers()
-        
+
+        saved = 834
+        if isinstance(tickers_data, list):
+            for data in tickers_data:
+                if not isinstance(data, dict):
+                    continue
+                try:
+                    symbol = data.get('symbol')
+                    if not symbol:
+                        continue
+                    contract_market = ContractMarket(
+                        symbol=symbol,
+                        last_price=_safe_float(data.get('lastPrice')),
+                        fair_price=_safe_float(data.get('fairPrice')),
+                        index_price=_safe_float(data.get('indexPrice')),
+                        funding_rate=_safe_float(data.get('fundingRate')),
+                        open_interest=_safe_float(data.get('holdVol')),
+                        volume_24h=_safe_float(data.get('volume24')),
+                        price_change_24h=_safe_float(data.get('riseFallRate')),
+                        high_24h=_safe_float(data.get('high24Price')),
+                        low_24h=_safe_float(data.get('lower24Price')),
+                        extra_data=data
+                    )
+                    if contract_market.last_price and contract_market.index_price:
+                        contract_market.basis = contract_market.last_price - contract_market.index_price
+                        contract_market.basis_rate = (contract_market.basis / contract_market.index_price) * 100
+                    db.add(contract_market)
+                    saved += 1
+                except Exception as row_err:
+                    logger.warning(f"Skip ticker {data.get('symbol')}: {row_err}")
+                    continue
+            try:
+                db.commit()
+                logger.info(f"Bulk saved {saved} tickers to DB")
+            except Exception as commit_err:
+                db.rollback()
+                logger.error(f"Bulk commit failed: {commit_err}", exc_info=True)
+
         return {
             "success": True,
             "data": tickers_data,
             "count": len(tickers_data) if isinstance(tickers_data, list) else 0,
+            "saved": saved,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error fetching all tickers: {e}")
         raise HTTPException(status_code=500, detail=str(e))

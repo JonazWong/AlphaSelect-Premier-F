@@ -31,16 +31,24 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
     db = SessionLocal()
     
     async def send_progress(status: str, progress: float = 0, **kwargs):
-        """Send progress update via WebSocket"""
-        from app.websocket import broadcast_training_progress
-        await broadcast_training_progress(session_id, {
-            'status': status,
-            'progress': progress,
-            'model_id': model_id,
-            'model_type': model_type,
-            **kwargs
-        })
-    
+        """Send progress update via Redis → Socket.IO (cross-process safe)"""
+        import socketio as sio_module
+        import os
+        redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+        try:
+            # write_only=True: emit to Redis without creating a listener loop
+            manager = sio_module.AsyncRedisManager(redis_url, write_only=True)
+            channel = f"training:{session_id}"
+            await manager.emit('training_progress', {
+                'status': status,
+                'progress': progress,
+                'model_id': model_id,
+                'model_type': model_type,
+                **kwargs
+            }, room=channel)
+        except Exception as e:
+            logger.warning(f"Failed to send progress via Redis: {e}")
+
     def sync_send_progress(status: str, progress: float = 0, **kwargs):
         """Synchronous wrapper for progress updates"""
         try:
@@ -183,16 +191,20 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
     results = {}
     
     def sync_send_progress(status: str, progress: float = 0, **kwargs):
-        """Synchronous wrapper for progress updates"""
+        """Synchronous wrapper for progress updates (cross-process via Redis)"""
         try:
-            from app.websocket import broadcast_training_progress
+            import socketio as sio_module
+            redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+            async def _emit():
+                manager = sio_module.AsyncRedisManager(redis_url, write_only=True)
+                await manager.emit('training_progress', {
+                    'status': status,
+                    'progress': progress,
+                    **kwargs
+                }, room=f"training:{session_id}")
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(broadcast_training_progress(session_id, {
-                'status': status,
-                'progress': progress,
-                **kwargs
-            }))
+            loop.run_until_complete(_emit())
             loop.close()
         except Exception as e:
             logger.warning(f"Failed to send progress update: {e}")

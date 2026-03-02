@@ -15,28 +15,28 @@ class OpenInterestFeatures:
             return df
         
         # Open interest moving averages
-        df['oi_sma_5'] = df['open_interest'].rolling(window=5).mean()
-        df['oi_sma_10'] = df['open_interest'].rolling(window=10).mean()
-        df['oi_sma_20'] = df['open_interest'].rolling(window=20).mean()
+        df['oi_sma_5'] = df['open_interest'].rolling(window=5, min_periods=1).mean()
+        df['oi_sma_10'] = df['open_interest'].rolling(window=10, min_periods=1).mean()
+        df['oi_sma_20'] = df['open_interest'].rolling(window=20, min_periods=1).mean()
         
         # Open interest change
-        df['oi_change'] = df['open_interest'].diff()
-        df['oi_pct_change'] = df['open_interest'].pct_change()
+        df['oi_change'] = df['open_interest'].diff().fillna(0)
+        df['oi_pct_change'] = df['open_interest'].pct_change().fillna(0)
         
         # Open interest momentum
-        df['oi_momentum_5'] = df['open_interest'] - df['open_interest'].shift(5)
-        df['oi_momentum_10'] = df['open_interest'] - df['open_interest'].shift(10)
+        df['oi_momentum_5'] = df['open_interest'].diff(5).fillna(0)
+        df['oi_momentum_10'] = df['open_interest'].diff(10).fillna(0)
         
         # Open interest rate of change
-        df['oi_roc_5'] = (df['open_interest'] - df['open_interest'].shift(5)) / (df['open_interest'].shift(5) + 1e-10)
-        df['oi_roc_10'] = (df['open_interest'] - df['open_interest'].shift(10)) / (df['open_interest'].shift(10) + 1e-10)
+        df['oi_roc_5'] = (df['open_interest'].diff(5) / (df['open_interest'].shift(5) + 1e-10)).fillna(0)
+        df['oi_roc_10'] = (df['open_interest'].diff(10) / (df['open_interest'].shift(10) + 1e-10)).fillna(0)
         
         # Open interest volatility
-        df['oi_volatility_10'] = df['oi_pct_change'].rolling(window=10).std()
+        df['oi_volatility_10'] = df['oi_pct_change'].rolling(window=10, min_periods=1).std().fillna(0)
         
         # Open interest extremes
-        df['oi_max_10'] = df['open_interest'].rolling(window=10).max()
-        df['oi_min_10'] = df['open_interest'].rolling(window=10).min()
+        df['oi_max_10'] = df['open_interest'].rolling(window=10, min_periods=1).max()
+        df['oi_min_10'] = df['open_interest'].rolling(window=10, min_periods=1).min()
         
         # Open interest position
         oi_range = df['oi_max_10'] - df['oi_min_10']

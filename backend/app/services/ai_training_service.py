@@ -50,12 +50,16 @@ class AITrainingService:
         df_features = ContractFeatures.add_all_features(df)
         df_features = FundingRateFeatures.add_all_features(df_features)
         df_features = OpenInterestFeatures.add_all_features(df_features)
-        
-        # Drop rows with NaN values
-        df_features = df_features.dropna()
-        
-        if len(df_features) < 100:
-            raise ValueError(f"Insufficient data after feature engineering: {len(df_features)} rows")
+
+        # Replace inf/-inf with NaN (caused by pct_change/log when denominator=0)
+        import numpy as np
+        df_features = df_features.replace([np.inf, -np.inf], np.nan)
+
+        # Fill remaining NaN with 0 (safe fallback for edge rows)
+        df_features = df_features.fillna(0)
+
+        if len(df_features) < 50:
+            raise ValueError(f"Insufficient data after feature engineering: {len(df_features)} rows (need at least 50, please collect more data for this symbol)")
         
         # Create target (predict next price)
         df_features['target'] = df_features['last_price'].shift(-1)

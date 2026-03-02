@@ -5,7 +5,7 @@ from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://admin:YOUR_DB_PASSWORD@postgres:5432/alphaselect"
+    DATABASE_URL: str = "postgresql://postgres:dev_password_123@localhost:5432/premier"
 
     # Redis
     REDIS_URL: str = "redis://redis:6379"

@@ -11,28 +11,28 @@ class ContractFeatures:
         """Add price-based technical features"""
         df = df.copy()
         
-        # Returns
-        df['returns'] = df['last_price'].pct_change()
-        df['log_returns'] = np.log(df['last_price'] / df['last_price'].shift(1))
+        # Returns (fillna(0) prevents NaN on first row from propagating through dropna)
+        df['returns'] = df['last_price'].pct_change().fillna(0)
+        df['log_returns'] = np.log(df['last_price'] / df['last_price'].shift(1).replace(0, np.nan)).fillna(0)
         
-        # Moving averages
+        # Moving averages (min_periods=1 allows computation with limited data)
         for window in [5, 10, 20, 50, 100, 200]:
-            df[f'sma_{window}'] = df['last_price'].rolling(window=window).mean()
-            df[f'ema_{window}'] = df['last_price'].ewm(span=window, adjust=False).mean()
+            df[f'sma_{window}'] = df['last_price'].rolling(window=window, min_periods=1).mean()
+            df[f'ema_{window}'] = df['last_price'].ewm(span=window, adjust=False, min_periods=1).mean()
         
-        # Price momentum
-        df['momentum_5'] = df['last_price'] - df['last_price'].shift(5)
-        df['momentum_10'] = df['last_price'] - df['last_price'].shift(10)
-        df['momentum_20'] = df['last_price'] - df['last_price'].shift(20)
+        # Price momentum (fill NaN with 0 for early rows)
+        df['momentum_5'] = df['last_price'].diff(5).fillna(0)
+        df['momentum_10'] = df['last_price'].diff(10).fillna(0)
+        df['momentum_20'] = df['last_price'].diff(20).fillna(0)
         
-        # Rate of change
-        df['roc_5'] = (df['last_price'] - df['last_price'].shift(5)) / df['last_price'].shift(5)
-        df['roc_10'] = (df['last_price'] - df['last_price'].shift(10)) / df['last_price'].shift(10)
+        # Rate of change (fill NaN with 0 for early rows)
+        df['roc_5'] = df['last_price'].pct_change(5).fillna(0)
+        df['roc_10'] = df['last_price'].pct_change(10).fillna(0)
         
         # Volatility
-        df['volatility_5'] = df['returns'].rolling(window=5).std()
-        df['volatility_10'] = df['returns'].rolling(window=10).std()
-        df['volatility_20'] = df['returns'].rolling(window=20).std()
+        df['volatility_5'] = df['returns'].rolling(window=5, min_periods=1).std().fillna(0)
+        df['volatility_10'] = df['returns'].rolling(window=10, min_periods=1).std().fillna(0)
+        df['volatility_20'] = df['returns'].rolling(window=20, min_periods=1).std().fillna(0)
         
         # High-Low Range and Body Ratio (if OHLC data available)
         if 'high_24h' in df.columns and 'low_24h' in df.columns:
@@ -47,14 +47,14 @@ class ContractFeatures:
         
         if 'volume_24h' in df.columns:
             # Volume moving averages
-            df['volume_sma_5'] = df['volume_24h'].rolling(window=5).mean()
-            df['volume_sma_10'] = df['volume_24h'].rolling(window=10).mean()
+            df['volume_sma_5'] = df['volume_24h'].rolling(window=5, min_periods=1).mean()
+            df['volume_sma_10'] = df['volume_24h'].rolling(window=10, min_periods=1).mean()
             
             # Volume change
-            df['volume_change'] = df['volume_24h'].pct_change()
+            df['volume_change'] = df['volume_24h'].pct_change().fillna(0)
             
             # Volume ratio
-            df['volume_ratio'] = df['volume_24h'] / df['volume_sma_10']
+            df['volume_ratio'] = (df['volume_24h'] / df['volume_sma_10']).fillna(1)
         
         return df
     
@@ -79,13 +79,13 @@ class ContractFeatures:
         df = df.copy()
         
         if 'basis' in df.columns:
-            df['basis_sma_5'] = df['basis'].rolling(window=5).mean()
-            df['basis_sma_10'] = df['basis'].rolling(window=10).mean()
-            df['basis_change'] = df['basis'].pct_change()
+            df['basis_sma_5'] = df['basis'].rolling(window=5, min_periods=1).mean()
+            df['basis_sma_10'] = df['basis'].rolling(window=10, min_periods=1).mean()
+            df['basis_change'] = df['basis'].pct_change().fillna(0)
         
         if 'basis_rate' in df.columns:
-            df['basis_rate_sma_5'] = df['basis_rate'].rolling(window=5).mean()
-            df['basis_rate_change'] = df['basis_rate'].pct_change()
+            df['basis_rate_sma_5'] = df['basis_rate'].rolling(window=5, min_periods=1).mean()
+            df['basis_rate_change'] = df['basis_rate'].pct_change().fillna(0)
         
         return df
     
@@ -154,11 +154,11 @@ class ContractFeatures:
     def _calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
         """Calculate RSI (Relative Strength Index)"""
         delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
+        gain = (delta.where(delta > 0, 0)).rolling(window=period, min_periods=1).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period, min_periods=1).mean()
+        rs = gain / loss.replace(0, np.nan)
         rsi = 100 - (100 / (1 + rs))
-        return rsi
+        return rsi.fillna(50)
     
     @staticmethod
     def _calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
@@ -173,8 +173,8 @@ class ContractFeatures:
     @staticmethod
     def _calculate_bollinger_bands(prices: pd.Series, period: int = 20, std_dev: float = 2.0):
         """Calculate Bollinger Bands"""
-        middle_band = prices.rolling(window=period).mean()
-        std = prices.rolling(window=period).std()
+        middle_band = prices.rolling(window=period, min_periods=1).mean()
+        std = prices.rolling(window=period, min_periods=1).std().fillna(0)
         upper_band = middle_band + (std * std_dev)
         lower_band = middle_band - (std * std_dev)
         return upper_band, middle_band, lower_band
@@ -183,11 +183,11 @@ class ContractFeatures:
     def _calculate_stochastic(close: pd.Series, high: pd.Series, low: pd.Series, 
                              k_period: int = 14, d_period: int = 3):
         """Calculate Stochastic Oscillator (%K and %D)"""
-        lowest_low = low.rolling(window=k_period).min()
-        highest_high = high.rolling(window=k_period).max()
+        lowest_low = low.rolling(window=k_period, min_periods=1).min()
+        highest_high = high.rolling(window=k_period, min_periods=1).max()
         denom = (highest_high - lowest_low).replace(0, np.nan)
-        stoch_k = 100 * (close - lowest_low) / denom
-        stoch_d = stoch_k.rolling(window=d_period).mean()
+        stoch_k = (100 * (close - lowest_low) / denom).fillna(50)
+        stoch_d = stoch_k.rolling(window=d_period, min_periods=1).mean()
         return stoch_k, stoch_d
     
     @staticmethod
@@ -197,5 +197,5 @@ class ContractFeatures:
         high_close = np.abs(high - close.shift())
         low_close = np.abs(low - close.shift())
         true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-        atr = true_range.rolling(window=period).mean()
+        atr = true_range.rolling(window=period, min_periods=1).mean()
         return atr

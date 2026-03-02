@@ -2,15 +2,15 @@ services:
   postgres:
     image: timescale/timescaledb:latest-pg16
     environment:
-      POSTGRES_DB: alphaselect
-      POSTGRES_USER: alphaselect_user
+      POSTGRES_DB: premier
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alphaselect_user"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://alphaselect_user:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/premier
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -69,6 +69,12 @@ services:
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       AI_MODEL_DIR: /app/ai_models
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks.celery_app", "inspect", "ping", "-t", "5"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     volumes:
       - ./ai_models:/app/ai_models
       - ./backend:/app
