@@ -20,12 +20,12 @@ ingress:
           prefix: /
 
 databases:
-  - name: postgres-db
+  - name: postgres
     engine: PG
     version: "16"
     production: false
 
-  - name: redis-cache
+  - name: redis
     engine: REDIS
     version: "7"
     production: false
@@ -45,10 +45,10 @@ services:
       # Managed database URLs are automatically injected by App Platform.
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${postgres-db.DATABASE_URL}
+        value: ${postgres.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${redis-cache.REDIS_URL}
+        value: ${redis.REDIS_URL}
       # Provide MEXC credentials via App Platform secret UI after creation.
       - key: MEXC_API_KEY
         scope: RUN_TIME
@@ -68,10 +68,9 @@ services:
       - key: AI_MODEL_DIR
         scope: RUN_TIME
         value: "/app/ai_models"
-      # Allow the frontend origin; update after the app URL is known.
       - key: ALLOWED_ORIGINS
         scope: RUN_TIME
-        value: ${frontend.PUBLIC_URL}
+        value: ${APP_URL}
     health_check:
       http_path: /health
 
@@ -86,15 +85,12 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     envs:
-      # With shared-ingress routing, the frontend and backend share the app
-      # domain; point both vars at the backend component's public URL so
-      # server-side rendering and browser calls both resolve correctly.
       - key: NEXT_PUBLIC_API_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${backend.PUBLIC_URL}
+        value: ${APP_URL}
       - key: NEXT_PUBLIC_WS_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${backend.PUBLIC_URL}
+        value: ${APP_URL}
     health_check:
       http_path: /health
 
@@ -111,10 +107,10 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${postgres-db.DATABASE_URL}
+        value: ${postgres.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${redis-cache.REDIS_URL}
+        value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
