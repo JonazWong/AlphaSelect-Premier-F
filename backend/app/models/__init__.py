@@ -9,6 +9,7 @@ from app.models.funding_rate import FundingRateHistory
 from app.models.open_interest import OpenInterestHistory
 from app.models.ai_model import AIModel
 from app.models.prediction import Prediction
+from app.models.extreme_signal import ExtremeSignal
 
 __all__ = [
     'ContractMarket',
@@ -16,4 +17,5 @@ __all__ = [
     'OpenInterestHistory',
     'AIModel',
     'Prediction',
+    'ExtremeSignal',
 ]
