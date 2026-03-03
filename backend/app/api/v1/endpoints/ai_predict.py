@@ -29,8 +29,6 @@ class PredictionRequest(BaseModel):
     horizon: int = 1
     use_ensemble: bool = True
 
-    model_config = {"protected_namespaces": ()}
-
 
 class PredictionResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -43,8 +41,6 @@ class PredictionResponse(BaseModel):
     target_time: datetime
     model_type: str
     current_price: Optional[float] = None
-
-    model_config = {"protected_namespaces": ()}
 
 
 @router.post("/predict", response_model=PredictionResponse)
