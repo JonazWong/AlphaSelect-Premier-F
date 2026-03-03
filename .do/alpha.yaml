@@ -1,0 +1,91 @@
+alerts:
+- rule: DEPLOYMENT_FAILED
+- rule: DOMAIN_FAILED
+databases:
+- cluster_name: db-postgresql-sgp1-75753
+  db_name: defaultdb
+  engine: PG
+  name: db-postgresql-sgp1-75753
+  production: true
+features:
+- buildpack-stack=ubuntu-22
+ingress:
+  rules:
+  - component:
+      name: alphaselect-premier-f-backend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /api
+  - component:
+      name: alphaselect-premier-f-backend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /ws      
+  - component:
+      name: alphaselect-premier-f-frontend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /alphaselect-premier-f-frontend
+name: alpha
+region: sgp
+services:
+- dockerfile_path: backend/Dockerfile
+  envs:
+  - key: SECRET_KEY
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:pWwD0D/sjpLvHEwKI+bFCcqm/YyZDqkz:4DDSjJ3kZzgK5fWwEwvT6Ro1aR9+er+CuXs1Qv5u2Prq4kDPYlmYRxnyX/3tHsn/wworxuG71gIGikAl7PxvP1ou]
+  - key: MEXC_API_KEY
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:SOjhIce51m7sE875AOyhzjago272aiad:6LO//OWioOIQxZD8/FtoehuqO6XgXc6wk1UJw0vEupBesQ==]
+  - key: MEXC_SECRET_KEY
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:jUE2GmwReBM72ga9LMQgqx1vFveeiFmf:6TgE9JEVWStNV1Dj/zHhIjCTaXQo1H+jz4+OXr4n1ckw1sfTP7tJlx3tYriB0UU5]
+  - key: DATABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:J4NN/0/1tBhWuWYiPqkXsjCXOsA4JRFu:71ds3S9epeh9hDvhuDpogNcoW18VD/roMiRRvA1xLLFiKBtMBIEYIsejKy77IC7jI3Ls4Q9m4KlOVlEvIlATq8NJtd9n7NItMq94bVpfYBj8r0yTwhB+ttxopJlFlQ/gizSQDZtXUCnB24vLD/aSdVhWbHu2i7vtyBJyd2KooCc/Ew/KNGYG9DFfexNA9r+5/bzVcaBLJvDDrFcbCA==]
+  - key: NEXT_PUBLIC_API_URL
+    scope: RUN_TIME
+    value: ${APP_URL}
+  - key: ALLOWED_ORIGINS
+    scope: RUN_AND_BUILD_TIME
+    value: ${APP_URL}
+  - key: MEXC_CONTRACT_BASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: https://contract.mexc.com
+  - key: AI_MODEL_DIR
+    scope: RUN_TIME
+    value: /app/ai_models
+  - key: NEXT_PUBLIC_WS_URL
+    scope: RUN_TIME
+    value: ${APP_URL}
+  github:
+    branch: main
+    repo: JonazWong/AlphaSelect-Premier-F
+  http_port: 8000
+  instance_count: 2
+  instance_size_slug: apps-s-1vcpu-1gb
+  name: alphaselect-premier-f-backend
+  source_dir: backend
+- dockerfile_path: frontend/Dockerfile
+  envs:
+  - key: DATABASE_URL
+    scope: RUN_TIME
+    value: ${production-database.DATABASE_URL}
+  github:
+    branch: main
+    repo: JonazWong/AlphaSelect-Premier-F
+  http_port: 3000
+  instance_count: 2
+  instance_size_slug: apps-s-1vcpu-1gb
+  name: alphaselect-premier-f-frontend
+  source_dir: frontend
