@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Activity, TrendingUp, Brain, LineChart, ChevronRight, Zap } from 'lucide-react'
+import { Activity, TrendingUp, Brain, LineChart, ChevronRight, Zap, AlertTriangle } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -98,6 +98,21 @@ export default function Home() {
               Identify chart patterns and technical analysis signals
             </p>
             <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium">
+              Explore <ChevronRight className="w-4 h-4" />
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/extreme-reversal">
+          <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
+            <div className="flex items-center gap-4 mb-4">
+              <AlertTriangle className="w-10 h-10 text-orange-400" />
+              <h3 className="text-xl font-bold">Reversal Monitor</h3>
+            </div>
+            <p className="text-gray-400">
+              AI-powered extreme bounce/pullback signal detection with LSTM, XGBoost & ARIMA
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-orange-400 text-sm font-medium">
               Explore <ChevronRight className="w-4 h-4" />
             </div>
           </div>

@@ -1,34 +1,42 @@
 """
-Pydantic schemas for ExtremeSignal API responses.
+Pydantic schemas for Extreme Reversal Signal API
 """
-from __future__ import annotations
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from datetime import datetime
-from typing import List, Optional, Any
-from pydantic import BaseModel
 
 
 class ExtremeSignalResponse(BaseModel):
-    id: int
+    """Single extreme reversal signal"""
+    id: str
     symbol: str
-    signal_type: str
-    urgency: str
+    signal_type: str = Field(..., description="bounce or pullback")
+    urgency: str = Field(..., description="critical / high / medium")
     timeframe: str
     confidence: float
-    price_change: float
-    current_price: float
-    predicted_move: float
-    rsi: Optional[float]
-    volume_multiplier: Optional[float]
-    macd_status: Optional[str]
-    bb_position: Optional[str]
-    ai_score: Optional[float]
-    lstm_prediction: Optional[str]
-    xgb_prediction: Optional[str]
-    arima_trend: Optional[str]
-    funding_rate: Optional[float]
-    open_interest_change: Optional[float]
-    liquidation_amount: Optional[float]
-    triggers: Optional[List[str]] = []
+    current_price: Optional[float] = None
+    price_change: Optional[float] = None
+    predicted_move: Optional[float] = None
+
+    # Technical indicators
+    rsi: Optional[float] = None
+    volume_multiplier: Optional[float] = None
+    macd_status: Optional[str] = None
+    bb_position: Optional[str] = None
+
+    # AI
+    ai_score: Optional[float] = None
+    lstm_prediction: Optional[float] = None
+    xgb_prediction: Optional[float] = None
+    arima_trend: Optional[str] = None
+
+    # Contract data
+    funding_rate: Optional[float] = None
+    open_interest_change: Optional[float] = None
+    liquidation_amount: Optional[float] = None
+
+    triggers: List[str] = []
+
     detected_at: datetime
     created_at: datetime
 
@@ -37,6 +45,7 @@ class ExtremeSignalResponse(BaseModel):
 
 
 class ExtremeSignalStats(BaseModel):
+    """Aggregate statistics for the signal list"""
     total: int
     bounce_count: int
     pullback_count: int
@@ -45,6 +54,9 @@ class ExtremeSignalStats(BaseModel):
 
 
 class ExtremeSignalListResponse(BaseModel):
-    items: List[ExtremeSignalResponse]
-    total: int
+    """Paginated list response"""
+    signals: List[ExtremeSignalResponse]
     stats: ExtremeSignalStats
+    total: int
+    offset: int
+    limit: int

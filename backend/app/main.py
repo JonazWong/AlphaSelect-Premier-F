@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.endpoints import contract_market, ai_training, ai_predict
+from app.api.v1.endpoints import contract_market, ai_training, ai_predict, extreme_signals
 from app.websocket.manager import sio
 from app.db.init_db import init_db
 import socketio
@@ -61,6 +61,7 @@ async def shutdown_event():
 fastapi_app.include_router(contract_market.router, prefix="/api/v1/contract", tags=["Contract Market"])
 fastapi_app.include_router(ai_training.router, prefix="/api/v1/ai/training", tags=["AI Training"])
 fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai/predict", tags=["AI Prediction"])
+fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signals", tags=["Extreme Signals"])
 
 @fastapi_app.get("/")
 async def root():
