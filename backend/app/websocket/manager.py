@@ -150,6 +150,17 @@ async def broadcast_market_update(symbol: str, data: dict):
     logger.debug(f"Broadcasted market update to {channel}")
 
 
+async def broadcast_extreme_signal(data: dict):
+    """
+    Broadcast a new extreme reversal signal to all subscribers.
+
+    Args:
+        data: Signal payload dict
+    """
+    await sio.emit('new_extreme_signal', data, room='extreme-signals')
+    logger.info(f"Broadcasted extreme signal for {data.get('symbol', '?')} to extreme-signals channel")
+
+
 # Export singleton instance
 __all__ = [
     'sio',
@@ -157,5 +168,6 @@ __all__ = [
     'broadcast_training_complete',
     'broadcast_training_failed',
     'broadcast_prediction',
-    'broadcast_market_update'
+    'broadcast_market_update',
+    'broadcast_extreme_signal',
 ]

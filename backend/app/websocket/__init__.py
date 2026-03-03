@@ -4,7 +4,8 @@ from app.websocket.manager import (
     broadcast_training_complete,
     broadcast_training_failed,
     broadcast_prediction,
-    broadcast_market_update
+    broadcast_market_update,
+    broadcast_extreme_signal,
 )
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     'broadcast_training_complete',
     'broadcast_training_failed',
     'broadcast_prediction',
-    'broadcast_market_update'
+    'broadcast_market_update',
+    'broadcast_extreme_signal',
 ]
