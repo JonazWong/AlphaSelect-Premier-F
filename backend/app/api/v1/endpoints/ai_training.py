@@ -33,6 +33,8 @@ async def get_data_status(
 
 
 class TrainModelRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     symbol: str
     model_type: str  # lstm, xgboost
     config: Optional[Dict[str, Any]] = None
@@ -40,6 +42,8 @@ class TrainModelRequest(BaseModel):
 
 
 class TrainModelResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     status: str
     model_id: str
     message: str
