@@ -40,8 +40,6 @@ class TrainModelRequest(BaseModel):
     config: Optional[Dict[str, Any]] = None
     min_data_points: int = 100
 
-    model_config = {"protected_namespaces": ()}
-
 
 class TrainModelResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -50,8 +48,6 @@ class TrainModelResponse(BaseModel):
     model_id: str
     message: str
     session_id: Optional[str] = None
-
-    model_config = {"protected_namespaces": ()}
 
 
 @router.post("/train", response_model=TrainModelResponse)
