@@ -22,6 +22,8 @@ router = APIRouter()
 
 
 class PredictionRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     symbol: str
     model_id: Optional[str] = None  # If None, use ensemble
     horizon: int = 1
@@ -31,6 +33,8 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     symbol: str
     predicted_value: float
     confidence_score: float
