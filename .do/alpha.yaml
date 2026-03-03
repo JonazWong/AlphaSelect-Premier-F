@@ -40,19 +40,15 @@ services:
   - key: SECRET_KEY
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:pWwD0D/sjpLvHEwKI+bFCcqm/YyZDqkz:4DDSjJ3kZzgK5fWwEwvT6Ro1aR9+er+CuXs1Qv5u2Prq4kDPYlmYRxnyX/3tHsn/wworxuG71gIGikAl7PxvP1ou]
   - key: MEXC_API_KEY
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:SOjhIce51m7sE875AOyhzjago272aiad:6LO//OWioOIQxZD8/FtoehuqO6XgXc6wk1UJw0vEupBesQ==]
   - key: MEXC_SECRET_KEY
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:jUE2GmwReBM72ga9LMQgqx1vFveeiFmf:6TgE9JEVWStNV1Dj/zHhIjCTaXQo1H+jz4+OXr4n1ckw1sfTP7tJlx3tYriB0UU5]
   - key: DATABASE_URL
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:J4NN/0/1tBhWuWYiPqkXsjCXOsA4JRFu:71ds3S9epeh9hDvhuDpogNcoW18VD/roMiRRvA1xLLFiKBtMBIEYIsejKy77IC7jI3Ls4Q9m4KlOVlEvIlATq8NJtd9n7NItMq94bVpfYBj8r0yTwhB+ttxopJlFlQ/gizSQDZtXUCnB24vLD/aSdVhWbHu2i7vtyBJyd2KooCc/Ew/KNGYG9DFfexNA9r+5/bzVcaBLJvDDrFcbCA==]
   - key: NEXT_PUBLIC_API_URL
     scope: RUN_TIME
     value: ${APP_URL}
