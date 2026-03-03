@@ -20,10 +20,11 @@ ingress:
           prefix: /
 
 databases:
-  - name: postgres
+  - name: premier
     engine: PG
     version: "16"
     production: false
+    db: premier
 
   - name: redis
     engine: REDIS
@@ -45,7 +46,7 @@ services:
       # Managed database URLs are automatically injected by App Platform.
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${postgres.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${redis.REDIS_URL}
@@ -57,6 +58,15 @@ services:
         scope: RUN_TIME
         type: SECRET
       - key: SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+      # doadmin connection string for schema GRANT (DO PostgreSQL 15+)
+      # Format: postgresql://doadmin:<password>@<host>:25060/premier?sslmode=require
+      - key: ADMIN_DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      # The app user name created by DO (shown in DB → Users & Databases)
+      - key: DB_APP_USER
         scope: RUN_TIME
         type: SECRET
       - key: MEXC_CONTRACT_BASE_URL
@@ -107,7 +117,7 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${postgres.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${redis.REDIS_URL}
