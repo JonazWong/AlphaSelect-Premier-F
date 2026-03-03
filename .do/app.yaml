@@ -65,7 +65,7 @@ services:
       - key: ADMIN_DATABASE_URL
         scope: RUN_TIME
         type: SECRET
-      # The app user name created by DO (shown in DB → Users & Databases)
+      # The app user name created by DO (shown in DB -> Users & Databases)
       - key: DB_APP_USER
         scope: RUN_TIME
         type: SECRET
