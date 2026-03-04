@@ -1,7 +1,7 @@
 import secrets
 import string
 
-def generate_secret_key(length=50):
+def generate_secret_key(length=32):
     """生成安全的 SECRET_KEY"""
     alphabet = string.ascii_letters + string.digits + string.punctuation
     secret_key = ''.join(secrets.choice(alphabet) for _ in range(length))
