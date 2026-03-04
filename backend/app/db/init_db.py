@@ -73,7 +73,6 @@ def init_db():
                 # Belt-and-suspenders: GRANT ALL + explicit CREATE on PG 15+
                 # (GRANT ALL may not include CREATE privilege on managed PG 15+)
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
-                conn.execute(text("GRANT CREATE ON SCHEMA public TO PUBLIC"))
                 if app_user:
                     conn.execute(text(f"GRANT ALL ON SCHEMA public TO {_quote_ident(app_user)}"))
                     conn.execute(text(f"GRANT CREATE ON SCHEMA public TO {_quote_ident(app_user)}"))
