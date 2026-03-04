@@ -54,6 +54,7 @@ def list_extreme_signals(
         elif sort == "volume":
             q = q.order_by(ExtremeSignal.volume_multiplier.desc().nullslast())
         elif sort == "change":
+            q = q.order_by(func.abs(ExtremeSignal.price_change).desc().nullslast())
             q = q.order_by(ExtremeSignal.price_change.desc().nullslast())
         else:
             q = q.order_by(ExtremeSignal.confidence.desc())
