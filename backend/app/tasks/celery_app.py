@@ -24,10 +24,4 @@ celery_app.conf.update(
     task_time_limit=3600,  # 1 hour max
     task_soft_time_limit=3000,  # 50 minutes soft limit
     broker_connection_retry_on_startup=True,
-    beat_schedule={
-        'scan-extreme-reversals-every-minute': {
-            'task': 'scan_extreme_reversals',
-            'schedule': 60.0,  # every 60 seconds
-        },
-    },
 )
