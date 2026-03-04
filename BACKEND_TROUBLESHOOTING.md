@@ -98,7 +98,7 @@ docker compose exec backend python -c "from app.main import app; print('OK')"
 docker compose logs backend
 
 # 2. 檢查數據庫
-docker compose exec postgres pg_isready -U alphaselect_user
+docker compose exec postgres pg_isready -U postgres
 
 # 3. 檢查端口
 netstat -ano | findstr :8000

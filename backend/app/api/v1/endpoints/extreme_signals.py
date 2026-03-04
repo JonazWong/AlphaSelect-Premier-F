@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
+from datetime import datetime, timedelta
 import logging
 
 from app.db.session import get_db
@@ -54,6 +55,7 @@ def list_extreme_signals(
             q = q.order_by(ExtremeSignal.volume_multiplier.desc().nullslast())
         elif sort == "change":
             q = q.order_by(func.abs(ExtremeSignal.price_change).desc().nullslast())
+            q = q.order_by(ExtremeSignal.price_change.desc().nullslast())
         else:
             q = q.order_by(ExtremeSignal.confidence.desc())
 
