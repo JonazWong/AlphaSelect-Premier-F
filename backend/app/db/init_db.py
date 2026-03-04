@@ -5,6 +5,11 @@ import logging
 import os
 from sqlalchemy import create_engine, text
 
+
+def _quote_ident(name: str) -> str:
+    """Return a safely double-quoted PostgreSQL identifier."""
+    return '"' + name.replace('"', '""') + '"'
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,19 +53,40 @@ def init_db():
         # Grant schema privileges first (doadmin only, no-op if no admin engine)
         if admin_engine is not None:
             with admin_engine.connect() as conn:
+                # Log which user/db is actually executing these commands
+                row = conn.execute(text("SELECT current_user, current_database()")).fetchone()
+                current_user, current_db = row[0], row[1]
+                logger.info(f"\U0001f511 Using ADMIN_DATABASE_URL targeting db: {current_db} as user: {current_user}")
+
+                # Attempt to take ownership of the public schema so that
+                # subsequent CREATE TABLE commands succeed on DO PG 15+
+                # (public schema is owned by pg_database_owner there).
+                try:
+                    with conn.begin_nested():
+                        conn.execute(text(
+                            f"ALTER SCHEMA public OWNER TO {_quote_ident(current_user)}"
+                        ))
+                    logger.info(f"\u2705 Schema public ownership set to {current_user}")
+                except Exception as owner_err:
+                    logger.warning(f"\u26a0\ufe0f Could not change schema ownership (non-fatal): {owner_err}")
+
+                # Belt-and-suspenders: GRANT ALL + explicit CREATE on PG 15+
+                # (GRANT ALL may not include CREATE privilege on managed PG 15+)
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
+                conn.execute(text("GRANT CREATE ON SCHEMA public TO PUBLIC"))
                 if app_user:
-                    conn.execute(text(f"GRANT ALL ON SCHEMA public TO {app_user}"))
+                    conn.execute(text(f"GRANT ALL ON SCHEMA public TO {_quote_ident(app_user)}"))
+                    conn.execute(text(f"GRANT CREATE ON SCHEMA public TO {_quote_ident(app_user)}"))
                     conn.execute(text(
                         f"ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                        f"GRANT ALL ON TABLES TO {app_user}"
+                        f"GRANT ALL ON TABLES TO {_quote_ident(app_user)}"
                     ))
                     conn.execute(text(
                         f"ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                        f"GRANT ALL ON SEQUENCES TO {app_user}"
+                        f"GRANT ALL ON SEQUENCES TO {_quote_ident(app_user)}"
                     ))
                 conn.commit()
-            logger.info("\u2705 Schema privileges granted")
+            logger.info("\u2705 Schema privileges granted successfully")
 
         # Create all tables
         Base.metadata.create_all(bind=target_engine)
@@ -75,10 +101,10 @@ def init_db():
         if admin_engine is not None and app_user:
             with admin_engine.connect() as conn:
                 conn.execute(text(
-                    f"GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {app_user}"
+                    f"GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {_quote_ident(app_user)}"
                 ))
                 conn.execute(text(
-                    f"GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {app_user}"
+                    f"GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {_quote_ident(app_user)}"
                 ))
                 conn.commit()
             logger.info(f"\u2705 Table privileges granted to {app_user}")
