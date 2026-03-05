@@ -56,6 +56,12 @@ def _check_admin_privileges(conn) -> tuple[bool, str]:
         " FROM pg_roles"
         " WHERE rolname = current_user"
     )).fetchone()
+    if row is None:
+        logger.error(
+            "\u274c Failed to fetch admin privilege information from pg_roles "
+            "- query returned no rows (unexpected database state)."
+        )
+        return False, "unknown"
     current_user, current_db, is_privileged = row[0], row[1], row[2]
     logger.info(
         f"\U0001f511 ADMIN_DATABASE_URL connects as user '{current_user}' "
