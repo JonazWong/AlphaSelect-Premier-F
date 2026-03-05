@@ -52,7 +52,11 @@ def _check_admin_privileges(conn) -> tuple[bool, str]:
     """
     row = conn.execute(text(
         "SELECT current_user, current_database(),"
-        " (rolsuper OR pg_has_role(rolname, 'pg_database_owner', 'MEMBER')) AS is_privileged"
+        " (rolsuper OR CASE"
+        "     WHEN EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pg_database_owner')"
+        "     THEN pg_has_role(rolname, 'pg_database_owner', 'MEMBER')"
+        "     ELSE FALSE"
+        " END) AS is_privileged"
         " FROM pg_roles"
         " WHERE rolname = current_user"
     )).fetchone()
