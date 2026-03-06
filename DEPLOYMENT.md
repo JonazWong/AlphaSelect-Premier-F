@@ -4,6 +4,32 @@
 
 This guide covers deploying AlphaSelect Premier F to production using DigitalOcean App Platform.
 
+## Current Production Architecture
+
+| Component | Platform | Plan | Notes |
+|-----------|----------|------|-------|
+| `alphaselect-premier-f-backend` | DO App Platform — Web Service | Professional XS ($12/mo, 1 GB RAM, 1 Shared vCPU) | FastAPI server |
+| `alphaselect-premier-f-frontend` | DO App Platform — Web Service | Basic XXS ($5/mo, 512 MB RAM, 1 Shared vCPU) | Next.js server |
+| `celery-worker` | DO App Platform — Worker | Basic XS ($10/mo, 1 GB RAM, 1 Shared vCPU) | Celery async tasks |
+| `premier` | DO Managed PostgreSQL 16 | — | Managed DB, connection via `${premier.DATABASE_URL}` |
+| Redis | **Upstash** (external) | — | URL injected via `REDIS_URL` SECRET env var |
+
+App URL: https://alpha-hjyhn.ondigitalocean.app  
+Region: SGP (Singapore)
+
+### Environment Variables (Secrets)
+
+Set the following as **SECRET** environment variables in the DO App Platform dashboard:
+
+| Variable | Description |
+|----------|-------------|
+| `REDIS_URL` | Upstash Redis connection string |
+| `MEXC_API_KEY` | MEXC read-only API key |
+| `MEXC_SECRET_KEY` | MEXC read-only secret key |
+| `SECRET_KEY` | JWT signing secret (≥ 32 chars) |
+| `ADMIN_DATABASE_URL` | PostgreSQL admin connection string |
+| `DB_APP_USER` | PostgreSQL application user |
+
 ## Prerequisites
 
 1. **DigitalOcean Account**: Sign up at [digitalocean.com](https://www.digitalocean.com/)
@@ -435,13 +461,13 @@ psql -h your-db-host -U user -d alphaselect < backup.sql
 
 ## Cost Estimation
 
-### DigitalOcean App Platform
-- **Backend**: $12/mo (2 instances)
-- **Frontend**: $12/mo (2 instances)
-- **Celery Worker**: $6/mo (1 instance)
-- **PostgreSQL**: $15/mo
-- **Redis**: $15/mo
-- **Total**: ~$60/mo
+### DigitalOcean App Platform (current setup)
+- **Backend** (Professional XS × 1): $12/mo
+- **Frontend** (Basic XXS × 1): $5/mo
+- **Celery Worker** (Basic XS × 1): $10/mo
+- **PostgreSQL** (DO Managed): varies by plan
+- **Redis**: hosted on Upstash (external, not DO)
+- **Total**: ~$27/mo + database plan
 
 ### DigitalOcean Droplet
 - **Droplet**: $12-24/mo

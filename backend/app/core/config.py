@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:dev_password_123@localhost:5432/premier"
 
     # Redis
+    # Default targets the local Docker Compose service; overridden in production by REDIS_URL env var (Upstash)
     REDIS_URL: str = "redis://redis:6379"
 
     # MEXC API
