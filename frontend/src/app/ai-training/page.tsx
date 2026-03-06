@@ -258,9 +258,11 @@ export default function AITrainingPage() {
             className="w-full bg-card text-white border border-gray-600 rounded-lg px-4 py-2"
             disabled={isTraining}
           >
-            <option value="BTC_USDT">BTC/USDT</option>
-            <option value="ETH_USDT">ETH/USDT</option>
-            <option value="BNB_USDT">BNB/USDT</option>
+            <option value="BTC_USDT">BTC/USDT (Bitcoin)</option>
+            <option value="ETH_USDT">ETH/USDT (Ethereum)</option>
+            <option value="SOL_USDT">SOL/USDT (Solana)</option>
+            <option value="BNB_USDT">BNB/USDT (Binance Coin)</option>
+            <option value="DOGE_USDT">DOGE/USDT (Dogecoin)</option>
           </select>
         </div>
 
