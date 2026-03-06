@@ -143,6 +143,47 @@ The system automatically collects data from MEXC:
 # - Index price data
 ```
 
+#### Collecting Data for Multiple Symbols
+
+**Quick Collection (Recommended):**
+
+Use the `quick_collect_100.bat` script to quickly collect data for 5 popular trading pairs:
+
+```bash
+# Run from project root
+quick_collect_100.bat
+```
+
+This script collects 30 data points for each of these symbols (150 total):
+- BTC_USDT (Bitcoin)
+- ETH_USDT (Ethereum)
+- SOL_USDT (Solana)
+- BNB_USDT (Binance Coin)
+- DOGE_USDT (Dogecoin)
+
+**Continuous Collection:**
+
+For ongoing data collection, use `docker-dev-tools/auto_collect_data.bat`:
+
+```bash
+cd docker-dev-tools
+auto_collect_data.bat
+```
+
+This runs continuously, collecting data every 60 seconds.
+
+**Manual Collection:**
+
+Collect data for specific symbols:
+
+```bash
+# Single symbol
+curl http://localhost:8000/api/v1/contract/ticker/BTC_USDT
+
+# Multiple symbols
+collect_training_data.bat
+```
+
 ### Step 2: Feature Engineering
 
 Features automatically extracted:
@@ -179,7 +220,31 @@ Features automatically extracted:
 
 ### Step 3: Model Training
 
-#### Using the UI (Recommended)
+#### Batch Training for Multiple Symbols (Recommended)
+
+To train all models for all collected symbols at once, use the batch training script:
+
+```bash
+# Run from project root
+train_all_symbols.bat
+```
+
+This script will:
+1. Check data availability for all 5 symbols
+2. Train 5 model types (LSTM, XGBoost, Random Forest, ARIMA, Linear Regression) for each symbol
+3. Submit 25 training tasks total (5 symbols × 5 models)
+4. Display progress and results
+
+**Training Time Estimates:**
+- XGBoost: 5-15 minutes per symbol
+- Random Forest: 5-10 minutes per symbol
+- Linear Regression: <1 minute per symbol
+- ARIMA: 2-5 minutes per symbol
+- LSTM: 30-60 minutes per symbol
+
+**Total time:** ~2-3 hours for all 25 models (tasks run in parallel via Celery workers)
+
+#### Using the UI (Single Symbol Training)
 
 1. **Navigate to AI Training Center**
    - Go to http://localhost:3000/ai-training
@@ -207,26 +272,71 @@ Features automatically extracted:
 
 #### Using the API
 
+**Single Symbol Training:**
+
 ```bash
 # Start training via API
-curl -X POST "http://localhost:8000/api/v1/ai/training/start" \
+curl -X POST "http://localhost:8000/api/v1/ai/training/train" \
   -H "Content-Type: application/json" \
   -d '{
     "symbol": "BTC_USDT",
     "model_type": "lstm",
-    "timeframe": "Min60",
-    "config": {
-      "epochs": 100,
-      "batch_size": 32,
-      "sequence_length": 60
-    }
+    "min_data_points": 100,
+    "config": {}
   }'
 
 # Check training status
-curl "http://localhost:8000/api/v1/ai/training/status/{session_id}"
+curl "http://localhost:8000/api/v1/ai/training/models/BTC_USDT"
 
-# Get training history
-curl "http://localhost:8000/api/v1/ai/training/history/BTC_USDT"
+# Get all models
+curl "http://localhost:8000/api/v1/ai/training/models"
+```
+
+**Batch Training via API (PowerShell):**
+
+```powershell
+# Define symbols and models
+$symbols = @('BTC_USDT', 'ETH_USDT', 'SOL_USDT', 'BNB_USDT', 'DOGE_USDT')
+$models = @('xgboost', 'random_forest', 'linear_regression', 'arima', 'lstm')
+
+# Train all combinations
+foreach ($symbol in $symbols) {
+    foreach ($model in $models) {
+        Write-Host "Training $symbol - $model"
+        $body = @{
+            symbol = $symbol
+            model_type = $model
+            min_data_points = 50
+            config = @{}
+        } | ConvertTo-Json
+        
+        Invoke-RestMethod -Uri "http://localhost:8000/api/v1/ai/training/train" `
+            -Method Post `
+            -ContentType "application/json" `
+            -Body $body
+        
+        Start-Sleep -Seconds 2
+    }
+}
+```
+
+**Batch Training via API (Bash):**
+
+```bash
+# Define arrays
+symbols=("BTC_USDT" "ETH_USDT" "SOL_USDT" "BNB_USDT" "DOGE_USDT")
+models=("xgboost" "random_forest" "linear_regression" "arima" "lstm")
+
+# Train all combinations
+for symbol in "${symbols[@]}"; do
+    for model in "${models[@]}"; do
+        echo "Training $symbol - $model"
+        curl -X POST "http://localhost:8000/api/v1/ai/training/train" \
+          -H "Content-Type: application/json" \
+          -d "{\"symbol\":\"$symbol\",\"model_type\":\"$model\",\"min_data_points\":50,\"config\":{}}"
+        sleep 2
+    done
+done
 ```
 
 ### Step 4: Model Evaluation

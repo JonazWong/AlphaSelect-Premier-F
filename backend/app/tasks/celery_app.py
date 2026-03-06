@@ -4,8 +4,8 @@ import os
 # Create Celery app
 celery_app = Celery(
     'alphaselect',
-    broker=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
-    backend=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+    broker=os.getenv('REDIS_URL', 'rediss://default:AQ34AAImcDFhNjhiZWRkYjgzNzk0OGRmYTRhMzRhMzEzNzY5ZWRlZnAxMzU3Ng@dominant-serval-3576.upstash.io:6379'),
+    backend=os.getenv('REDIS_URL', 'rediss://default:AQ34AAImcDFhNjhiZWRkYjgzNzk0OGRmYTRhMzRhMzEzNzY5ZWRlZnAxMzU3Ng@dominant-serval-3576.upstash.io:6379'),
     include=[
         'app.tasks.ai_training_tasks',
         'app.tasks.cleanup_tasks',
