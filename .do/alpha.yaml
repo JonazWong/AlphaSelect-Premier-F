@@ -31,7 +31,7 @@ ingress:
       authority:
         exact: ""
       path:
-        prefix: /alphaselect-premier-f-frontend
+        prefix: /
 name: alpha
 region: sgp
 services:
