@@ -1,38 +1,35 @@
-name: alphaselect-premier-f
+name: alpha
 region: sgp
 
 ingress:
   rules:
     - component:
-        name: backend
+        name: alphaselect-premier-f-backend
       match:
         path:
           prefix: /api
     - component:
-        name: backend
+        name: alphaselect-premier-f-backend
       match:
         path:
           prefix: /ws
     - component:
-        name: frontend
+        name: alphaselect-premier-f-frontend
       match:
         path:
           prefix: /
 
 databases:
   - name: premier
+    cluster_name: premier
+    db_name: premier
+    db_user: doadmin
     engine: PG
+    production: true
     version: "16"
-    production: false
-    db: premier
-
-  - name: redis
-    engine: REDIS
-    version: "7"
-    production: false
 
 services:
-  - name: backend
+  - name: alphaselect-premier-f-backend
     github:
       repo: JonazWong/AlphaSelect-Premier-F
       branch: main
@@ -43,31 +40,26 @@ services:
     instance_count: 1
     instance_size_slug: professional-xs
     envs:
-      # Managed database URLs are automatically injected by App Platform.
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
-        scope: RUN_TIME
-        value: ${redis.REDIS_URL}
-      # Provide MEXC credentials via App Platform secret UI after creation.
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
       - key: MEXC_API_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
       - key: MEXC_SECRET_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
       - key: SECRET_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
-      # doadmin connection string for schema GRANT (DO PostgreSQL 15+)
-      # Format: postgresql://doadmin:<password>@<host>:25060/premier?sslmode=require
       - key: ADMIN_DATABASE_URL
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
-      # The app user name created by DO (shown in DB -> Users & Databases)
       - key: DB_APP_USER
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
       - key: MEXC_CONTRACT_BASE_URL
         scope: RUN_TIME
@@ -83,8 +75,13 @@ services:
         value: ${APP_URL}
     health_check:
       http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
 
-  - name: frontend
+  - name: alphaselect-premier-f-frontend
     github:
       repo: JonazWong/AlphaSelect-Premier-F
       branch: main
@@ -103,6 +100,11 @@ services:
         value: ${APP_URL}
     health_check:
       http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
 
 workers:
   - name: celery-worker
@@ -120,7 +122,7 @@ workers:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${redis.REDIS_URL}
+        type: SECRET
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
