@@ -34,12 +34,12 @@ interface TrainedModel {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const MODEL_TYPES = [
-  { id: 'lstm', name: 'LSTM', description: 'Deep learning for long-term trends', color: 'cyan' },
+  { id: 'lstm', name: 'LSTM', description: 'Deep learning for long-term trends', note: 'Requires 100+ data points', color: 'cyan' },
   { id: 'xgboost', name: 'XGBoost', description: 'Gradient boosting for accuracy', color: 'purple' },
   { id: 'random_forest', name: 'Random Forest', description: 'Ensemble tree-based model', color: 'green' },
   { id: 'arima', name: 'ARIMA', description: 'Time series forecasting', color: 'blue' },
   { id: 'linear_regression', name: 'Linear Regression', description: 'Baseline linear model', color: 'yellow' },
-  { id: 'ensemble', name: 'Ensemble', description: 'Combined model predictions', color: 'red' }
+  { id: 'ensemble', name: 'Ensemble', description: 'XGBoost + RF + ARIMA + LR combined', note: 'Add LSTM to ensemble manually when 1000+ rows available', color: 'red' }
 ]
 
 export default function AITrainingPage() {
@@ -142,6 +142,20 @@ export default function AITrainingPage() {
   const startTraining = async () => {
     setErrorMsg(null)
     setSuccessMsg(null)
+
+    // Build model-specific default config to ensure backend uses sensible defaults
+    const getModelConfig = (modelType: string): Record<string, unknown> => {
+      switch (modelType) {
+        case 'lstm':
+          return { sequence_length: 60, epochs: 50, batch_size: 32, units: [128, 64], dropout: 0.2, learning_rate: 0.001 }
+        case 'ensemble':
+          // model_configs for each sub-model; LSTM excluded by default (needs 1000+ rows)
+          return { xgboost: { n_estimators: 100 }, random_forest: { n_estimators: 100 }, arima: {}, linear_regression: {} }
+        default:
+          return {}
+      }
+    }
+
     try {
       console.log('🚀 Starting training...', { symbol: selectedSymbol, model: selectedModel })
       setIsTraining(true)
@@ -154,7 +168,7 @@ export default function AITrainingPage() {
           symbol: selectedSymbol,
           model_type: selectedModel,
           min_data_points: 100,
-          config: {}
+          config: getModelConfig(selectedModel)
         })
       })
 
@@ -288,6 +302,9 @@ export default function AITrainingPage() {
               >
                 <div className="font-bold text-lg mb-1">{model.name}</div>
                 <div className="text-sm text-gray-400">{model.description}</div>
+                {model.note && (
+                  <div className="text-xs text-yellow-400/80 mt-1">{model.note}</div>
+                )}
               </button>
             ))}
           </div>

@@ -239,7 +239,7 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         # Set default configs if not provided
         # LSTM is excluded by default: requires large data (>1000 rows) and long training time.
         # Add 'lstm': {'sequence_length': 60, 'epochs': 50} manually once sufficient data is collected.
-        if model_configs is None:
+        if not model_configs:
             model_configs = {
                 'xgboost': {'n_estimators': 100},
                 'random_forest': {'n_estimators': 100},
@@ -337,6 +337,18 @@ def train_ensemble_models_task(self, session_id: str, symbol: str, model_configs
         
     except Exception as e:
         logger.error(f"Error in ensemble training: {e}", exc_info=True)
+        
+        # Mark the pre-created ensemble DB record as failed
+        try:
+            if model_id:
+                ensemble_model_record = db.query(AIModel).filter(AIModel.id == model_id).first()
+                if ensemble_model_record:
+                    from datetime import datetime
+                    ensemble_model_record.status = 'failed'
+                    ensemble_model_record.training_completed_at = datetime.utcnow()
+                    db.commit()
+        except Exception as db_error:
+            logger.error(f"Error updating ensemble failed status: {db_error}")
         
         # Broadcast failure
         try:
