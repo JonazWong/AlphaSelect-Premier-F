@@ -7,6 +7,11 @@ on:
     # Run daily at 2 AM UTC to catch new vulnerabilities
     - cron: '0 2 * * *'
 
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 concurrency:
   group: security-scan-${{ github.ref }}
   cancel-in-progress: false
