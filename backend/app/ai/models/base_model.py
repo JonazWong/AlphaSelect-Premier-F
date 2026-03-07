@@ -50,6 +50,13 @@ class BaseModel(ABC):
         
         predictions = self.predict(X)
         
+        # Align lengths: models like LSTM produce fewer predictions than input rows
+        # (due to sequence creation) and ensemble truncates to the shortest sub-model.
+        if len(predictions) != len(y):
+            min_len = min(len(predictions), len(y))
+            predictions = predictions[-min_len:]
+            y = y[-min_len:]
+        
         # Basic metrics
         metrics = {
             'r2_score': float(r2_score(y, predictions)),

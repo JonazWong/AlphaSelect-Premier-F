@@ -177,7 +177,7 @@ class AITrainingService:
         """
         logger.info(f"Training ensemble for {symbol}")
         
-        if model_configs is None:
+        if not model_configs:
             # LSTM excluded by default: needs 1000+ rows & long GPU training time.
             # Include manually via config once sufficient data is collected.
             model_configs = {

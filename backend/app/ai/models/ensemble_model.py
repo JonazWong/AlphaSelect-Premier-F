@@ -164,3 +164,83 @@ class EnsembleModel(BaseModel):
                 print(f"Error getting contribution from {model.model_type}: {e}")
         
         return contributions
+
+    def save(self, path: str) -> None:
+        """
+        Save ensemble model to disk.
+
+        Each sub-model is saved via its own ``save()`` method into a sibling
+        directory so that LSTM sub-models use Keras-native serialization while
+        others are pickled normally.  The ensemble metadata (weights, config,
+        sub-model paths) is then pickled to *path*.
+        """
+        import os
+        import pickle
+
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        # Directory for sub-model files
+        base = path[:-4] if path.endswith('.pkl') else path
+        sub_dir = base + '_submodels'
+        os.makedirs(sub_dir, exist_ok=True)
+
+        sub_model_infos = []
+        for i, model in enumerate(self.models):
+            sub_path = os.path.join(sub_dir, f"{model.model_type}_{i}.pkl")
+            model.save(sub_path)
+            sub_model_infos.append({
+                'model_type': model.model_type,
+                'path': sub_path,
+                'index': i
+            })
+
+        ensemble_data = {
+            'scaler': self.scaler,
+            'feature_names': self.feature_names,
+            'config': self.config,
+            'symbol': self.symbol,
+            'model_type': self.model_type,
+            'model_weights': self.model_weights,
+            'sub_model_infos': sub_model_infos
+        }
+
+        with open(path, 'wb') as f:
+            pickle.dump(ensemble_data, f)
+
+    def load(self, path: str) -> None:
+        """Load ensemble model including all sub-models from disk."""
+        import pickle
+
+        with open(path, 'rb') as f:
+            ensemble_data = pickle.load(f)
+
+        self.scaler = ensemble_data['scaler']
+        self.feature_names = ensemble_data['feature_names']
+        self.config = ensemble_data['config']
+        self.symbol = ensemble_data['symbol']
+        self.model_type = ensemble_data['model_type']
+        self.model_weights = ensemble_data.get('model_weights', {})
+
+        # Lazy import to avoid circular dependency
+        from app.ai.models.lstm_model import LSTMModel
+        from app.ai.models.xgboost_model import XGBoostModel
+        from app.ai.models.random_forest_model import RandomForestModel
+        from app.ai.models.arima_model import ARIMAModel
+        from app.ai.models.linear_regression_model import LinearRegressionModel
+
+        model_classes = {
+            'lstm': LSTMModel,
+            'xgboost': XGBoostModel,
+            'random_forest': RandomForestModel,
+            'arima': ARIMAModel,
+            'linear_regression': LinearRegressionModel
+        }
+
+        self.models = []
+        for info in ensemble_data.get('sub_model_infos', []):
+            model_type = info['model_type']
+            sub_path = info['path']
+            if model_type in model_classes:
+                sub_model = model_classes[model_type](self.symbol)
+                sub_model.load(sub_path)
+                self.models.append(sub_model)

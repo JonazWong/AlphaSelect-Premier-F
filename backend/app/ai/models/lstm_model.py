@@ -165,3 +165,54 @@ class LSTMModel(BaseModel):
         predictions = self.model.predict(X_seq, verbose=0)
         
         return predictions.flatten()
+
+    def save(self, path: str) -> None:
+        """
+        Save LSTM model to disk.
+
+        The Keras Sequential model is saved in native SavedModel format to avoid
+        pickle incompatibility with TensorFlow objects.  All other metadata
+        (scaler, config, feature names, …) is pickled alongside.
+        """
+        import pickle
+        import os
+
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        # Derive a sibling path for the Keras SavedModel directory
+        keras_path = path.replace('.pkl', '') + '_keras_model'
+        if self.model is not None:
+            self.model.save(keras_path)
+
+        metadata = {
+            'scaler': self.scaler,
+            'feature_names': self.feature_names,
+            'config': self.config,
+            'symbol': self.symbol,
+            'model_type': self.model_type,
+            'keras_path': keras_path if self.model is not None else None
+        }
+
+        with open(path, 'wb') as f:
+            pickle.dump(metadata, f)
+
+    def load(self, path: str) -> None:
+        """Load LSTM model from disk (Keras native + pickle metadata)."""
+        import os
+        import pickle
+        import tensorflow as tf
+
+        with open(path, 'rb') as f:
+            metadata = pickle.load(f)
+
+        self.scaler = metadata['scaler']
+        self.feature_names = metadata['feature_names']
+        self.config = metadata['config']
+        self.symbol = metadata['symbol']
+        self.model_type = metadata['model_type']
+
+        keras_path = metadata.get('keras_path')
+        if keras_path and os.path.exists(keras_path):
+            self.model = tf.keras.models.load_model(keras_path)
+        else:
+            self.model = None
