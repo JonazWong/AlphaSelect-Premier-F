@@ -14,6 +14,21 @@ ingress:
         path:
           prefix: /ws
     - component:
+        name: backend
+      match:
+        path:
+          prefix: /health
+    - component:
+        name: backend
+      match:
+        path:
+          prefix: /docs
+    - component:
+        name: backend
+      match:
+        path:
+          prefix: /redoc
+    - component:
         name: frontend
       match:
         path:
@@ -80,7 +95,7 @@ services:
         value: "/app/ai_models"
       - key: ALLOWED_ORIGINS
         scope: RUN_TIME
-        value: ${APP_URL}
+        value: "${APP_URL},${frontend.PUBLIC_URL}"
     health_check:
       http_path: /health
 
@@ -95,6 +110,9 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     envs:
+      - key: PORT
+        scope: RUN_AND_BUILD_TIME
+        value: "3000"
       - key: NEXT_PUBLIC_API_URL
         scope: RUN_AND_BUILD_TIME
         value: ${APP_URL}
