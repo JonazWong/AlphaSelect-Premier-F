@@ -159,7 +159,6 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
-        value: ${postgres-db.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
         type: SECRET
@@ -197,7 +196,6 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
-        value: ${postgres-db.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_TIME
         type: SECRET
@@ -237,7 +235,7 @@ services:
      - `MEXC_API_KEY`
      - `MEXC_SECRET_KEY`
      - `SECRET_KEY` (generate strong random key)
-     - `DATABASE_URL` (from managed PostgreSQL)
+     - `DATABASE_URL` (external DigitalOcean PostgreSQL — set as Secret in App Platform UI)
      - `REDIS_URL` (from managed Redis)
 
 4. **Deploy**

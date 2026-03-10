@@ -21,6 +21,9 @@ def _get_admin_engine():
     Required for DigitalOcean managed PostgreSQL 15+ where the app user
     lacks CREATE privilege on the public schema by default.
     Only doadmin (superuser) can create tables and grant schema privileges.
+
+    Example ADMIN_DATABASE_URL:
+    postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
     """
     admin_url = os.getenv("ADMIN_DATABASE_URL")
     app_db_url = os.getenv("DATABASE_URL", "")

@@ -43,13 +43,12 @@ If DigitalOcean still doesn't detect components:
 
 3. **Add Databases:**
    - Click "Add Database"
-   - PostgreSQL 16, name: `postgres-db`
-   - Click "Add Database"
    - Redis, version 7, name: `redis-cache`
+   - (PostgreSQL is external — do NOT add a managed PG database)
 
 4. **Set Environment Variables:**
-   - `DATABASE_URL` → Secret
-   - `REDIS_URL` → Secret
+   - `DATABASE_URL` → Secret: `postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require`
+   - `REDIS_URL` → Secret (or auto-injected from managed Redis)
    - `SECRET_KEY` → Secret
    - `MEXC_API_KEY` → Secret (if using MEXC)
    - `MEXC_SECRET_KEY` → Secret (if using MEXC)
@@ -78,9 +77,9 @@ doctl apps create --spec app.yaml
 - `http_port`: Port the service listens on
 - `health_check.http_path`: Endpoint to check if service is healthy
 
-**Database Variables (Auto-populated by DO):**
-- Backend/Celery connect via `DATABASE_URL` (PostgreSQL)
-- Backend/Celery connect via `REDIS_URL` (Redis)
+**Database Variables:**
+- Backend/Celery connect via `DATABASE_URL` (external DigitalOcean PostgreSQL — set as Secret in App Platform UI)
+- Backend/Celery connect via `REDIS_URL` (managed Redis)
 
 **Service-to-Service Communication:**
 - Backend URL available as `${backend.PUBLIC_URL}` in frontend env vars
@@ -111,8 +110,10 @@ doctl apps create --spec app.yaml
 - Environment variables auto-resolve to service URLs
 
 ### Database connections fail
-- `DATABASE_URL` and `REDIS_URL` are auto-set by DigitalOcean
-- Don't override them in app.yaml unless needed
+- `DATABASE_URL` must be set as a Secret in App Platform UI pointing to the external DigitalOcean PostgreSQL
+- Host: `premier-do-user-32973725-0.l.db.ondigitalocean.com` port `25060` with `sslmode=require`
+- `REDIS_URL` is auto-set by DigitalOcean managed Redis
+- Don't override them in app.yaml with hardcoded values
 - Check that `source_dir` is correct (postgres/redis need backend connection)
 
 ---

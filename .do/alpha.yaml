@@ -2,10 +2,10 @@ alerts:
 - rule: DEPLOYMENT_FAILED
 - rule: DOMAIN_FAILED
 databases:
-- cluster_name: db-postgresql-sgp1-75753
+- cluster_name: premier
   db_name: defaultdb
   engine: PG
-  name: db-postgresql-sgp1-75753
+  name: premier
   production: true
 features:
 - buildpack-stack=ubuntu-22
@@ -73,10 +73,6 @@ services:
   name: alphaselect-premier-f-backend
   source_dir: backend
 - dockerfile_path: frontend/Dockerfile
-  envs:
-  - key: DATABASE_URL
-    scope: RUN_TIME
-    value: ${production-database.DATABASE_URL}
   github:
     branch: main
     repo: JonazWong/AlphaSelect-Premier-F

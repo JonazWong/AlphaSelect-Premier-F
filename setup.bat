@@ -170,6 +170,7 @@ if not exist backend\.env (
         (
             echo # Backend 環境變數
             echo DATABASE_URL=postgresql://postgres:dev_password_123@postgres:5432/premier
+            echo # Production: DATABASE_URL=postgresql://doadmin:^<password^>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
             echo REDIS_URL=redis://redis:6379
             echo MEXC_API_KEY=
             echo MEXC_SECRET_KEY=
