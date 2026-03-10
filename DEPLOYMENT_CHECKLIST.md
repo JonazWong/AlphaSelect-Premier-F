@@ -8,7 +8,8 @@ Work through every item below **before** merging to `main` and triggering a prod
 
 - [ ] `ingress.rules` lists `/api` → `backend`, `/ws` → `backend`, `/` → `frontend` (in that order)
 - [ ] `celery-worker` is declared under the top-level `workers:` key (not `services:`)
-- [ ] `DATABASE_URL` / `REDIS_URL` in every component use `${postgres-db.DATABASE_URL}` / `${redis-cache.REDIS_URL}` — never `type: SECRET` — so App Platform auto-wires managed databases
+- [ ] `DATABASE_URL` is set as `type: SECRET` in every component (set manually in App Platform UI with the external DigitalOcean PostgreSQL URL)
+- [ ] `REDIS_URL` uses `${redis-cache.REDIS_URL}` for the managed Redis or is set as `type: SECRET`
 - [ ] `MEXC_API_KEY`, `MEXC_SECRET_KEY`, `SECRET_KEY` are all `type: SECRET` (entered manually in App Platform UI after creation)
 - [ ] No component contains both `routes:` and the app-level `ingress:` block
 - [ ] Validate locally: `doctl apps spec validate .do/app.yaml`
@@ -22,7 +23,7 @@ Work through every item below **before** merging to `main` and triggering a prod
 
 | Variable | Where to set | Expected value |
 |---|---|---|
-| `DATABASE_URL` | Auto-injected by App Platform | `${postgres-db.DATABASE_URL}` |
+| `DATABASE_URL` | App Platform secret UI | External DO PostgreSQL URL (`postgresql://doadmin:...@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require`) |
 | `REDIS_URL` | Auto-injected by App Platform | `${redis-cache.REDIS_URL}` |
 | `SECRET_KEY` | App Platform secret UI | ≥ 32 random chars |
 | `MEXC_API_KEY` | App Platform secret UI | Your MEXC read-only key |
@@ -292,8 +293,9 @@ doctl apps logs <app-id> --service=backend
 - View logs: `doctl apps logs <app-id>`
 
 **Database connection errors:**
-- Ensure `DATABASE_URL` and `REDIS_URL` are set as secrets
-- Check DigitalOcean created the databases
+- Ensure `DATABASE_URL` is set as a secret in App Platform UI (external DigitalOcean PostgreSQL)
+- Ensure `REDIS_URL` is set (managed Redis or secret)
+- Verify the database host `premier-do-user-32973725-0.l.db.ondigitalocean.com` is reachable from the App Platform
 - Verify Dockerfiles can access `/var/run/secrets/` for DO secrets
 
 ---

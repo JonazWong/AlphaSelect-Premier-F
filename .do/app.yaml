@@ -35,12 +35,6 @@ ingress:
           prefix: /
 
 databases:
-  - name: premier
-    engine: PG
-    version: "16"
-    production: false
-    db: premier
-
   - name: redis
     engine: REDIS
     version: "7"
@@ -58,10 +52,11 @@ services:
     instance_count: 1
     instance_size_slug: professional-xs
     envs:
-      # Managed database URLs are automatically injected by App Platform.
+      # DATABASE_URL is set as a secret in App Platform UI.
+      # Value: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${premier.DATABASE_URL}
+        type: SECRET
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${redis.REDIS_URL}
@@ -76,7 +71,7 @@ services:
         scope: RUN_TIME
         type: SECRET
       # doadmin connection string for schema GRANT (DO PostgreSQL 15+)
-      # Format: postgresql://doadmin:<password>@<host>:25060/premier?sslmode=require
+      # Format: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
       - key: ADMIN_DATABASE_URL
         scope: RUN_TIME
         type: SECRET
@@ -135,7 +130,7 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${premier.DATABASE_URL}
+        type: SECRET
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${redis.REDIS_URL}
