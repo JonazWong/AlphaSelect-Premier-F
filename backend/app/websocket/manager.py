@@ -15,20 +15,30 @@ logger = logging.getLogger(__name__)
 WEBSOCKET_VERBOSE_LOGGING = os.getenv("WEBSOCKET_VERBOSE_LOGGING", "true").lower() == "true"
 
 # Redis URL for cross-process Socket.IO broadcasting (Celery → FastAPI → Browser)
+import ssl
+
+# Redis URL for cross-process Socket.IO broadcasting (Celery → FastAPI → Browser)
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 
-# Create Socket.IO server with Redis client manager
-# This allows Celery workers (separate process/container) to emit events
-# that get forwarded to all connected browser clients
+# python-socketio's AsyncRedisManager may not support rediss:// schema directly.
+# Convert rediss:// to redis:// and pass ssl_context via Redis connection options.
+if REDIS_URL.startswith('rediss://'):
+    REDIS_URL = REDIS_URL.replace('rediss://', 'redis://', 1)
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    redis_manager = socketio.AsyncRedisManager(REDIS_URL, redis_options={'ssl': ssl_context})
+else:
+    redis_manager = socketio.AsyncRedisManager(REDIS_URL)
+
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
-    client_manager=socketio.AsyncRedisManager(REDIS_URL),
+    client_manager=redis_manager,
     logger=WEBSOCKET_VERBOSE_LOGGING,
     engineio_logger=WEBSOCKET_VERBOSE_LOGGING
 )
-
-
+   
 @sio.event
 async def connect(sid, environ):
     """Handle client connection"""
