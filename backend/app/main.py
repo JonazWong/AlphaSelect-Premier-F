@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from app.core.config import settings
@@ -66,20 +66,28 @@ fastapi_app.include_router(ai_training.router, prefix="/api/v1/ai/training", tag
 fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai/predict", tags=["AI Prediction"])
 fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signals", tags=["Extreme Signals"])
 
-# Static files directory (homepage assets live here)
-# Homepage HTML: backend/app/static/index.html
+# Static files directory (serves assets under /static)
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
 fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
+def _api_status_response() -> JSONResponse:
+    """Return a standard API status JSON response."""
+    return JSONResponse({
+        "status": "ok",
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "message": "API is running. Frontend available at http://localhost:3000"
+    })
+
 @fastapi_app.get("/", include_in_schema=False)
 async def root():
-    """Serve the HTML homepage from backend/app/static/index.html."""
-    return FileResponse(str(_STATIC_DIR / "index.html"), media_type="text/html")
+    """Root endpoint returning API status. Frontend is served by Next.js on port 3000."""
+    return _api_status_response()
 
 @fastapi_app.get("/api/status", include_in_schema=False)
 async def api_status():
-    """JSON status response (formerly at /)."""
-    return JSONResponse({"status": "ok", "service": settings.APP_NAME})
+    """API status endpoint (alias for /)."""
+    return _api_status_response()
 
 @fastapi_app.get("/health")
 async def health_check():
