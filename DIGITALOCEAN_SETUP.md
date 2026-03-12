@@ -1,3 +1,16 @@
+# DigitalOcean Deployment Guide
+
+> **Single App Spec:** The only supported DigitalOcean App Platform spec is **`.do/app.yaml`**.
+> Do not use any other spec file (e.g. the old `alpha.yaml` has been removed).
+> When configuring or updating the app on DigitalOcean, always point it at `.do/app.yaml`.
+
+> **Backend API Docs:** `/docs` and `/redoc` are **not** publicly routed through the App Platform ingress.
+> To access the interactive API documentation, use the backend component's direct URL
+> (available under **Components → backend → Live URL** in the DigitalOcean dashboard),
+> or temporarily port-forward to the container for local inspection.
+
+---
+
 # DigitalOcean Deployment – "No Components Detected" Fix
 
 ## Problem

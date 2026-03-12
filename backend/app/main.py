@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api.v1.endpoints import contract_market, ai_training, ai_predict, extreme_signals
 from app.websocket.manager import sio
@@ -66,8 +66,8 @@ fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signa
 
 @fastapi_app.get("/", include_in_schema=False)
 async def root():
-    """Redirect root to API docs - frontend is served by the frontend component"""
-    return RedirectResponse(url="/docs")
+    """Simple status response – frontend is served by the frontend component"""
+    return JSONResponse({"status": "ok", "service": settings.APP_NAME})
 
 @fastapi_app.get("/health")
 async def health_check():

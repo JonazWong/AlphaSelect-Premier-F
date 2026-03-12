@@ -19,16 +19,6 @@ ingress:
         path:
           prefix: /health
     - component:
-        name: backend
-      match:
-        path:
-          prefix: /docs
-    - component:
-        name: backend
-      match:
-        path:
-          prefix: /redoc
-    - component:
         name: frontend
       match:
         path:
