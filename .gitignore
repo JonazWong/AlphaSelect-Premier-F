@@ -29,6 +29,10 @@ venv/
 ENV/
 env/
 
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
 # AI Models
 ai_models/**/*.h5
 ai_models/**/*.pkl

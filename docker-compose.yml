@@ -83,6 +83,28 @@ services:
       - ./ai_models:/app/ai_models
       - ./backend:/app
 
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/premier
+      REDIS_URL: redis://redis:6379
+      MEXC_API_KEY: ${MEXC_API_KEY:-}
+      MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
+      MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
+      MEXC_SPOT_BASE_URL: https://api.mexc.com
+      AI_MODEL_DIR: /app/ai_models
+    volumes:
+      - ./ai_models:/app/ai_models
+      - ./backend:/app
+
   frontend:
     build:
       context: ./frontend
