@@ -67,7 +67,7 @@ fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signa
 @fastapi_app.get("/", include_in_schema=False)
 async def root():
     """Simple status response – frontend is served by the frontend component"""
-    return JSONResponse({"status": "ok", "service": settings.APP_NAME, "version": settings.APP_VERSION})
+    return JSONResponse({"status": "ok", "service": settings.APP_NAME})
 
 @fastapi_app.get("/health")
 async def health_check():
