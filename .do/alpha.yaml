@@ -24,7 +24,28 @@ ingress:
       authority:
         exact: ""
       path:
-        prefix: /ws      
+        prefix: /ws
+  - component:
+      name: alphaselect-premier-f-backend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /health
+  - component:
+      name: alphaselect-premier-f-backend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /docs
+  - component:
+      name: alphaselect-premier-f-backend
+    match:
+      authority:
+        exact: ""
+      path:
+        prefix: /redoc
   - component:
       name: alphaselect-premier-f-frontend
     match:
@@ -73,6 +94,16 @@ services:
   name: alphaselect-premier-f-backend
   source_dir: backend
 - dockerfile_path: frontend/Dockerfile
+  envs:
+  - key: PORT
+    scope: RUN_AND_BUILD_TIME
+    value: "3000"
+  - key: NEXT_PUBLIC_API_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${APP_URL}
+  - key: NEXT_PUBLIC_WS_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${APP_URL}
   github:
     branch: main
     repo: JonazWong/AlphaSelect-Premier-F
