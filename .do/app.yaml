@@ -1,5 +1,12 @@
-name: alphaselect-premier-f
+name: alpha
 region: sgp
+
+databases:
+- cluster_name: alpha
+  db_user: doadmin
+  engine: PG
+  name: alpha
+  production: true
 
 ingress:
   rules:
@@ -28,14 +35,13 @@ databases:
   - name: redis
     engine: REDIS
     version: "7"
-    production: false
+    production: true
 
 services:
   - name: backend
     github:
       repo: JonazWong/AlphaSelect-Premier-F
-      branch: main
-      deploy_on_push: false
+      branch: main 
     source_dir: backend
     dockerfile_path: Dockerfile
     http_port: 8000
@@ -81,8 +87,7 @@ services:
   - name: frontend
     github:
       repo: JonazWong/AlphaSelect-Premier-F
-      branch: main
-      deploy_on_push: false
+      branch: main 
     source_dir: frontend
     dockerfile_path: Dockerfile
     http_port: 3000
@@ -105,8 +110,7 @@ workers:
   - name: celery-worker
     github:
       repo: JonazWong/AlphaSelect-Premier-F
-      branch: main
-      deploy_on_push: false
+      branch: main 
     source_dir: backend
     dockerfile_path: Dockerfile
     instance_count: 1
