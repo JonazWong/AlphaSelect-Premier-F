@@ -52,15 +52,12 @@ services:
     instance_count: 1
     instance_size_slug: professional-xs
     envs:
-      # DATABASE_URL is set as a secret in App Platform UI.
-      # Value: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${redis.REDIS_URL}
-      # Provide MEXC credentials via App Platform secret UI after creation.
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -70,12 +67,9 @@ services:
       - key: SECRET_KEY
         scope: RUN_TIME
         type: SECRET
-      # doadmin connection string for schema GRANT (DO PostgreSQL 15+)
-      # Format: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
       - key: ADMIN_DATABASE_URL
         scope: RUN_TIME
         type: SECRET
-      # The app user name created by DO (shown in DB -> Users & Databases)
       - key: DB_APP_USER
         scope: RUN_TIME
         type: SECRET
