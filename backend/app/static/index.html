@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaSelect Premier F — AI Trading Platform</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cyan:   #00f5ff;
+      --purple: #a855f7;
+      --bg:     #0a0a0f;
+      --card:   rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text:   #e2e8f0;
+      --muted:  #94a3b8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Gradient text ── */
+    .grad { background: linear-gradient(135deg, var(--cyan), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(10,10,15,0.85);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .nav-brand { font-size: 1.1rem; font-weight: 700; }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--cyan); }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 5rem 1rem 4rem;
+      position: relative;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .35rem 1rem; border-radius: 9999px;
+      border: 1px solid rgba(0,245,255,.25); background: rgba(0,245,255,.08);
+      color: var(--cyan); font-size: .8rem; font-weight: 600;
+      margin-bottom: 1.5rem; letter-spacing: .05em;
+    }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 800; margin-bottom: 1rem; }
+    .hero p  { font-size: 1.15rem; color: var(--muted); max-width: 680px; margin: 0 auto 2.5rem; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .btn-primary {
+      display: inline-block; padding: .7rem 1.75rem; border-radius: .5rem;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #000; font-weight: 700; font-size: .95rem; text-decoration: none;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-ghost {
+      display: inline-block; padding: .65rem 1.6rem; border-radius: .5rem;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: .95rem; text-decoration: none; transition: border-color .2s, color .2s, transform .15s;
+    }
+    .btn-ghost:hover { border-color: #4b5563; color: var(--text); transform: translateY(-1px); }
+
+    /* ── Cards grid ── */
+    .grid { display: grid; gap: 1.25rem; margin-bottom: 4rem; }
+    .grid-4 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 1rem; padding: 1.5rem;
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none; color: inherit; display: block;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 0 20px rgba(0,245,255,.12); }
+    .card-icon { font-size: 2rem; margin-bottom: .75rem; }
+    .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
+    .card p  { font-size: .88rem; color: var(--muted); }
+    .card .cta { margin-top: 1rem; font-size: .83rem; font-weight: 600; color: var(--cyan); }
+
+    /* ── Stats ── */
+    .stats-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 1rem; padding: 2.5rem 2rem; margin-bottom: 4rem; text-align: center;
+    }
+    .stats-card h2 { font-size: 1.7rem; font-weight: 800; margin-bottom: 2rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2rem; }
+    .stat-num  { font-size: 2.75rem; font-weight: 800; color: var(--cyan); }
+    .stat-label{ font-size: .9rem; color: var(--muted); margin-top: .2rem; }
+    .stat-sub  { font-size: .78rem; color: #4b5563; margin-top: .4rem; }
+
+    /* ── API links ── */
+    .api-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 1rem; padding: 1.75rem; margin-bottom: 4rem;
+    }
+    .api-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem; }
+    .api-list { list-style: none; display: flex; flex-wrap: wrap; gap: .6rem; }
+    .api-list li a {
+      display: inline-block; padding: .35rem .9rem; border-radius: .4rem;
+      border: 1px solid var(--border); background: rgba(255,255,255,.03);
+      color: var(--cyan); font-size: .83rem; text-decoration: none; font-family: monospace;
+      transition: background .2s, border-color .2s;
+    }
+    .api-list li a:hover { background: rgba(0,245,255,.08); border-color: rgba(0,245,255,.3); }
+
+    /* ── Section heading ── */
+    .section-heading { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 1.75rem; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border); padding: 1.5rem 2rem;
+      text-align: center; color: var(--muted); font-size: .82rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <span class="nav-brand">⚡ <span class="grad">AlphaSelect Premier F</span></span>
+  <ul class="nav-links">
+    <li><a href="/docs">API Docs</a></li>
+    <li><a href="/redoc">ReDoc</a></li>
+    <li><a href="/health">Health</a></li>
+    <li><a href="/api/status">Status</a></li>
+  </ul>
+</nav>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="badge">⚡ AI-Powered Trading Intelligence</div>
+    <h1><span class="grad">AlphaSelect Premier F</span></h1>
+    <p>AI-Driven MEXC Contract Trading Analysis Platform — integrating deep learning prediction models and professional technical analysis for MEXC perpetual contract trading pairs.</p>
+    <div class="btn-row">
+      <a class="btn-primary" href="/docs">📖 API Documentation</a>
+      <a class="btn-ghost"   href="/health">✅ Health Check</a>
+    </div>
+  </section>
+
+  <!-- Feature cards -->
+  <h2 class="section-heading">Platform <span class="grad">Features</span></h2>
+  <div class="grid grid-4" style="margin-bottom:4rem">
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>Contract Radar</h3>
+      <p>Real-time trading signals with AI-powered long/short analysis</p>
+      <div class="cta">→ /api/v1/contract</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧠</div>
+      <h3>AI Training</h3>
+      <p>Train LSTM, XGBoost, and ensemble models for price prediction</p>
+      <div class="cta">→ /api/v1/ai/training</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h3>AI Predictions</h3>
+      <p>Price forecasts from trained AI models with confidence scores</p>
+      <div class="cta">→ /api/v1/ai/predict</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚠️</div>
+      <h3>Extreme Signals</h3>
+      <p>AI-powered extreme bounce/pullback signal detection</p>
+      <div class="cta">→ /api/v1/extreme-signals</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-card">
+    <h2>Platform <span class="grad">Statistics</span></h2>
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">6</div>
+        <div class="stat-label">AI Models</div>
+        <div class="stat-sub">LSTM · XGBoost · RandomForest<br>ARIMA · Linear · Ensemble</div>
+      </div>
+      <div>
+        <div class="stat-num">20+</div>
+        <div class="stat-label">Technical Indicators</div>
+        <div class="stat-sub">RSI · MACD · Bollinger Bands<br>EMA · SMA · and more</div>
+      </div>
+      <div>
+        <div class="stat-num" style="font-size:1.8rem">Real-time</div>
+        <div class="stat-label">Market Data</div>
+        <div class="stat-sub">Live prices · Funding rates<br>Open interest</div>
+      </div>
+      <div>
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Monitoring</div>
+        <div class="stat-sub">Continuous data crawling<br>and signal generation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech stack -->
+  <h2 class="section-heading">Technology <span class="grad">Stack</span></h2>
+  <div class="grid grid-2" style="margin-bottom:4rem">
+    <div class="card">
+      <h3 style="color:var(--cyan);margin-bottom:.75rem">🛠 Backend</h3>
+      <ul style="list-style:none;color:var(--muted);font-size:.9rem;line-height:2">
+        <li>• FastAPI (Python 3.11)</li>
+        <li>• PostgreSQL 16 + TimescaleDB</li>
+        <li>• Redis 7 · Celery</li>
+        <li>• Socket.IO WebSocket</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--purple);margin-bottom:.75rem">🖥 Frontend</h3>
+      <ul style="list-style:none;color:var(--muted);font-size:.9rem;line-height:2">
+        <li>• Next.js 15 (App Router)</li>
+        <li>• TypeScript</li>
+        <li>• Tailwind CSS</li>
+        <li>• TradingView Charts</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:#f59e0b;margin-bottom:.75rem">🤖 AI / ML</h3>
+      <ul style="list-style:none;color:var(--muted);font-size:.9rem;line-height:2">
+        <li>• TensorFlow 2.x (LSTM)</li>
+        <li>• XGBoost</li>
+        <li>• scikit-learn</li>
+        <li>• statsmodels (ARIMA)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--cyan);margin-bottom:.75rem">☁️ Infrastructure</h3>
+      <ul style="list-style:none;color:var(--muted);font-size:.9rem;line-height:2">
+        <li>• Docker + Docker Compose</li>
+        <li>• DigitalOcean App Platform</li>
+        <li>• Managed PostgreSQL &amp; Redis</li>
+        <li>• S3-compatible Storage</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Quick API links -->
+  <div class="api-card">
+    <h2>🔗 Quick Links</h2>
+    <ul class="api-list">
+      <li><a href="/docs">/docs — Swagger UI</a></li>
+      <li><a href="/redoc">/redoc — ReDoc</a></li>
+      <li><a href="/health">/health</a></li>
+      <li><a href="/api/status">/api/status</a></li>
+      <li><a href="/api/v1/contract">/api/v1/contract</a></li>
+      <li><a href="/api/v1/ai/training">/api/v1/ai/training</a></li>
+      <li><a href="/api/v1/ai/predict">/api/v1/ai/predict</a></li>
+      <li><a href="/api/v1/extreme-signals">/api/v1/extreme-signals</a></li>
+    </ul>
+  </div>
+
+</main>
+
+<footer>
+  © 2025 AlphaSelect Premier F &nbsp;·&nbsp; Backend API &amp; WebSocket at <code>:8000</code> &nbsp;·&nbsp; Frontend at <code>:3000</code>
+</footer>
+
+</body>
+</html>

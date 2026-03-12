@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from app.core.config import settings
 from app.api.v1.endpoints import contract_market, ai_training, ai_predict, extreme_signals
 from app.websocket.manager import sio
@@ -64,9 +66,19 @@ fastapi_app.include_router(ai_training.router, prefix="/api/v1/ai/training", tag
 fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai/predict", tags=["AI Prediction"])
 fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signals", tags=["Extreme Signals"])
 
+# Static files directory (homepage assets live here)
+# Homepage HTML: backend/app/static/index.html
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+
 @fastapi_app.get("/", include_in_schema=False)
 async def root():
-    """Simple status response – frontend is served by the frontend component"""
+    """Serve the HTML homepage from backend/app/static/index.html."""
+    return FileResponse(str(_STATIC_DIR / "index.html"), media_type="text/html")
+
+@fastapi_app.get("/api/status", include_in_schema=False)
+async def api_status():
+    """JSON status response (formerly at /)."""
     return JSONResponse({"status": "ok", "service": settings.APP_NAME})
 
 @fastapi_app.get("/health")
