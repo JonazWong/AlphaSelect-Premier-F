@@ -2,10 +2,11 @@ name: alpha
 region: sgp
 
 databases:
-- cluster_name: alpha
+- cluster_name: premier
   db_user: doadmin
+  db_name: defaultdb  
   engine: PG
-  name: alpha
+  name: premier
   production: true
 
 ingress:
