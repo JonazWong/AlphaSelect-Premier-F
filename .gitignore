@@ -30,10 +30,10 @@ ENV/
 env/
 
 # AI Models
-ai_models/*.h5
-ai_models/*.pkl
-ai_models/*.joblib
-ai_models/*.pb
+ai_models/**/*.h5
+ai_models/**/*.pkl
+ai_models/**/*.joblib
+ai_models/**/*.pb
 ai_models/saved_models/
 !ai_models/.gitkeep
 
