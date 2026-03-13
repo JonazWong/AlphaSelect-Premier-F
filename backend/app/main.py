@@ -70,13 +70,16 @@ fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signa
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
 fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
+# Frontend URL for status messages; falls back to localhost for dev if not configured
+_FRONTEND_URL = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+
 def _api_status_response() -> JSONResponse:
     """Return a standard API status JSON response."""
     return JSONResponse({
         "status": "ok",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "message": "API is running. Frontend available at http://localhost:3000"
+        "message": f"API is running. Frontend available at {_FRONTEND_URL}"
     })
 
 @fastapi_app.get("/", include_in_schema=False)
