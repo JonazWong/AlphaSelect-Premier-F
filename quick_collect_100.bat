@@ -47,8 +47,12 @@ FOR /L %%i IN (1,1,30) DO (
 
         :retry_collect
         REM 呼叫 API 並取得 HTTP 狀態碼
+        set "http_code="
         for /f %%c in ('curl -s -o nul -w "%%{http_code}" http://localhost:8000/api/v1/contract/ticker/%%s 2^>nul') do (
             set http_code=%%c
+        )
+        if not defined http_code (
+            set "http_code=000"
         )
 
         if "!http_code!"=="200" (
