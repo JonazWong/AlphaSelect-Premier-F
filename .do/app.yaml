@@ -137,3 +137,34 @@ workers:
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
     run_command: celery -A app.tasks.celery_app worker --loglevel=info
+
+  - name: celery-beat
+    github:
+      repo: JonazWong/AlphaSelect-Premier-F
+      branch: main
+      deploy_on_push: true
+    source_dir: backend
+    dockerfile_path: backend/Dockerfile
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: REDIS_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ${redis.REDIS_URL}
+      - key: MEXC_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: MEXC_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: SECRET_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: AI_MODEL_DIR
+        scope: RUN_AND_BUILD_TIME
+        value: /app/ai_models
+    run_command: celery -A app.tasks.celery_app beat --loglevel=info
