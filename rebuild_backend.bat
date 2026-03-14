@@ -53,7 +53,7 @@ echo [4/5] 等待 Backend 啟動...
 set /a attempts=0
 :check
 set /a attempts+=1
-curl -s http://localhost:8000/health >nul 2>&1
+curl -fsS http://localhost:8000/health 2>&1 | findstr /i "healthy" >nul
 if %errorlevel% equ 0 (
     echo ✅ Backend 重新構建並啟動成功！
     echo    訪問: http://localhost:8000
