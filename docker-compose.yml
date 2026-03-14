@@ -120,7 +120,7 @@ services:
     environment:
       PORT: "3000"
       NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+      NEXT_PUBLIC_WS_URL: http://localhost:8000
     depends_on:
       - backend
 
