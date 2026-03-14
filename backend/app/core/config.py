@@ -5,10 +5,11 @@ from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require"
+    # Default is for local Docker development only — override DATABASE_URL in production
+    DATABASE_URL: str = "postgresql://postgres:dev_password_123@postgres:5432/premier"
 
     # Redis
-    REDIS_URL: str = "rediss://default:AQ34AAImcDFhNjhiZWRkYjgzNzk0OGRmYTRhMzRhMzEzNzY5ZWRlZnAxMzU3Ng@dominant-serval-3576.upstash.io:6379"
+    REDIS_URL: str = "redis://redis:6379"
 
     # MEXC API
     MEXC_API_KEY: str = ""
