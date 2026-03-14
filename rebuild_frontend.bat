@@ -59,7 +59,7 @@ echo ⚠️  Frontend 尚未響應（可能仍在構建中，請稍後再試）
 :frontend_ready
 echo.
 echo [5/5] 健康檢查...
-docker compose ps --filter name=frontend
+docker compose ps frontend
 echo.
 echo 最新 Frontend 日誌:
 docker compose logs frontend --tail 20
