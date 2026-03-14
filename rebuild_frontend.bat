@@ -45,7 +45,7 @@ set /a attempts=0
 :wait_frontend
 set /a attempts+=1
 timeout /t 5 /nobreak >nul
-curl -s http://localhost:3000 >nul 2>&1
+curl -fsS http://localhost:3000 >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ Frontend 已就緒
     goto frontend_ready
