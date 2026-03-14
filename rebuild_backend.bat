@@ -8,8 +8,8 @@ echo.
 echo 用途: 重新構建 Backend Docker 映像（用於修復依賴或代碼問題後）
 echo 使用: 雙擊執行，或在命令列輸入 rebuild_backend.bat
 echo.
-echo 選項:
-echo   執行後輸入 L 可顯示完整構建日誌
+echo 提示:
+echo   若構建失敗，腳本會詢問是否立即顯示 Backend 近期執行日誌
 echo ====================================
 echo.
 echo ⚠️  此操作將重新構建 Backend Docker 映像，請確認已儲存相關設定
@@ -29,9 +29,9 @@ if %errorlevel% neq 0 (
     echo    1. 查看上方的錯誤訊息（pip install / requirements 問題最常見）
     echo    2. 確認 backend/requirements.txt 內容是否正確
     echo    3. 確認 backend/Dockerfile 語法無誤
-    echo    4. 執行: docker compose logs backend --tail 80  查看詳細日誌
+    echo    4. 執行: docker compose logs backend --tail 80  查看 Backend 容器近期執行日誌
     echo.
-    set /p show_logs="是否立即顯示 Backend 構建日誌？(y/n): "
+    set /p show_logs="是否立即顯示 Backend 近期執行日誌？(y/n): "
     if /i "!show_logs!"=="y" docker compose logs backend --tail 80
     pause
     exit /b 1
