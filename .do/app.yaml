@@ -1,4 +1,4 @@
-name: alpha
+name: alphaselect-premier
 region: sgp
 
 alerts:
@@ -10,15 +10,11 @@ features:
 
 databases:
   - cluster_name: premier
-    db_name: defaultdb
+    db_name: alphaselect
     db_user: doadmin
     engine: PG
     name: premier
-    production: true
-  - name: redis
-    engine: REDIS
-    version: "7"
-    production: false
+    production: true 
 
 ingress:
   rules:

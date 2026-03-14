@@ -23,7 +23,7 @@ Work through every item below **before** merging to `main` and triggering a prod
 
 | Variable | Where to set | Expected value |
 |---|---|---|
-| `DATABASE_URL` | App Platform secret UI | External DO PostgreSQL URL (`postgresql://doadmin:...@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require`) |
+| `DATABASE_URL` | App Platform secret UI | External DO PostgreSQL URL (`postgresql://doadmin:...@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/alphaselect?sslmode=require`) |
 | `REDIS_URL` | Auto-injected by App Platform | `${redis-cache.REDIS_URL}` |
 | `SECRET_KEY` | App Platform secret UI | ≥ 32 random chars |
 | `MEXC_API_KEY` | App Platform secret UI | Your MEXC read-only key |

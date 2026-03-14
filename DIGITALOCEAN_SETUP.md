@@ -60,7 +60,7 @@ If DigitalOcean still doesn't detect components:
    - (PostgreSQL is external — do NOT add a managed PG database)
 
 4. **Set Environment Variables:**
-   - `DATABASE_URL` → Secret: `postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require`
+   - `DATABASE_URL` → Secret: `postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/alphaselect?sslmode=require`
    - `REDIS_URL` → Secret (or auto-injected from managed Redis)
    - `SECRET_KEY` → Secret
    - `MEXC_API_KEY` → Secret (if using MEXC)
