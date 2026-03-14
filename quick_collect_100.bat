@@ -59,7 +59,7 @@ FOR /L %%i IN (1,1,30) DO (
             set /a collected+=1
             echo [!total!/150] ✅ %%s - 已收集 (HTTP 200)
         ) else if "!http_code!"=="429" (
-            REM 速率限制，稍作等待後重試一次
+            REM 速率限制，稍作等待後最多重試 2 次
             if !retry_count! lss 2 (
                 set /a retry_count+=1
                 set /a retried+=1
