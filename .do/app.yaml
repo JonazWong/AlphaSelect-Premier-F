@@ -60,6 +60,7 @@ services:
         type: SECRET
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
+        type: SECRET
         value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
