@@ -5,11 +5,12 @@ from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
     # Database
-    # Default is for local Docker development only — override DATABASE_URL in production
-    DATABASE_URL: str = "postgresql://postgres:dev_password_123@postgres:5432/premier"
+    # Must be provided via DATABASE_URL env var / .env / docker-compose
+    DATABASE_URL: str = ""
 
     # Redis
-    REDIS_URL: str = "redis://redis:6379"
+    # Must be provided via REDIS_URL env var / .env / docker-compose
+    REDIS_URL: str = ""
 
     # MEXC API
     MEXC_API_KEY: str = ""
@@ -23,8 +24,8 @@ class Settings(BaseSettings):
     DEFAULT_BATCH_SIZE: int = 32
 
     # Security
-    # WARNING: override in production via SECRET_KEY env var (must be >= 32 chars)
-    SECRET_KEY: str = Field(default="dev-secret-key-change-me-in-production!", min_length=32)
+    # WARNING: must be provided via SECRET_KEY env var (must be >= 32 chars)
+    SECRET_KEY: str = Field(default="", min_length=32)
     ALGORITHM: str = "HS256"
 
     # CORS
