@@ -19,7 +19,7 @@ pause
 
 :: 確認 Backend 可用
 echo 🔍 檢查 Backend 服務...
-curl -s http://localhost:8000/health >nul 2>&1
+curl -fsS http://localhost:8000/health >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ Backend 未運行，請先執行 start.bat 啟動服務
     pause
