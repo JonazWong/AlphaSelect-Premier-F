@@ -5,6 +5,12 @@ echo ====================================
 echo   AlphaSelect Premier F - 一鍵配置
 echo ====================================
 echo.
+echo 用途: 初始化本地開發環境（生成 .env 文件、建立目錄、檢查依賴）
+echo 使用: 雙擊執行，或在命令列輸入 setup.bat
+echo.
+echo 注意: 生產環境請勿直接使用此腳本配置的預設密碼
+echo ====================================
+echo.
 
 :: 詢問是否清理舊資料
 echo ⚠️  檢測到以下可能存在的舊資料:
@@ -170,7 +176,9 @@ if not exist backend\.env (
         (
             echo # Backend 環境變數
             echo DATABASE_URL=postgresql://postgres:dev_password_123@postgres:5432/premier
-            echo # Production: DATABASE_URL=postgresql://doadmin:^<password^>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+            echo # 生產環境: DATABASE_URL=postgresql://doadmin:^<password^>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+            echo # 生產環境: db_cluster_name=premier
+            echo # 生產環境: DB_APP_USER=doadmin
             echo REDIS_URL=redis://redis:6379
             echo MEXC_API_KEY=
             echo MEXC_SECRET_KEY=
