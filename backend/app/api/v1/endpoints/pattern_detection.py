@@ -239,12 +239,16 @@ def _get_patterns_for_symbol(symbol: str, db: Session) -> List[dict]:
     records = (
         db.query(ContractMarket)
         .filter(ContractMarket.symbol == db_symbol)
-        .order_by(ContractMarket.created_at.asc())
+        .order_by(ContractMarket.created_at.desc())
         .limit(100)
         .all()
     )
     if not records:
         return []
+
+    # We queried the most recent 100 records in descending order;
+    # reverse to get chronological order (oldest → newest) for pattern calculations.
+    records = list(reversed(records))
 
     prices = [r.last_price for r in records if r.last_price is not None]
     return _detect_patterns(symbol, prices)
