@@ -7,6 +7,7 @@ GET /api/v1/reversal/{symbol} — reversal signals for a single symbol
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 import logging
 import numpy as np
@@ -241,6 +242,85 @@ def _get_reversals_for_symbol(symbol: str, db: Session) -> List[dict]:
     return _detect_reversals(symbol, prices, latest_funding)
 
 
+def _get_reversals_for_symbols(
+    symbols: List[str], db: Session, per_symbol_limit: int = 100
+) -> List[dict]:
+    """
+    Fetch price data and detect reversals for multiple symbols in a single batched query.
+
+    This avoids issuing one query per symbol (N+1 pattern) by using a window function
+    to select the last `per_symbol_limit` records per symbol.
+    """
+    if not symbols:
+        return []
+
+    # Map DB symbols (e.g. BTC_USDT) to original frontend symbols (e.g. BTCUSDT).
+    db_symbol_map: dict[str, str] = {}
+    for s in symbols:
+        db_sym = normalize_symbol(s)
+        # In case of duplicates, the last occurrence wins; this is fine for our use.
+        db_symbol_map[db_sym] = s
+
+    db_symbols = list(db_symbol_map.keys())
+
+    # Use a window function to get the last N rows per symbol by created_at.
+    subq = (
+        db.query(
+            ContractMarket.id,
+            ContractMarket.symbol,
+            ContractMarket.last_price,
+            ContractMarket.funding_rate,
+            ContractMarket.created_at,
+            func.row_number()
+            .over(
+                partition_by=ContractMarket.symbol,
+                order_by=ContractMarket.created_at.desc(),
+            )
+            .label("rn"),
+        )
+        .filter(ContractMarket.symbol.in_(db_symbols))
+        .subquery()
+    )
+
+    rows = (
+        db.query(
+            subq.c.symbol,
+            subq.c.last_price,
+            subq.c.funding_rate,
+            subq.c.created_at,
+        )
+        .filter(subq.c.rn <= per_symbol_limit)
+        .order_by(subq.c.symbol.asc(), subq.c.created_at.asc())
+        .all()
+    )
+
+    prices_by_symbol: dict[str, List[float]] = {}
+    funding_by_symbol: dict[str, float] = {}
+
+    for symbol, last_price, funding_rate, created_at in rows:
+        if last_price is None:
+            continue
+        prices_by_symbol.setdefault(symbol, []).append(float(last_price))
+        # Because we order by created_at ascending in the outer query, the last assignment
+        # here corresponds to the most recent funding rate.
+        funding_by_symbol[symbol] = float(funding_rate or 0.0)
+
+    all_signals: List[dict] = []
+
+   for db_symbol, prices in prices_by_symbol.items():
+        if not prices:
+            continue
+        frontend_symbol = db_symbol_map.get(db_symbol, db_symbol.replace("_", ""))
+        latest_funding = funding_by_symbol.get(db_symbol, 0.0)
+        try:
+            signals = _detect_reversals(frontend_symbol, prices, latest_funding)
+            all_signals.extend(signals)
+        except Exception as e:
+            logger.warning(f"Reversal detection failed for {frontend_symbol}: {e}")
+
+    return all_signals
+
+
 @router.get("/scan")
 def scan_reversals(
     symbols: Optional[str] = Query(
@@ -260,13 +340,8 @@ def scan_reversals(
                 return {"signals": [], "total": 0}
             symbol_list = [row[0].replace("_", "") for row in rows]
 
-        all_signals: List[dict] = []
-        for sym in symbol_list:
-            try:
-                signals = _get_reversals_for_symbol(sym, db)
-                all_signals.extend(signals)
-            except Exception as e:
-                logger.warning(f"Reversal detection failed for {sym}: {e}")
+        # Fetch and detect reversals for all symbols in a single batched query
+        all_signals: List[dict] = _get_reversals_for_symbols(symbol_list, db)
 
         # Sort by confidence descending
         all_signals.sort(key=lambda s: s["confidence"], reverse=True)
