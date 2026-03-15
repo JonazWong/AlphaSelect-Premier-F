@@ -1,8 +1,32 @@
 @echo off
+setlocal enabledelayedexpansion
 
-REM Your current batch commands here
-FOR /F "tokens=*" %%i IN (some command) DO (
-    curl.exe -s -o NUL -w "%%{http_code}" %%i
+set "url=https://your-url.com/api"
+set "max_retries=5"
+set "exit_code=0"
+
+:retry
+for /L %%i in (1,1,%max_retries%) do (
+    curl.exe -s -o NUL NUL "!url!" -w "%%{http_code}" > temp_code.txt
+    set /p http_code=<temp_code.txt
+
+    if "!http_code!"=="200" (
+        echo Request was successful.
+        exit /b 0
+    ) else (
+        echo Attempt %%i failed with HTTP code: !http_code!
+        if %%i lss %max_retries% (
+            echo Retrying...
+            timeout /t 5 > NUL
+        ) else (
+            echo Max retries reached. Exiting with error.
+            exit_code=1
+        )
+    )
 )
 
-curl.exe -fsS http://health.check.endpoint
+if %exit_code% neq 0 (
+    exit /b !exit_code!
+)
+
+endlocal
