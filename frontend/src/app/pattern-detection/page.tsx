@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LineChart, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { LineChart, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart from '@/components/IndicatorChart'
 import { SparklineChart } from '@/components/IndicatorChart'
-import { generateMockPatterns, generateMockOHLCV, PatternResult } from '@/lib/mockData'
+import { fetchPatterns, PatternResult } from '@/lib/api'
+import { generateMockOHLCV } from '@/lib/mockData'
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT']
 
@@ -31,12 +32,41 @@ export default function PatternDetectionPage() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
   const [comparison, setComparison] = useState<string[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
+  const [patterns, setPatterns] = useState<PatternResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (symbols.length === 0) return
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+    fetchPatterns(symbols)
+      .then((data) => {
+        if (!controller.signal.aborted) setPatterns(data)
+      })
+      .catch((err: Error) => {
+        if (!controller.signal.aborted) setError(err.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => {
+      controller.abort()
+    }
+  }, [symbols])
+
   const chartData = useMemo(
-    () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    [selectedSymbol, timeframe,]
- );
-  const patterns = useMemo(() => generateMockPatterns(symbols), [symbols,])
- 
+    () =>
+      selectedSymbol
+        ? generateMockOHLCV(
+            selectedSymbol,
+            timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90
+          )
+        : [],
+    [selectedSymbol, timeframe]
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,6 +103,17 @@ export default function PatternDetectionPage() {
         <div className="glass-card p-12 text-center">
           <LineChart className="w-12 h-12 mx-auto mb-4 text-gray-600" />
           <p className="text-gray-400">{t('patternDetection.selectSymbolsHint')}</p>
+        </div>
+      ) : loading ? (
+        <div className="glass-card p-12 text-center">
+          <Loader2 className="w-10 h-10 mx-auto mb-4 text-purple-400 animate-spin" />
+          <p className="text-gray-400">{t('common.loading')}</p>
+        </div>
+      ) : error ? (
+        <div className="glass-card p-8 text-center border-red-500/30">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
+          <p className="text-red-400 font-medium mb-1">{t('common.error')}</p>
+          <p className="text-gray-500 text-sm">{error}</p>
         </div>
       ) : (
         <div className="grid xl:grid-cols-3 gap-6">

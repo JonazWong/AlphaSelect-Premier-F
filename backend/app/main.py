@@ -4,7 +4,15 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from app.core.config import settings
-from app.api.v1.endpoints import contract_market, ai_training, ai_predict, extreme_signals
+from app.api.v1.endpoints import (
+    contract_market,
+    ai_training,
+    ai_predict,
+    extreme_signals,
+    pattern_detection,
+    market_screener,
+    reversal_monitor,
+)
 from app.websocket.manager import sio
 from app.db.init_db import init_db
 import socketio
@@ -65,6 +73,9 @@ fastapi_app.include_router(contract_market.router, prefix="/api/v1/contract", ta
 fastapi_app.include_router(ai_training.router, prefix="/api/v1/ai/training", tags=["AI Training"])
 fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai/predict", tags=["AI Prediction"])
 fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signals", tags=["Extreme Signals"])
+fastapi_app.include_router(pattern_detection.router, prefix="/api/v1/patterns", tags=["Pattern Detection"])
+fastapi_app.include_router(market_screener.router, prefix="/api/v1/screener", tags=["Market Screener"])
+fastapi_app.include_router(reversal_monitor.router, prefix="/api/v1/reversal", tags=["Reversal Monitor"])
 
 # Static files directory (serves assets under /static)
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
