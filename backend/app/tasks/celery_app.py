@@ -19,8 +19,15 @@ def get_redis_url_with_ssl():
         query_params = parse_qs(parsed.query)
 
         if 'ssl_cert_reqs' not in query_params:
-            ssl_cert_reqs = os.getenv('REDIS_SSL_CERT_REQS', 'CERT_NONE')
-            query_params['ssl_cert_reqs'] = [ssl_cert_reqs]
+            allowed_ssl_cert_reqs = {'CERT_NONE', 'CERT_OPTIONAL', 'CERT_REQUIRED'}
+            raw_ssl_cert_reqs = os.getenv('REDIS_SSL_CERT_REQS', 'CERT_NONE')
+            normalized_ssl_cert_reqs = raw_ssl_cert_reqs.upper()
+            if normalized_ssl_cert_reqs not in allowed_ssl_cert_reqs:
+                raise ValueError(
+                    f"Invalid REDIS_SSL_CERT_REQS value: {raw_ssl_cert_reqs!r}. "
+                    f"Allowed values are: {', '.join(sorted(allowed_ssl_cert_reqs))}."
+                )
+            query_params['ssl_cert_reqs'] = [normalized_ssl_cert_reqs]
 
         new_query = urlencode(query_params, doseq=True)
         redis_url = urlunparse((
