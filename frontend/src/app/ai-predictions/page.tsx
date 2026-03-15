@@ -70,26 +70,26 @@ export default function AIPredictionsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-  if (symbols.length === 0) return
-  let isCancelled = false
-  setLoading(true)
-  setError(null)
-  const controller = new AbortController(); // Add this line
-  fetchPredictions(symbols, controller.signal)
-    .then((data) => {
-      if (!isCancelled) setPredictions(data)
-    })
-    .catch((err: Error) => {
-      if (!isCancelled) setError(err.message)
-    })
-    .finally(() => {
-      if (!isCancelled) setLoading(false)
-    })
-  return () => {
-    isCancelled = true
-    controller.abort(); // Optionally abort on cleanup
-  }
-}, [symbols])
+    if (symbols.length === 0) return
+    let isCancelled = false
+    setLoading(true)
+    setError(null)
+    const controller = new AbortController(); // fixed
+    fetchPredictions(symbols, controller.signal)
+      .then((data) => {
+        if (!isCancelled) setPredictions(data)
+      })
+      .catch((err: Error) => {
+        if (!isCancelled) setError(err.message)
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false)
+      })
+    return () => {
+      isCancelled = true
+      controller.abort();
+    }
+  }, [symbols])
 
   const chartData = useMemo(
     () =>
@@ -212,7 +212,7 @@ export default function AIPredictionsPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-xl font-bold">{pred.symbol}</h3>
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border mt-1 ${RATING_COLORS[pred.rating]}`}>
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border mt-1 ${RATING_COLORS[pred.rating]}`}> 
                       {pred.direction === 'bullish' ? <TrendingUp className="w-3 h-3" /> : pred.direction === 'bearish' ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       {t(`aiPredictions.${pred.rating}`)}
                     </div>
@@ -234,7 +234,7 @@ export default function AIPredictionsPage() {
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">{pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
-                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}> 
                       {pred.upsidePct >= 0 ? '+' : ''}{pred.upsidePct}%
                     </div>
                   </div>
@@ -269,4 +269,3 @@ export default function AIPredictionsPage() {
     </div>
   )
 }
-
