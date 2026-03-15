@@ -271,10 +271,43 @@ def scan_patterns(
             # Convert DB symbols (BTC_USDT) back to frontend format (BTCUSDT)
             symbol_list = [row[0].replace("_", "") for row in rows]
 
+        if not symbol_list:
+            return {"patterns": [], "total": 0}
+
+        # Normalize requested symbols to DB format (e.g. BTCUSDT -> BTC_USDT)
+        db_symbol_map = {}
+        for sym in symbol_list:
+            db_sym = normalize_symbol(sym)
+            db_symbol_map[db_sym] = sym
+
+        db_symbols = list(db_symbol_map.keys())
+
+        # Fetch all records for the requested symbols in a single query
+        records = (
+            db.query(ContractMarket)
+            .filter(ContractMarket.symbol.in_(db_symbols))
+            .order_by(ContractMarket.symbol.asc(), ContractMarket.created_at.asc())
+            .all()
+        )
+
+        # Group records by DB symbol
+        grouped_records = {}
+        for r in records:
+            grouped_records.setdefault(r.symbol, []).append(r)
+
         all_patterns: List[dict] = []
         for sym in symbol_list:
             try:
-                patterns = _get_patterns_for_symbol(sym, db)
+                db_sym = normalize_symbol(sym)
+                sym_records = grouped_records.get(db_sym, [])
+                if not sym_records:
+                    continue
+                prices = [
+                    r.last_price for r in sym_records if r.last_price is not None
+                ]
+                if not prices:
+                    continue
+                patterns = _detect_patterns(sym, prices)
                 all_patterns.extend(patterns)
             except Exception as e:
                 logger.warning(f"Pattern detection failed for {sym}: {e}")
