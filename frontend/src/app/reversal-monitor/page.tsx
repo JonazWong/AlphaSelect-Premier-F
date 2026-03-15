@@ -5,7 +5,44 @@ import { useTranslation } from 'react-i18next'
 import { TrendingUp, TrendingDown, RefreshCw, AlertCircle, Loader2, Activity } from 'lucide-react'
 import '@/i18n/config'
 import SymbolSelector from '@/components/SymbolSelector'
-import { fetchReversalSignals, ReversalSignal } from '@/lib/api'
+
+export type ReversalSignal = {
+  id: string
+  symbol: string
+  direction: 'bullish' | 'bearish'
+  urgency: 'critical' | 'high' | 'medium' | 'low'
+  timestamp?: string
+  [key: string]: any
+}
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:8000'
+
+export async function fetchReversalSignals(symbols?: string[]): Promise<ReversalSignal[]> {
+  const params = new URLSearchParams()
+
+  if (symbols && symbols.length > 0) {
+    params.set('symbols', symbols.join(','))
+  }
+
+  const query = params.toString()
+  const url = `${API_BASE_URL}/api/v1/reversal-signals${query ? `?${query}` : ''}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reversal signals (status ${response.status})`)
+  }
+
+  return (await response.json()) as ReversalSignal[]
+}
 
 const URGENCY_COLORS: Record<ReversalSignal['urgency'], string> = {
   critical: 'text-red-400 bg-red-500/10 border-red-500/40',
