@@ -91,21 +91,21 @@ export default function PatternDetectionPage() {
 
   useEffect(() => {
     if (symbols.length === 0) return
-    const controller = new AbortController()
+    let isCancelled = false
     setLoading(true)
     setError(null)
     fetchPatterns(symbols)
       .then((data) => {
-        if (!controller.signal.aborted) setPatterns(data)
+        if (!isCancelled) setPatterns(data)
       })
       .catch((err: Error) => {
-        if (!controller.signal.aborted) setError(err.message)
+        if (!isCancelled) setError(err.message)
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
+        if (!isCancelled) setLoading(false)
       })
     return () => {
-      controller.abort()
+      isCancelled = true
     }
   }, [symbols])
 
