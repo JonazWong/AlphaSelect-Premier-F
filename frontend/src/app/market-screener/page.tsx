@@ -8,8 +8,50 @@ import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import { SparklineChart } from '@/components/IndicatorChart'
-import { fetchScreenerData, ScreenerResult } from '@/lib/api'
 import { generateMockOHLCV } from '@/lib/mockData'
+
+export type ScreenerResult = {
+  symbol: string
+  riskLevel: 'low' | 'medium' | 'high'
+  side: 'long' | 'short'
+  confidence: number
+  change24h: number
+  volume24h: number
+  fundingRate: number
+  sparkline: number[]
+}
+
+const API_BASE_URL =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:8000'
+
+async function fetchScreenerData(symbols?: string[]): Promise<ScreenerResult[]> {
+  const params = new URLSearchParams()
+  if (symbols && symbols.length > 0) {
+    params.set('symbols', symbols.join(','))
+  }
+
+  const url = `${API_BASE_URL}/api/v1/contract_market/screener${
+    params.toString() ? `?${params.toString()}` : ''
+  }`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || `Request failed with status ${response.status}`)
+  }
+
+  const data = (await response.json()) as ScreenerResult[]
+  return data
+}
 
 type RiskFilter = 'all' | 'low' | 'medium' | 'high'
 type SideFilter = 'both' | 'long' | 'short'
