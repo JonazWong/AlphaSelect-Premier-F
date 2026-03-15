@@ -226,12 +226,15 @@ def _get_reversals_for_symbol(symbol: str, db: Session) -> List[dict]:
     records = (
         db.query(ContractMarket)
         .filter(ContractMarket.symbol == db_symbol)
-        .order_by(ContractMarket.created_at.asc())
+        .order_by(ContractMarket.created_at.desc())
         .limit(100)
         .all()
     )
     if not records:
         return []
+
+    # Reverse to get oldest → newest ordering for indicator calculations.
+    records = list(reversed(records))
 
     prices = [float(r.last_price) for r in records if r.last_price is not None]
     latest_funding = float(records[-1].funding_rate or 0.0)
