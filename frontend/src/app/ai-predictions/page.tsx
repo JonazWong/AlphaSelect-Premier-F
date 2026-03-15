@@ -20,6 +20,7 @@ export interface PredictionResult {
   confidence: number
   priceTarget?: number
   timeframe?: string
+  currentPrice?: number
   // Allow additional backend-provided fields without breaking the UI
   [key: string]: unknown
 }
@@ -219,7 +220,9 @@ export default function AIPredictionsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold font-mono text-primary">
-                      ${pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                      ${typeof pred.currentPrice === 'number'
+                        ? pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                        : '--'}
                     </div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.currentPrice')}</div>
                   </div>
