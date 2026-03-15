@@ -71,21 +71,21 @@ export default function AIPredictionsPage() {
 
   useEffect(() => {
     if (symbols.length === 0) return
-    const controller = new AbortController()
+    let isCancelled = false
     setLoading(true)
     setError(null)
     fetchPredictions(symbols, controller.signal)
       .then((data) => {
-        if (!controller.signal.aborted) setPredictions(data)
+        if (!isCancelled) setPredictions(data)
       })
       .catch((err: Error) => {
-        if (!controller.signal.aborted) setError(err.message)
+        if (!isCancelled) setError(err.message)
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
+        if (!isCancelled) setLoading(false)
       })
     return () => {
-      controller.abort()
+      isCancelled = true
     }
   }, [symbols])
 
