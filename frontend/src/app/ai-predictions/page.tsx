@@ -220,8 +220,8 @@ export default function AIPredictionsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold font-mono text-primary">
-                      ${typeof pred.currentPrice === 'number'
-                        ? pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                      {typeof pred.currentPrice === 'number'
+                        ? `$${pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
                         : '--'}
                     </div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.currentPrice')}</div>
