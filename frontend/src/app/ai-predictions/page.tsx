@@ -8,17 +8,55 @@ import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart, { SparklineChart } from '@/components/IndicatorChart'
-import { fetchPredictions, PredictionResult } from '@/lib/api'
 import { generateMockOHLCV } from '@/lib/mockData'
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+
+export type PredictionRating = 'strongBuy' | 'buy' | 'hold' | 'sell' | 'strongSell'
+
+export interface PredictionResult {
+  symbol: string
+  rating: PredictionRating
+  confidence: number
+  priceTarget?: number
+  timeframe?: string
+  // Allow additional backend-provided fields without breaking the UI
+  [key: string]: unknown
+}
 
 const RATING_COLORS: Record<PredictionResult['rating'], string> = {
   strongBuy: 'text-green-400 bg-green-500/10 border-green-500/30',
   buy: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
   hold: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
   sell: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
-  strongSell: 'text-red-400 bg-red-500/10 border-red-500/30',
+  strongSell: 'text-red-400 bg-red-500/10 border-red-500/10',
+}
+
+async function fetchPredictions(
+  symbols: string[],
+  signal?: AbortSignal
+): Promise<PredictionResult[]> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
+      ? process.env.NEXT_PUBLIC_API_URL
+      : 'http://localhost:8000'
+
+  const response = await fetch(`${baseUrl}/api/v1/ai/predictions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ symbols }),
+    signal,
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Failed to fetch predictions: ${response.status}`)
+  }
+
+  const data = (await response.json()) as PredictionResult[]
+  return data
 }
 
 export default function AIPredictionsPage() {
@@ -36,7 +74,7 @@ export default function AIPredictionsPage() {
     const controller = new AbortController()
     setLoading(true)
     setError(null)
-    fetchPredictions(symbols)
+    fetchPredictions(symbols, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) setPredictions(data)
       })
