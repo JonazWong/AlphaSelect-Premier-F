@@ -1,15 +1,69 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LineChart, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { LineChart, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart from '@/components/IndicatorChart'
 import { SparklineChart } from '@/components/IndicatorChart'
-import { generateMockPatterns, generateMockOHLCV, PatternResult } from '@/lib/mockData'
+
+
+
+interface PatternResult {
+  reliability: 'high' | 'medium' | 'low'
+  status: 'detected' | 'pending' | 'failed'
+  [key: string]: any
+}
+
+async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
+  const now = Date.now()
+
+  return symbols.map((symbol, index) => {
+    const reliabilityCycle: Array<PatternResult['reliability']> = ['high', 'medium', 'low']
+    const statusCycle: Array<PatternResult['status']> = ['detected', 'pending', 'failed']
+
+    return {
+      symbol,
+      patternName: 'Mock Pattern',
+      direction: index % 2 === 0 ? 'bullish' : 'bearish',
+      reliability: reliabilityCycle[index % reliabilityCycle.length],
+      status: statusCycle[index % statusCycle.length],
+      detectedAt: new Date(now - index * 60 * 60 * 1000).toISOString(),
+    }
+  })
+}
+
+function generateMockOHLCV(symbol: string, days: number): any[] {
+  const data: any[] = []
+  const now = Date.now()
+  let lastClose = 50000
+
+  for (let i = days - 1; i >= 0; i--) {
+    const time = new Date(now - i * 24 * 60 * 60 * 1000)
+    const open = lastClose
+    const high = open * (1 + Math.random() * 0.02)
+    const low = open * (1 - Math.random() * 0.02)
+    const close = low + Math.random() * (high - low)
+    const volume = 1000 + Math.random() * 5000
+
+    lastClose = close
+
+    data.push({
+      symbol,
+      time,
+      open,
+      high,
+      low,
+      close,
+      volume,
+    })
+  }
+
+  return data
+}
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT']
 
@@ -31,12 +85,41 @@ export default function PatternDetectionPage() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
   const [comparison, setComparison] = useState<string[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
+  const [patterns, setPatterns] = useState<PatternResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (symbols.length === 0) return
+    let isCancelled = false
+    setLoading(true)
+    setError(null)
+    fetchPatterns(symbols)
+      .then((data) => {
+        if (!isCancelled) setPatterns(data)
+      })
+      .catch((err: Error) => {
+        if (!isCancelled) setError(err.message)
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false)
+      })
+    return () => {
+      isCancelled = true
+    }
+  }, [symbols])
+
   const chartData = useMemo(
-    () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    [selectedSymbol, timeframe,]
- );
-  const patterns = useMemo(() => generateMockPatterns(symbols), [symbols,])
- 
+    () =>
+      selectedSymbol
+        ? generateMockOHLCV(
+            selectedSymbol,
+            timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90
+          )
+        : [],
+    [selectedSymbol, timeframe]
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,6 +156,17 @@ export default function PatternDetectionPage() {
         <div className="glass-card p-12 text-center">
           <LineChart className="w-12 h-12 mx-auto mb-4 text-gray-600" />
           <p className="text-gray-400">{t('patternDetection.selectSymbolsHint')}</p>
+        </div>
+      ) : loading ? (
+        <div className="glass-card p-12 text-center">
+          <Loader2 className="w-10 h-10 mx-auto mb-4 text-purple-400 animate-spin" />
+          <p className="text-gray-400">{t('common.loading')}</p>
+        </div>
+      ) : error ? (
+        <div className="glass-card p-8 text-center border-red-500/30">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
+          <p className="text-red-400 font-medium mb-1">{t('common.error')}</p>
+          <p className="text-gray-500 text-sm">{error}</p>
         </div>
       ) : (
         <div className="grid xl:grid-cols-3 gap-6">

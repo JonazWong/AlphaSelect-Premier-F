@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Brain, TrendingUp, LineChart, Filter, Home, AlertTriangle } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home, AlertTriangle, BarChart2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLanguage } from '@/components/I18nProvider'
 import '@/i18n/config'
@@ -20,6 +20,7 @@ export default function Navigation() {
     { href: '/pattern-detection', labelKey: 'nav.patternDetection', icon: LineChart },
     { href: '/market-screener', labelKey: 'nav.marketScreener', icon: Filter },
     { href: '/extreme-reversal', labelKey: 'nav.extremeReversal', icon: AlertTriangle },
+    { href: '/reversal-monitor', labelKey: 'nav.reversalMonitor', icon: BarChart2 },
   ]
   
   return (

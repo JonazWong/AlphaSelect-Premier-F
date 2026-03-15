@@ -1,14 +1,57 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Filter, TrendingUp, TrendingDown, RefreshCw, ArrowUpDown } from 'lucide-react'
+import { Filter, TrendingUp, TrendingDown, RefreshCw, ArrowUpDown, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import { SparklineChart } from '@/components/IndicatorChart'
-import { generateMockScreenerData, generateMockOHLCV, ScreenerResult } from '@/lib/mockData'
+import { generateMockOHLCV } from '@/lib/mockData'
+
+export type ScreenerResult = {
+  symbol: string
+  riskLevel: 'low' | 'medium' | 'high'
+  side: 'long' | 'short'
+  confidence: number
+  change24h: number
+  volume24h: number
+  fundingRate: number
+  sparkline: number[]
+}
+
+const API_BASE_URL =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:8000'
+
+async function fetchScreenerData(symbols?: string[]): Promise<ScreenerResult[]> {
+  const params = new URLSearchParams()
+  if (symbols && symbols.length > 0) {
+    params.set('symbols', symbols.join(','))
+  }
+
+  const url = `${API_BASE_URL}/api/v1/contract_market/screener${
+    params.toString() ? `?${params.toString()}` : ''
+  }`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || `Request failed with status ${response.status}`)
+  }
+
+  const data = (await response.json()) as ScreenerResult[]
+  return data
+}
 
 type RiskFilter = 'all' | 'low' | 'medium' | 'high'
 type SideFilter = 'both' | 'long' | 'short'
@@ -24,7 +67,22 @@ export default function MarketScreenerPage() {
   const [minConfidence, setMinConfidence] = useState(50)
   const [sortField, setSortField] = useState<SortField>('confidence')
   const [sortAsc, setSortAsc] = useState(false)
-  const [allData, setAllData] = useState<ScreenerResult[]>(() => generateMockScreenerData(20))
+  const [allData, setAllData] = useState<ScreenerResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadData = (symbols?: string[]) => {
+    setLoading(true)
+    setError(null)
+    fetchScreenerData(symbols && symbols.length > 0 ? symbols : undefined)
+      .then((data) => setAllData(data))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   const filtered = useMemo(() => {
     let data = allData
@@ -45,7 +103,7 @@ export default function MarketScreenerPage() {
     return data
   }, [allData, selectedSymbols, riskFilter, sideFilter, minConfidence, sortField, sortAsc])
 
-  const handleRefresh = () => setAllData(generateMockScreenerData(20))
+  const handleRefresh = () => loadData()
   const handleClearFilters = () => {
     setSelectedSymbols([])
     setRiskFilter('all')
@@ -87,13 +145,21 @@ export default function MarketScreenerPage() {
         </div>
         <button
           onClick={handleRefresh}
+          disabled={loading}
           aria-label={t('common.refresh')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           {t('common.refresh')}
         </button>
       </div>
+
+      {error && (
+        <div className="glass-card p-4 border-red-500/30 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Filter sidebar */}
@@ -184,14 +250,23 @@ export default function MarketScreenerPage() {
           <div className="glass-card overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-700/50 flex items-center justify-between">
               <span className="text-sm text-gray-400">
-                {t('marketScreener.showing', { count: filtered.length })}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                    {t('common.loading')}
+                  </span>
+                ) : (
+                  t('marketScreener.showing', { count: filtered.length })
+                )}
               </span>
             </div>
 
-            {filtered.length === 0 ? (
+            {!loading && filtered.length === 0 ? (
               <div className="p-12 text-center">
                 <Filter className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                <p className="text-gray-500 text-sm">{t('marketScreener.noResults')}</p>
+                <p className="text-gray-500 text-sm">
+                  {allData.length === 0 ? t('marketScreener.noData', { defaultValue: 'No market data available. Please collect market data first.' }) : t('marketScreener.noResults')}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">

@@ -1,23 +1,62 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Brain, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Brain, TrendingUp, TrendingDown, Minus, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart, { SparklineChart } from '@/components/IndicatorChart'
-import { generateMockPredictions, generateMockOHLCV, PredictionResult } from '@/lib/mockData'
+import { generateMockOHLCV } from '@/lib/mockData'
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+
+export type PredictionRating = 'strongBuy' | 'buy' | 'hold' | 'sell' | 'strongSell'
+
+export interface PredictionResult {
+  symbol: string
+  rating: PredictionRating
+  confidence: number
+  priceTarget?: number
+  timeframe?: string
+  // Allow additional backend-provided fields without breaking the UI
+  [key: string]: unknown
+}
 
 const RATING_COLORS: Record<PredictionResult['rating'], string> = {
   strongBuy: 'text-green-400 bg-green-500/10 border-green-500/30',
   buy: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
   hold: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
   sell: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
-  strongSell: 'text-red-400 bg-red-500/10 border-red-500/30',
+  strongSell: 'text-red-400 bg-red-500/10 border-red-500/10',
+}
+
+async function fetchPredictions(
+  symbols: string[],
+  signal?: AbortSignal
+): Promise<PredictionResult[]> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
+      ? process.env.NEXT_PUBLIC_API_URL
+      : 'http://localhost:8000'
+
+  const response = await fetch(`${baseUrl}/api/v1/ai/predictions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ symbols }),
+    signal,
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Failed to fetch predictions: ${response.status}`)
+  }
+
+  const data = (await response.json()) as PredictionResult[]
+  return data
 }
 
 export default function AIPredictionsPage() {
@@ -26,10 +65,39 @@ export default function AIPredictionsPage() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
   const [comparison, setComparison] = useState<string[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(DEFAULT_SYMBOLS[0])
-  const predictions = useMemo(() => generateMockPredictions(symbols), [symbols,])
+  const [predictions, setPredictions] = useState<PredictionResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (symbols.length === 0) return
+    let isCancelled = false
+    setLoading(true)
+    setError(null)
+    fetchPredictions(symbols, controller.signal)
+      .then((data) => {
+        if (!isCancelled) setPredictions(data)
+      })
+      .catch((err: Error) => {
+        if (!isCancelled) setError(err.message)
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false)
+      })
+    return () => {
+      isCancelled = true
+    }
+  }, [symbols])
+
   const chartData = useMemo(
-    () => (selectedSymbol ? generateMockOHLCV(selectedSymbol, timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90) : []),
-    [selectedSymbol, timeframe,]
+    () =>
+      selectedSymbol
+        ? generateMockOHLCV(
+            selectedSymbol,
+            timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90
+          )
+        : [],
+    [selectedSymbol, timeframe]
   )
 
   return (
@@ -73,6 +141,22 @@ export default function AIPredictionsPage() {
         <div className="glass-card p-12 text-center">
           <Brain className="w-12 h-12 mx-auto mb-4 text-gray-600" />
           <p className="text-gray-400">{t('aiPredictions.selectSymbolsHint')}</p>
+        </div>
+      ) : loading ? (
+        <div className="glass-card p-12 text-center">
+          <Loader2 className="w-10 h-10 mx-auto mb-4 text-cyan-400 animate-spin" />
+          <p className="text-gray-400">{t('common.loading')}</p>
+        </div>
+      ) : error ? (
+        <div className="glass-card p-8 text-center border-red-500/30">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
+          <p className="text-red-400 font-medium mb-1">{t('common.error')}</p>
+          <p className="text-gray-500 text-sm">{error}</p>
+        </div>
+      ) : predictions.length === 0 ? (
+        <div className="glass-card p-12 text-center">
+          <Brain className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+          <p className="text-gray-400">{t('aiPredictions.noData', { defaultValue: 'No prediction data available. Please train an AI model first.' })}</p>
         </div>
       ) : (
         <>
@@ -183,3 +267,4 @@ export default function AIPredictionsPage() {
     </div>
   )
 }
+
