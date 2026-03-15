@@ -70,24 +70,26 @@ export default function AIPredictionsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (symbols.length === 0) return
-    let isCancelled = false
-    setLoading(true)
-    setError(null)
-    fetchPredictions(symbols, controller.signal)
-      .then((data) => {
-        if (!isCancelled) setPredictions(data)
-      })
-      .catch((err: Error) => {
-        if (!isCancelled) setError(err.message)
-      })
-      .finally(() => {
-        if (!isCancelled) setLoading(false)
-      })
-    return () => {
-      isCancelled = true
-    }
-  }, [symbols])
+  if (symbols.length === 0) return
+  let isCancelled = false
+  setLoading(true)
+  setError(null)
+  const controller = new AbortController(); // Add this line
+  fetchPredictions(symbols, controller.signal)
+    .then((data) => {
+      if (!isCancelled) setPredictions(data)
+    })
+    .catch((err: Error) => {
+      if (!isCancelled) setError(err.message)
+    })
+    .finally(() => {
+      if (!isCancelled) setLoading(false)
+    })
+  return () => {
+    isCancelled = true
+    controller.abort(); // Optionally abort on cleanup
+  }
+}, [symbols])
 
   const chartData = useMemo(
     () =>
