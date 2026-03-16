@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:2.25.2-pg16
     environment:
       POSTGRES_DB: premier
       POSTGRES_USER: postgres
