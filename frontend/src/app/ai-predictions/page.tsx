@@ -21,9 +21,9 @@ export interface PredictionResult {
   priceTarget?: number
   timeframe?: string
   currentPrice?: number
-  upsidePct?: number     // Add this line
-  modelAccuracy?: number // Add this line
-  forecastPeriod?: string // Add this line
+  upsidePct?: number
+  modelAccuracy?: number
+  forecastPeriod?: string
   [key: string]: unknown
 }
 
