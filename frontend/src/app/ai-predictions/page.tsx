@@ -21,8 +21,10 @@ export interface PredictionResult {
   priceTarget?: number
   timeframe?: string
   currentPrice?: number
-  // Allow additional backend-provided fields without breaking the UI
-  [key: string]: unknown
+  upsidePct?: number     // Add this line
+  modelAccuracy?: number // Add this line
+  forecastPeriod?: string // Add this line
+  [key:/ai-predictions/page.tsx:// Allow additional backend-provided fields without breaking the UI  
 }
 
 const RATING_COLORS: Record<PredictionResult['rating'], string> = {
