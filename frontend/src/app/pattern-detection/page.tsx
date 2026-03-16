@@ -52,7 +52,7 @@ function generateMockOHLCV(symbol: string, days: number): OHLCV[] {
   let lastClose = 50000
 
   for (let i = days - 1; i >= 0; i--) {
-    const time = new Date(now - i * 24 * 60 * 60 * 1000)
+    const date = new Date(now - i * 24 * 60 * 60 * 1000)
     const open = lastClose
     const high = open * (1 + Math.random() * 0.02)
     const low = open * (1 - Math.random() * 0.02)
@@ -62,7 +62,7 @@ function generateMockOHLCV(symbol: string, days: number): OHLCV[] {
     lastClose = close
 
     data.push({
-      date: time.toISOString(),
+      date: date.toISOString(),
       open,
       high,
       low,
