@@ -12,6 +12,7 @@ import { generateMockOHLCV } from '@/lib/mockData'
 
 export type ScreenerResult = {
   symbol: string
+  price?: number
   riskLevel: 'low' | 'medium' | 'high'
   side: 'long' | 'short'
   confidence: number
@@ -304,7 +305,7 @@ export default function MarketScreenerPage() {
                       >
                         <td className="px-4 py-3 font-bold text-white">{row.symbol}</td>
                         <td className="px-4 py-3 text-right font-mono text-gray-200">
-                          ${row.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                          ${typeof row.price === 'number' ? row.price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '--'}
                         </td>
                         <td className={`px-4 py-3 text-right font-mono font-bold ${row.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           <span className="flex items-center justify-end gap-1">

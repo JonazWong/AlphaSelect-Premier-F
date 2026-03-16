@@ -24,7 +24,7 @@ export interface PredictionResult {
   upsidePct?: number     // Add this line
   modelAccuracy?: number // Add this line
   forecastPeriod?: string // Add this line
-  [key:/ai-predictions/page.tsx:// Allow additional backend-provided fields without breaking the UI  
+  [key: string]: unknown
 }
 
 const RATING_COLORS: Record<PredictionResult['rating'], string> = {
@@ -236,13 +236,13 @@ export default function AIPredictionsPage() {
                     <div className="font-mono font-bold text-sm text-white">
                       ${typeof pred.currentPrice === 'number'
                        ? pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
-                       : '--'})}
+                       : '--'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">{pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
-                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}> 
-                      {pred.upsidePct >= 0 ? '+' : ''}{pred.upsidePct}%
+                    <div className="text-xs text-gray-500">{typeof pred.upsidePct === 'number' && pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
+                    <div className={`font-bold text-sm ${typeof pred.upsidePct === 'number' && pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}> 
+                      {typeof pred.upsidePct === 'number' ? `${pred.upsidePct >= 0 ? '+' : ''}${pred.upsidePct}%` : '--'}
                     </div>
                   </div>
                   <div>

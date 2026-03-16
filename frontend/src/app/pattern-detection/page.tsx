@@ -7,15 +7,21 @@ import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
-import IndicatorChart from '@/components/IndicatorChart'
+import IndicatorChart, { OHLCV } from '@/components/IndicatorChart'
 import { SparklineChart } from '@/components/IndicatorChart'
 
 
 
 interface PatternResult {
+  symbol: string
+  direction: string
+  pattern: string
+  completion: number
+  breakoutLevel: number
+  targetPrice: number
   reliability: 'high' | 'medium' | 'low'
   status: 'detected' | 'pending' | 'failed'
-  [key: string]: any
+  [key: string]: unknown
 }
 
 async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
@@ -29,6 +35,10 @@ async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
       symbol,
       patternName: 'Mock Pattern',
       direction: index % 2 === 0 ? 'bullish' : 'bearish',
+      pattern: 'mockPattern',
+      completion: Math.round(50 + Math.random() * 50),
+      breakoutLevel: 50000 + index * 1000,
+      targetPrice: 55000 + index * 1000,
       reliability: reliabilityCycle[index % reliabilityCycle.length],
       status: statusCycle[index % statusCycle.length],
       detectedAt: new Date(now - index * 60 * 60 * 1000).toISOString(),
@@ -36,8 +46,8 @@ async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
   })
 }
 
-function generateMockOHLCV(symbol: string, days: number): any[] {
-  const data: any[] = []
+function generateMockOHLCV(symbol: string, days: number): OHLCV[] {
+  const data: OHLCV[] = []
   const now = Date.now()
   let lastClose = 50000
 
@@ -52,8 +62,7 @@ function generateMockOHLCV(symbol: string, days: number): any[] {
     lastClose = close
 
     data.push({
-      symbol,
-      time,
+      date: time.toISOString(),
       open,
       high,
       low,
