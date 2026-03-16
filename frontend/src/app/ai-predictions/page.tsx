@@ -21,7 +21,9 @@ export interface PredictionResult {
   priceTarget?: number
   timeframe?: string
   currentPrice?: number
-  // Allow additional backend-provided fields without breaking the UI
+  upsidePct?: number
+  modelAccuracy?: number
+  forecastPeriod?: string
   [key: string]: unknown
 }
 
@@ -235,12 +237,27 @@ export default function AIPredictionsPage() {
                       {typeof pred.priceTarget === 'number'
                         ? `$${pred.priceTarget.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
                         : '--'}
+                      ${typeof pred.targetPrice === 'number'
+                       ? pred.targetPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                       : '--'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">{pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
-                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}> 
-                      {pred.upsidePct >= 0 ? '+' : ''}{pred.upsidePct}%
+                    <div className="text-xs text-gray-500">
+                      {typeof pred.upsidePct === 'number'
+                        ? (pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside'))
+                        : '--'}
+                    </div>
+                    <div
+                      className={`font-bold text-sm ${
+                        typeof pred.upsidePct === 'number'
+                          ? pred.upsidePct >= 0
+                            ? 'text-green-400'
+                            : 'text-red-400'
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      {typeof pred.upsidePct === 'number' ? `${pred.upsidePct >= 0 ? '+' : ''}${pred.upsidePct}%` : '--'}
                     </div>
                   </div>
                   <div>
