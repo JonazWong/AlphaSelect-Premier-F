@@ -240,8 +240,20 @@ export default function AIPredictionsPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">{typeof pred.upsidePct === 'number' && pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
-                    <div className={`font-bold text-sm ${typeof pred.upsidePct === 'number' && pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}> 
+                    <div className="text-xs text-gray-500">
+                      {typeof pred.upsidePct === 'number'
+                        ? (pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside'))
+                        : '--'}
+                    </div>
+                    <div
+                      className={`font-bold text-sm ${
+                        typeof pred.upsidePct === 'number'
+                          ? pred.upsidePct >= 0
+                            ? 'text-green-400'
+                            : 'text-red-400'
+                          : 'text-gray-400'
+                      }`}
+                    >
                       {typeof pred.upsidePct === 'number' ? `${pred.upsidePct >= 0 ? '+' : ''}${pred.upsidePct}%` : '--'}
                     </div>
                   </div>
