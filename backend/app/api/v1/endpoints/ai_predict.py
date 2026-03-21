@@ -414,8 +414,19 @@ async def batch_predictions(
             # Confidence: distance from neutral (RSI 50) scaled to [50, 90]
             confidence = int(min(90, 50 + abs(rsi - 50) * 0.8))
 
-            # Price target: simple projection based on trend direction
-            target_pct = 0.03 if rating in ("strongBuy", "buy") else -0.03
+            # Price target: simple projection based on trend direction,
+            # with semantics aligned to the rating label.
+            if rating in ("strongBuy", "buy"):
+                target_pct = 0.03
+            elif rating == "hold":
+                target_pct = 0.0
+            elif rating == "sell":
+                target_pct = -0.03
+            elif rating == "strongSell":
+                target_pct = -0.05
+            else:
+                # Fallback to neutral if rating is unexpected
+                target_pct = 0.0
             price_target = round(current_price * (1 + target_pct), 6)
             upside_pct = round((price_target / current_price - 1) * 100, 2)
 
