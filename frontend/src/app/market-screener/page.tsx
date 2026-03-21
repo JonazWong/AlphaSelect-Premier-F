@@ -333,6 +333,9 @@ export default function MarketScreenerPage() {
                             {t(`common.levels.${row.riskLevel}`)}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-right">
+                          {/* Reserved for sparkline / extra price column to align with table header */}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
