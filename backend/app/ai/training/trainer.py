@@ -4,6 +4,10 @@ from datetime import datetime
 from app.ai.models.base_model import BaseModel
 from app.ai.models.lstm_model import LSTMModel
 from app.ai.models.xgboost_model import XGBoostModel
+from app.ai.models.arima_model import ARIMAModel
+from app.ai.models.ensemble_model import EnsembleModel
+from app.ai.models.linear_regression_model import LinearRegressionModel
+from app.ai.models.random_forest_model import RandomForestModel
 from app.ai.training.data_preprocessor import DataPreprocessor
 
 
@@ -19,6 +23,10 @@ class ModelTrainer:
         model_mapping = {
             'lstm': LSTMModel,
             'xgboost': XGBoostModel,
+            'arima': ARIMAModel,
+            'ensemble': EnsembleModel,
+            'linear_regression': LinearRegressionModel,
+            'random_forest': RandomForestModel,
         }
         
         if model_type not in model_mapping:

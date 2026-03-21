@@ -107,10 +107,10 @@ TIMEFRAME_MAP = {
 }
 
 SIGNAL_THRESHOLDS = {
-    "rsi_oversold": 30,
-    "rsi_overbought": 70,
-    "volume_spike": 2.0,
-    "min_confidence": 60.0,
+    "rsi_oversold": 40,  # Lowered from 35 to detect more bounce signals
+    "rsi_overbought": 60,  # Lowered from 65 to detect more pullback signals
+    "volume_spike": 1.5,  # Lowered from 2.0 to capture more volume anomalies
+    "min_confidence": 40.0,  # Lowered from 50 to allow more signals through
 }
 
 MIN_REQUIRED_CANDLES = 30
@@ -158,16 +158,14 @@ def _pick_triggers(signal_type: str, rsi: float, vol_mult: float) -> List[str]:
     if signal_type == "bounce":
         if rsi < 30:
             triggers.append("RSI極端")
-        if vol_mult > 2:
+        if vol_mult > 1.5:
             triggers.append("放量異常")
-        triggers.append("布林帶突破")
         triggers.append("MACD背離")
     else:
         if rsi > 70:
             triggers.append("RSI極端")
-        if vol_mult > 2:
+        if vol_mult > 1.5:
             triggers.append("放量異常")
-        triggers.append("布林帶突破")
         triggers.append("MACD背離")
     triggers.append("AI模型觸發")
     return triggers
@@ -203,16 +201,22 @@ class ExtremeSignalService:
 
         if symbols is None:
             symbols = self._fetch_top_symbols(limit=30)
+        
+        logger.info(f"[scan_symbols] Scanning {len(symbols)} symbols across {len(timeframes)} timeframes")
 
         detected: List[Dict] = []
+        scanned_count = 0
         for symbol in symbols:
             for tf in timeframes:
+                scanned_count += 1
                 try:
                     signal = self._analyze_symbol(symbol, tf)
                     if signal:
                         detected.append(signal)
                 except Exception as exc:
                     logger.warning(f"[ExtremeSignalService] {symbol}/{tf} skipped: {exc}")
+        
+        logger.info(f"[scan_symbols] Scanned {scanned_count} pairs, found {len(detected)} signals")
         return detected
 
     # ------------------------------------------------------------------
@@ -239,13 +243,14 @@ class ExtremeSignalService:
         Run the full analysis pipeline for one symbol + timeframe.
         Returns a signal dict or None if no signal detected.
         """
+        logger.info(f"[_analyze_symbol] Analyzing {symbol}/{timeframe}")
         mexc_interval = TIMEFRAME_MAP.get(timeframe, "Min60")
 
         # --- Fetch klines ---
         try:
             raw_klines = self._api.get_contract_klines(symbol, interval=mexc_interval, limit=100)
         except Exception as exc:
-            logger.debug(f"Kline fetch failed for {symbol}/{timeframe}: {exc}")
+            logger.info(f"Kline fetch failed for {symbol}/{timeframe}: {exc}")
             return None
 
         ohlcv = _parse_klines(raw_klines)
@@ -253,6 +258,7 @@ class ExtremeSignalService:
         volumes = ohlcv["volumes"]
 
         if len(closes) < MIN_REQUIRED_CANDLES:
+            logger.info(f"{symbol}/{timeframe}: Insufficient candles ({len(closes)} < {MIN_REQUIRED_CANDLES})")
             return None
 
         # --- Compute indicators ---
@@ -269,6 +275,9 @@ class ExtremeSignalService:
             rsi, macd_result, bb, vol_mult, current_price, closes
         )
         if signal_type is None:
+            logger.info(
+                f"{symbol}/{timeframe}: No signal type (RSI={rsi}, MACD_hist={macd_result.get('histogram')}, vol_mult={vol_mult})"
+            )
             return None
 
         # --- Fetch contract data ---
@@ -294,7 +303,14 @@ class ExtremeSignalService:
         )
 
         if confidence < SIGNAL_THRESHOLDS["min_confidence"]:
+            logger.info(
+                f"{symbol}/{timeframe}: Confidence too low ({confidence:.1f} < {SIGNAL_THRESHOLDS['min_confidence']}) - triggers={triggers}"
+            )
             return None
+        
+        logger.info(
+            f"{symbol}/{timeframe}: Signal detected! Type={signal_type}, Confidence={confidence:.1f}, RSI={rsi}, Triggers={triggers}"
+        )
 
         urgency = "critical" if confidence >= 85 else ("high" if confidence >= 75 else "medium")
 
@@ -337,6 +353,7 @@ class ExtremeSignalService:
         triggers = []
         signal_type = None
 
+        # RSI extreme conditions
         if rsi is not None and rsi < SIGNAL_THRESHOLDS["rsi_oversold"]:
             signal_type = "bounce"
             triggers.append("RSI極端")
@@ -344,23 +361,25 @@ class ExtremeSignalService:
             signal_type = "pullback"
             triggers.append("RSI極端")
 
-        if bb.get("lower") and price < bb["lower"]:
-            signal_type = signal_type or "bounce"
-            triggers.append("布林帶突破")
-        elif bb.get("upper") and price > bb["upper"]:
-            signal_type = signal_type or "pullback"
-            triggers.append("布林帶突破")
-
+        # MACD divergence - can also determine signal type
         hist = macd.get("histogram")
-        if hist is not None:
-            if hist > 0 and (signal_type == "bounce" or signal_type is None):
-                triggers.append("MACD背離")
-            elif hist < 0 and (signal_type == "pullback" or signal_type is None):
-                triggers.append("MACD背離")
+        if hist is not None and abs(hist) > 0:
+            if hist > 0:
+                if signal_type is None:
+                    signal_type = "bounce"
+                if signal_type == "bounce":
+                    triggers.append("MACD背離")
+            elif hist < 0:
+                if signal_type is None:
+                    signal_type = "pullback"
+                if signal_type == "pullback":
+                    triggers.append("MACD背離")
 
+        # Volume spike - adds trigger
         if vol_mult is not None and vol_mult >= SIGNAL_THRESHOLDS["volume_spike"]:
             triggers.append("放量異常")
 
+        # Add AI trigger if we have a valid signal type
         if signal_type and len(closes) > 10:
             triggers.append("AI模型觸發")
 

@@ -168,3 +168,5 @@ workers:
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
     run_command: celery -A app.tasks.celery_app beat --loglevel=info
+
+    

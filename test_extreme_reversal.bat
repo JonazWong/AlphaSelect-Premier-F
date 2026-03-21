@@ -11,7 +11,7 @@ docker ps --filter "name=alphaselect" --format "{{.Names}}: {{.Status}}"
 echo.
 
 echo [2/6] 檢查資料表是否存在...
-docker exec alphaselect-premier-f-postgres-1 psql -U postgres -d premier -c "\d extreme_signals" | findstr "Table"
+docker exec alphaselect-premier-f-postgres-1 psql -U postgres -d alphaselect -c "\d extreme_signals" | findstr "Table"
 echo.
 
 echo [3/6] 測試 API 端點...

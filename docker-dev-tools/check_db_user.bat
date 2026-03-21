@@ -13,12 +13,12 @@ echo [2] 檢查資料庫列表...
 docker compose exec -T postgres psql -U postgres -d postgres -c "\l"
 echo.
 
-echo [3] 連接到 premier 資料庫...
-docker compose exec -T postgres psql -U postgres -d premier -c "SELECT current_user, current_database();"
+echo [3] 連接到 alphaselect 資料庫...
+docker compose exec -T postgres psql -U postgres -d alphaselect -c "SELECT current_user, current_database();"
 echo.
 
 echo [4] 檢查表...
-docker compose exec -T postgres psql -U postgres -d premier -c "\dt"
+docker compose exec -T postgres psql -U postgres -d alphaselect -c "\dt"
 echo.
 
 pause

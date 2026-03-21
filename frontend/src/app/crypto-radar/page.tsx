@@ -279,25 +279,25 @@ export default function CryptoRadar() {
                 <div>
                   <div className="text-xs text-gray-400 mb-1">入場價 (USD)</div>
                   <div className="text-lg font-bold font-mono text-cyan-400">
-                    ${signal.entryPrice.toFixed(2)}
+                    ${signal.entryPrice.toFixed(5)}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-400 mb-1">止損 (USD)</div>
                   <div className="text-lg font-bold font-mono text-red-400">
-                    ${signal.stopLoss.toFixed(2)}
+                    ${signal.stopLoss.toFixed(5)}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-400 mb-1">目標 1 (USD)</div>
                   <div className="text-lg font-bold font-mono text-green-400">
-                    ${signal.target1.toFixed(2)}
+                    ${signal.target1.toFixed(5)}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-400 mb-1">目標 2 (USD)</div>
                   <div className="text-lg font-bold font-mono text-green-400">
-                    ${signal.target2.toFixed(2)}
+                    ${signal.target2.toFixed(5)}
                   </div>
                 </div>
               </div>

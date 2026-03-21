@@ -71,7 +71,7 @@ async def shutdown_event():
 # API路由注冊
 fastapi_app.include_router(contract_market.router, prefix="/api/v1/contract", tags=["Contract Market"])
 fastapi_app.include_router(ai_training.router, prefix="/api/v1/ai/training", tags=["AI Training"])
-fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai/predict", tags=["AI Prediction"])
+fastapi_app.include_router(ai_predict.router, prefix="/api/v1/ai", tags=["AI Prediction"])
 fastapi_app.include_router(extreme_signals.router, prefix="/api/v1/extreme-signals", tags=["Extreme Signals"])
 fastapi_app.include_router(pattern_detection.router, prefix="/api/v1/patterns", tags=["Pattern Detection"])
 fastapi_app.include_router(market_screener.router, prefix="/api/v1/screener", tags=["Market Screener"])

@@ -5,7 +5,6 @@ from datetime import datetime
 from pydantic import BaseModel
 import logging
 import pandas as pd
-import numpy as np
 import os
 
 from app.db.session import get_db
@@ -70,21 +69,26 @@ async def make_prediction(
         # Reverse to chronological order
         recent_data = list(reversed(recent_data))
         
-        # Convert to DataFrame
+        # Convert to DataFrame with proper None handling
         df = pd.DataFrame([{
-            'created_at': record.created_at,
-            'last_price': record.last_price,
-            'fair_price': record.fair_price,
-            'index_price': record.index_price,
-            'funding_rate': record.funding_rate,
-            'open_interest': record.open_interest,
-            'volume_24h': record.volume_24h,
-            'price_change_24h': record.price_change_24h,
-            'high_24h': record.high_24h,
-            'low_24h': record.low_24h,
-            'basis': record.basis,
-            'basis_rate': record.basis_rate
+            'last_price': float(record.last_price) if record.last_price else None,
+            'fair_price': float(record.fair_price) if record.fair_price else None,
+            'index_price': float(record.index_price) if record.index_price else None,
+            'funding_rate': float(record.funding_rate) if record.funding_rate else None,
+            'open_interest': float(record.open_interest) if record.open_interest else None,
+            'volume_24h': float(record.volume_24h) if record.volume_24h else None,
+            'price_change_24h': float(record.price_change_24h) if record.price_change_24h else None,
+            'high_24h': float(record.high_24h) if record.high_24h else None,
+            'low_24h': float(record.low_24h) if record.low_24h else None,
+            'basis': float(record.basis) if record.basis else None,
+            'basis_rate': float(record.basis_rate) if record.basis_rate else None
         } for record in recent_data])
+        
+        # Set created_at as index
+        df.index = [record.created_at for record in recent_data]
+        
+        # Forward fill then backward fill to handle None values
+        df = df.fillna(method='ffill').fillna(method='bfill').fillna(0)
         
         # Make prediction
         if request.use_ensemble and not request.model_id:
@@ -294,157 +298,177 @@ async def get_prediction_details(
 
 
 class BatchPredictionRequest(BaseModel):
+    """Request model for batch predictions"""
     model_config = {"protected_namespaces": ()}
-
+    
     symbols: List[str]
+    use_ensemble: bool = False  # Default to single model for reliability
+    horizon: int = 1
 
 
-def _compute_rsi(prices: np.ndarray, period: int = 14) -> float:
-    """Compute RSI for the last data point."""
-    if len(prices) < period + 1:
-        return 50.0
-    deltas = np.diff(prices)
-    gains = np.where(deltas > 0, deltas, 0.0)
-    losses = np.where(deltas < 0, -deltas, 0.0)
-    avg_gain = float(np.mean(gains[-period:]))
-    avg_loss = float(np.mean(losses[-period:]))
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    return 100.0 - (100.0 / (1.0 + rs))
+class BatchPredictionResult(BaseModel):
+    """Simplified prediction result for batch response"""
+    model_config = {"protected_namespaces": ()}
+    
+    symbol: str
+    rating: str  # strongBuy, buy, hold, sell, strongSell
+    confidence: float
+    priceTarget: Optional[float] = None
+    timeframe: str = "1h"
+    predicted_value: Optional[float] = None
+    model_type: Optional[str] = None
 
 
-def _rating_from_indicators(rsi: float, trend_slope: float, funding_rate: float) -> str:
-    """Map technical indicators to a prediction rating.
-
-    Scoring:
-      RSI < 30 (oversold) → +2; RSI 30-45 (below neutral) → +1
-      RSI 55-70 (above neutral) → -1; RSI > 70 (overbought) → -2
-      Positive price trend → +1; Negative → -1
-      Funding rate < -0.1% (negative/bearish funding = longs rewarded) → +1
-      Funding rate > +0.1% (positive/bullish funding = shorts rewarded) → -1
-      Total ≥ 3 → strongBuy, ≥ 1 → buy, ≤ -3 → strongSell, ≤ -1 → sell, else hold
-    """
-    score = 0
-    # RSI signal
-    if rsi < 30:
-        score += 2
-    elif rsi < 45:
-        score += 1
-    elif rsi > 70:
-        score -= 2
-    elif rsi > 55:
-        score -= 1
-
-    # Trend signal
-    if trend_slope > 0:
-        score += 1
-    elif trend_slope < 0:
-        score -= 1
-
-    # Funding rate signal: extreme positive funding = bearish; extreme negative = bullish
-    if funding_rate < -0.001:
-        score += 1
-    elif funding_rate > 0.001:
-        score -= 1
-
-    if score >= 3:
+def _determine_rating(predicted_value: float, current_price: float, confidence: float) -> str:
+    """Determine buy/sell rating based on predicted price change and confidence"""
+    if current_price == 0:
+        return "hold"
+    
+    price_change_pct = ((predicted_value - current_price) / current_price) * 100
+    
+    # Adjust thresholds based on confidence
+    strong_threshold = 3.0 if confidence > 80 else 5.0
+    moderate_threshold = 1.5 if confidence > 70 else 2.5
+    
+    if price_change_pct >= strong_threshold:
         return "strongBuy"
-    elif score >= 1:
+    elif price_change_pct >= moderate_threshold:
         return "buy"
-    elif score <= -3:
+    elif price_change_pct <= -strong_threshold:
         return "strongSell"
-    elif score <= -1:
+    elif price_change_pct <= -moderate_threshold:
         return "sell"
-    return "hold"
+    else:
+        return "hold"
 
 
-@router.post("/predictions")
-async def batch_predictions(
+@router.post("/predictions", response_model=List[BatchPredictionResult])
+async def make_batch_predictions(
     request: BatchPredictionRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    """Batch prediction for multiple symbols using real market data."""
+    """
+    Make predictions for multiple symbols at once
+    
+    Only returns predictions for symbols with valid trained models.
+    Symbols without models are silently skipped.
+    
+    This endpoint is designed for the AI Predictions page frontend
+    """
     results = []
-
+    
     for symbol in request.symbols:
-        # Normalise symbol to DB format (BTCUSDT → BTC_USDT)
-        db_symbol = symbol
-        if "_" not in symbol and len(symbol) > 4 and symbol.endswith("USDT"):
-            db_symbol = symbol[:-4] + "_USDT"
-
         try:
-            records = (
-                db.query(ContractMarket)
-                .filter(ContractMarket.symbol == db_symbol)
-                .order_by(ContractMarket.created_at.desc())
-                .limit(50)
-                .all()
-            )
-
-            if not records:
+            # Normalize symbol format
+            db_symbol = symbol if "_" in symbol else symbol[:-4] + "_USDT" if symbol.endswith("USDT") else symbol
+            
+            # Get recent contract data
+            recent_data = db.query(ContractMarket).filter(
+                ContractMarket.symbol == db_symbol
+            ).order_by(ContractMarket.created_at.desc()).limit(200).all()
+            
+            if not recent_data or len(recent_data) < 20:
+                # Not enough data - skip this symbol
+                logger.info(f"Skipping {symbol}: insufficient data (only {len(recent_data)} records)")
                 continue
-
-            records = list(reversed(records))
-            prices = np.array(
-                [float(r.last_price) for r in records if r.last_price is not None],
-                dtype=float,
-            )
-
-            if len(prices) == 0:
+            
+            # Get current price
+            current_price = float(recent_data[0].last_price) if recent_data[0].last_price else 0.0
+            
+            # Reverse to chronological order
+            recent_data = list(reversed(recent_data))
+            
+            # Convert to DataFrame with proper None handling
+            df = pd.DataFrame([{
+                'last_price': float(record.last_price) if record.last_price else None,
+                'fair_price': float(record.fair_price) if record.fair_price else None,
+                'index_price': float(record.index_price) if record.index_price else None,
+                'funding_rate': float(record.funding_rate) if record.funding_rate else None,
+                'open_interest': float(record.open_interest) if record.open_interest else None,
+                'volume_24h': float(record.volume_24h) if record.volume_24h else None,
+                'price_change_24h': float(record.price_change_24h) if record.price_change_24h else None,
+                'high_24h': float(record.high_24h) if record.high_24h else None,
+                'low_24h': float(record.low_24h) if record.low_24h else None,
+                'basis': float(record.basis) if record.basis else None,
+                'basis_rate': float(record.basis_rate) if record.basis_rate else None
+            } for record in recent_data])
+            
+            # Set created_at as index
+            df.index = [record.created_at for record in recent_data]
+            
+            # Forward fill then backward fill to handle None values
+            df = df.fillna(method='ffill').fillna(method='bfill').fillna(0)
+            
+            # Try to make prediction
+            try:
+                if request.use_ensemble:
+                    prediction_result = await predict_with_ensemble(
+                        db, db_symbol, df, request.horizon
+                    )
+                else:
+                    # Get best trained model (lowest RMSE among valid models)
+                    model_records = db.query(AIModel).filter(
+                        AIModel.symbol == db_symbol,
+                        AIModel.status == 'trained',
+                        AIModel.model_type.in_(['xgboost', 'random_forest'])  # Prefer these model types
+                    ).all()
+                    
+                    if not model_records:
+                        # Fallback to any trained model
+                        model_records = db.query(AIModel).filter(
+                            AIModel.symbol == db_symbol,
+                            AIModel.status == 'trained'
+                        ).all()
+                    
+                    if model_records:
+                        # Select model with lowest RMSE and valid file_path
+                        valid_models = [m for m in model_records if m.file_path and os.path.exists(m.file_path)]
+                        
+                        if not valid_models:
+                            logger.info(f"Skipping {symbol}: no valid model files found")
+                            continue
+                        
+                        best_model = min(valid_models, 
+                                       key=lambda m: m.metrics.get('rmse', float('inf')) 
+                                       if m.metrics else float('inf'))
+                        model_record = best_model
+                    else:
+                        logger.info(f"Skipping {symbol}: no trained models found")
+                        continue
+                    
+                    if model_record:
+                        prediction_result = await predict_with_model(
+                            model_record, df, request.horizon
+                        )
+                    else:
+                        continue
+                
+                predicted_value = prediction_result['predicted_value']
+                confidence = prediction_result['confidence_score'] * 100
+                rating = _determine_rating(predicted_value, current_price, confidence)
+                
+                results.append(BatchPredictionResult(
+                    symbol=symbol,
+                    rating=rating,
+                    confidence=round(confidence, 2),
+                    priceTarget=round(predicted_value, 6),
+                    timeframe="1h",
+                    predicted_value=round(predicted_value, 6),
+                    model_type=prediction_result.get('model_type', 'unknown')
+                ))
+                
+            except HTTPException:
+                # Skip symbols with HTTP errors (e.g., no models found)
+                logger.info(f"Skipping {symbol}: {str(HTTPException)}")
                 continue
-
-            latest = records[-1]
-            current_price = float(latest.last_price)
-            funding_rate = float(latest.funding_rate or 0.0)
-            change24h = float(latest.price_change_24h or 0.0)
-
-            rsi = _compute_rsi(prices)
-
-            # Simple linear trend slope
-            if len(prices) >= 3:
-                trend_slope = float(
-                    np.polyfit(np.arange(len(prices)), prices, 1)[0]
-                )
-            else:
-                trend_slope = change24h
-
-            rating = _rating_from_indicators(rsi, trend_slope, funding_rate)
-
-            # Confidence: distance from neutral (RSI 50) scaled to [50, 90]
-            confidence = int(min(90, 50 + abs(rsi - 50) * 0.8))
-
-            # Price target: simple projection based on trend direction,
-            # with semantics aligned to the rating label.
-            if rating in ("strongBuy", "buy"):
-                target_pct = 0.03
-            elif rating == "hold":
-                target_pct = 0.0
-            elif rating == "sell":
-                target_pct = -0.03
-            elif rating == "strongSell":
-                target_pct = -0.05
-            else:
-                # Fallback to neutral if rating is unexpected
-                target_pct = 0.0
-            price_target = round(current_price * (1 + target_pct), 6)
-            upside_pct = round((price_target / current_price - 1) * 100, 2)
-
-            results.append(
-                {
-                    "symbol": symbol,
-                    "rating": rating,
-                    "confidence": confidence,
-                    "currentPrice": current_price,
-                    "priceTarget": price_target,
-                    "upsidePct": upside_pct,
-                    "forecastPeriod": "24h",
-                    "timeframe": "1D",
-                }
-            )
-
+            except Exception as pred_err:
+                # Skip symbols with prediction errors
+                logger.info(f"Skipping {symbol}: prediction failed - {pred_err}")
+                continue
+        
         except Exception as e:
-            logger.warning(f"Batch prediction failed for {symbol}: {e}")
-
+            # Skip symbols with data processing errors
+            logger.info(f"Skipping {symbol}: data processing error - {e}")
+            continue
+    
     return results
-

@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Brain, TrendingUp, TrendingDown, Minus, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
-import IndicatorChart, { OHLCV } from '@/components/IndicatorChart'
+import IndicatorChart, { SparklineChart } from '@/components/IndicatorChart'
+import { generateMockOHLCV } from '@/lib/mockData'
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
 
@@ -19,10 +20,7 @@ export interface PredictionResult {
   confidence: number
   priceTarget?: number
   timeframe?: string
-  currentPrice?: number
-  upsidePct?: number
-  modelAccuracy?: number
-  forecastPeriod?: string
+  // Allow additional backend-provided fields without breaking the UI
   [key: string]: unknown
 }
 
@@ -34,16 +32,16 @@ const RATING_COLORS: Record<PredictionResult['rating'], string> = {
   strongSell: 'text-red-400 bg-red-500/10 border-red-500/10',
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
-    ? process.env.NEXT_PUBLIC_API_URL
-    : 'http://localhost:8000'
-
 async function fetchPredictions(
   symbols: string[],
   signal?: AbortSignal
 ): Promise<PredictionResult[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/ai/predict/predictions`, {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
+      ? process.env.NEXT_PUBLIC_API_URL
+      : 'http://localhost:8000'
+
+  const response = await fetch(`${baseUrl}/api/v1/ai/predictions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -61,31 +59,6 @@ async function fetchPredictions(
   return data
 }
 
-async function fetchKlines(symbol: string, limit = 90): Promise<OHLCV[]> {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/contract/klines/${symbol}?interval=Min60&limit=${limit}`,
-      { cache: 'no-store' }
-    )
-    if (!response.ok) return []
-    const json = await response.json()
-    const rows: unknown[] = json?.data ?? []
-    return rows.map((k) => {
-      const row = k as Record<string, unknown>
-      return {
-        date: new Date(Number(row.time) * 1000).toISOString(),
-        open: parseFloat(String(row.open ?? 0)),
-        high: parseFloat(String(row.high ?? 0)),
-        low: parseFloat(String(row.low ?? 0)),
-        close: parseFloat(String(row.close ?? 0)),
-        volume: parseFloat(String(row.vol ?? row.volume ?? 0)),
-      }
-    })
-  } catch {
-    return []
-  }
-}
-
 export default function AIPredictionsPage() {
   const { t } = useTranslation('common')
   const [timeframe, setTimeframe] = useState<Timeframe>('1M')
@@ -95,14 +68,13 @@ export default function AIPredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [chartData, setChartData] = useState<OHLCV[]>([])
 
   useEffect(() => {
     if (symbols.length === 0) return
+    const controller = new AbortController()
     let isCancelled = false
     setLoading(true)
     setError(null)
-    const controller = new AbortController(); // fixed
     fetchPredictions(symbols, controller.signal)
       .then((data) => {
         if (!isCancelled) setPredictions(data)
@@ -115,15 +87,20 @@ export default function AIPredictionsPage() {
       })
     return () => {
       isCancelled = true
-      controller.abort();
+      controller.abort()
     }
   }, [symbols])
 
-  useEffect(() => {
-    if (!selectedSymbol) return
-    const limit = timeframe === '1D' ? 24 : timeframe === '1W' ? 168 : timeframe === '1M' ? 720 : 2160
-    fetchKlines(selectedSymbol, limit).then(setChartData)
-  }, [selectedSymbol, timeframe])
+  const chartData = useMemo(
+    () =>
+      selectedSymbol
+        ? generateMockOHLCV(
+            selectedSymbol,
+            timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90
+          )
+        : [],
+    [selectedSymbol, timeframe]
+  )
 
   return (
     <div className="space-y-6">
@@ -224,20 +201,25 @@ export default function AIPredictionsPage() {
                 onKeyDown={(e) => e.key === 'Enter' && setSelectedSymbol(pred.symbol)}
                 aria-label={`${pred.symbol} prediction`}
               >
-                {/* Prediction card header */}
+                {/* Sparkline */}
+                <div className="h-10 mb-3">
+                  <SparklineChart
+                    data={generateMockOHLCV(pred.symbol, 30)}
+                    color={pred.direction === 'bullish' ? '#22c55e' : pred.direction === 'bearish' ? '#ef4444' : '#6b7280'}
+                  />
+                </div>
+
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-xl font-bold">{pred.symbol}</h3>
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border mt-1 ${RATING_COLORS[pred.rating]}`}> 
-                      {['strongBuy', 'buy'].includes(pred.rating) ? <TrendingUp className="w-3 h-3" /> : ['strongSell', 'sell'].includes(pred.rating) ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border mt-1 ${RATING_COLORS[pred.rating]}`}>
+                      {pred.direction === 'bullish' ? <TrendingUp className="w-3 h-3" /> : pred.direction === 'bearish' ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       {t(`aiPredictions.${pred.rating}`)}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold font-mono text-primary">
-                      {typeof pred.currentPrice === 'number'
-                        ? `$${pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-                        : '--'}
+                      ${pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.currentPrice')}</div>
                   </div>
@@ -247,30 +229,13 @@ export default function AIPredictionsPage() {
                   <div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.targetPrice')}</div>
                     <div className="font-mono font-bold text-sm text-white">
-                      {typeof pred.priceTarget === 'number'
-                        ? `$${pred.priceTarget.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-                        : '--'}
-                      ${typeof pred.targetPrice === 'number'
-                       ? pred.targetPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
-                       : '--'}
+                      ${pred.targetPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">
-                      {typeof pred.upsidePct === 'number'
-                        ? (pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside'))
-                        : '--'}
-                    </div>
-                    <div
-                      className={`font-bold text-sm ${
-                        typeof pred.upsidePct === 'number'
-                          ? pred.upsidePct >= 0
-                            ? 'text-green-400'
-                            : 'text-red-400'
-                          : 'text-gray-400'
-                      }`}
-                    >
-                      {typeof pred.upsidePct === 'number' ? `${pred.upsidePct >= 0 ? '+' : ''}${pred.upsidePct}%` : '--'}
+                    <div className="text-xs text-gray-500">{pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
+                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {pred.upsidePct >= 0 ? '+' : ''}{pred.upsidePct}%
                     </div>
                   </div>
                   <div>
@@ -304,3 +269,4 @@ export default function AIPredictionsPage() {
     </div>
   )
 }
+

@@ -2,7 +2,7 @@ services:
   postgres:
     image: timescale/timescaledb:2.25.2-pg16
     environment:
-      POSTGRES_DB: premier
+      POSTGRES_DB: alphaselect
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
     ports:
@@ -41,7 +41,7 @@ services:
     environment:
       # Local development DB — override DATABASE_URL for production:
       # DATABASE_URL: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/premier
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -68,11 +68,15 @@ services:
     environment:
       # Local development DB — override DATABASE_URL for production:
       # DATABASE_URL: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/premier
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
+      MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
+      MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
     healthcheck:
       test: ["CMD", "celery", "-A", "app.tasks.celery_app", "inspect", "ping", "-t", "5"]
       interval: 30s
@@ -94,13 +98,15 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/premier
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
       MEXC_CONTRACT_BASE_URL: https://contract.mexc.com
       MEXC_SPOT_BASE_URL: https://api.mexc.com
       AI_MODEL_DIR: /app/ai_models
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import glob,sys\nfound=False\nfor f in glob.glob('/proc/*/cmdline'):\n  try:\n    data=open(f,'rb').read()\n    if b'celery\\x00' in data and b'beat\\x00' in data: found=True;break\n  except: pass\nsys.exit(0 if found else 1)\""]
       interval: 60s
