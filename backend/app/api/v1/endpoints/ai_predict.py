@@ -339,7 +339,7 @@ def _rating_from_indicators(rsi: float, trend_slope: float, funding_rate: float)
     # Trend signal
     if trend_slope > 0:
         score += 1
-    else:
+    elif trend_slope < 0:
         score -= 1
 
     # Funding rate signal: extreme positive funding = bearish; extreme negative = bullish
