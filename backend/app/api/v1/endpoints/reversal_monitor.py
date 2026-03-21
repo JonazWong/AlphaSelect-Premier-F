@@ -79,7 +79,7 @@ def _compute_bollinger(prices: np.ndarray, period: int = 20) -> tuple:
 
 def _detect_reversals(symbol: str, prices: List[float], funding_rate: float = 0.0) -> List[dict]:
     """Detect potential reversal signals from price data."""
-    if len(prices) < 15:
+    if len(prices) < 10:
         return []
 
     arr = np.array(prices, dtype=float)
@@ -96,8 +96,8 @@ def _detect_reversals(symbol: str, prices: List[float], funding_rate: float = 0.
     bb_range = bb_upper - bb_lower
     bb_pos = (current_price - bb_lower) / bb_range if bb_range > 0 else 0.5
 
-    if rsi < 35 and bb_pos < 0.25:
-        confidence = int(min(90, 50 + (35 - rsi) * 1.5 + (0.25 - bb_pos) * 60))
+    if rsi < 40 and bb_pos < 0.30:
+        confidence = int(min(90, 50 + (40 - rsi) * 1.5 + (0.30 - bb_pos) * 60))
         macd_bonus = 10 if macd_hist > 0 else 0
         confidence = min(90, confidence + macd_bonus)
 
@@ -118,8 +118,8 @@ def _detect_reversals(symbol: str, prices: List[float], funding_rate: float = 0.
         )
 
     # ── Overbought pullback signal ────────────────────────────────────
-    if rsi > 65 and bb_pos > 0.75:
-        confidence = int(min(90, 50 + (rsi - 65) * 1.5 + (bb_pos - 0.75) * 60))
+    if rsi > 60 and bb_pos > 0.70:
+        confidence = int(min(90, 50 + (rsi - 60) * 1.5 + (bb_pos - 0.70) * 60))
         macd_bonus = 10 if macd_hist < 0 else 0
         confidence = min(90, confidence + macd_bonus)
 
@@ -307,7 +307,7 @@ def _get_reversals_for_symbols(
 
     all_signals: List[dict] = []
 
-   for db_symbol, prices in prices_by_symbol.items():
+    for db_symbol, prices in prices_by_symbol.items():
         if not prices:
             continue
         frontend_symbol = db_symbol_map.get(db_symbol, db_symbol.replace("_", ""))

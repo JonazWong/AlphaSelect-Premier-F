@@ -153,47 +153,6 @@ def _parse_klines(raw: Any) -> Dict[str, List[float]]:
     return {"opens": opens, "highs": highs, "lows": lows, "closes": closes, "volumes": volumes}
 
 
-def _build_mock_signal(symbol: str, timeframe: str) -> Dict:
-    """Return a deterministic mock signal for a symbol when real data unavailable."""
-    import hashlib
-
-    seed = int(hashlib.md5(f"{symbol}{timeframe}".encode()).hexdigest()[:8], 16)
-
-    def _rnd(lo: float, hi: float) -> float:
-        return round(lo + (seed % 1000) / 1000 * (hi - lo), 4)
-
-    signal_type = "bounce" if seed % 2 == 0 else "pullback"
-    confidence = _rnd(60, 95)
-    urgency = "critical" if confidence >= 85 else ("high" if confidence >= 75 else "medium")
-    rsi = _rnd(20, 35) if signal_type == "bounce" else _rnd(65, 80)
-
-    return {
-        "id": str(uuid.uuid4()),
-        "symbol": symbol,
-        "signal_type": signal_type,
-        "urgency": urgency,
-        "timeframe": timeframe,
-        "confidence": confidence,
-        "current_price": _rnd(0.5, 50000),
-        "price_change": _rnd(-15, -3) if signal_type == "bounce" else _rnd(3, 15),
-        "predicted_move": _rnd(3, 12),
-        "rsi": rsi,
-        "volume_multiplier": _rnd(1.5, 5.0),
-        "macd_status": "bullish_divergence" if signal_type == "bounce" else "bearish_divergence",
-        "bb_position": "below_lower" if signal_type == "bounce" else "above_upper",
-        "ai_score": _rnd(60, 95),
-        "lstm_prediction": _rnd(2, 8),
-        "xgb_prediction": _rnd(2, 8),
-        "arima_trend": "upward" if signal_type == "bounce" else "downward",
-        "funding_rate": _rnd(-0.002, 0.002),
-        "open_interest_change": _rnd(-5, 5),
-        "liquidation_amount": _rnd(100000, 10000000),
-        "triggers": _pick_triggers(signal_type, rsi, _rnd(1.5, 5.0)),
-        "detected_at": datetime.utcnow(),
-        "created_at": datetime.utcnow(),
-    }
-
-
 def _pick_triggers(signal_type: str, rsi: float, vol_mult: float) -> List[str]:
     triggers = []
     if signal_type == "bounce":
