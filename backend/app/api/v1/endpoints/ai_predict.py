@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel
 import logging
 import pandas as pd
+import numpy as np
 import os
 
 from app.db.session import get_db
@@ -290,3 +291,149 @@ async def get_prediction_details(
     except Exception as e:
         logger.error(f"Error fetching prediction: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class BatchPredictionRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
+    symbols: List[str]
+
+
+def _compute_rsi(prices: np.ndarray, period: int = 14) -> float:
+    """Compute RSI for the last data point."""
+    if len(prices) < period + 1:
+        return 50.0
+    deltas = np.diff(prices)
+    gains = np.where(deltas > 0, deltas, 0.0)
+    losses = np.where(deltas < 0, -deltas, 0.0)
+    avg_gain = float(np.mean(gains[-period:]))
+    avg_loss = float(np.mean(losses[-period:]))
+    if avg_loss == 0:
+        return 100.0
+    rs = avg_gain / avg_loss
+    return 100.0 - (100.0 / (1.0 + rs))
+
+
+def _rating_from_indicators(rsi: float, trend_slope: float, funding_rate: float) -> str:
+    """Map technical indicators to a prediction rating.
+
+    Scoring:
+      RSI < 30 (oversold) → +2; RSI 30-45 (below neutral) → +1
+      RSI 55-70 (above neutral) → -1; RSI > 70 (overbought) → -2
+      Positive price trend → +1; Negative → -1
+      Funding rate < -0.1% (negative/bearish funding = longs rewarded) → +1
+      Funding rate > +0.1% (positive/bullish funding = shorts rewarded) → -1
+      Total ≥ 3 → strongBuy, ≥ 1 → buy, ≤ -3 → strongSell, ≤ -1 → sell, else hold
+    """
+    score = 0
+    # RSI signal
+    if rsi < 30:
+        score += 2
+    elif rsi < 45:
+        score += 1
+    elif rsi > 70:
+        score -= 2
+    elif rsi > 55:
+        score -= 1
+
+    # Trend signal
+    if trend_slope > 0:
+        score += 1
+    else:
+        score -= 1
+
+    # Funding rate signal: extreme positive funding = bearish; extreme negative = bullish
+    if funding_rate < -0.001:
+        score += 1
+    elif funding_rate > 0.001:
+        score -= 1
+
+    if score >= 3:
+        return "strongBuy"
+    elif score >= 1:
+        return "buy"
+    elif score <= -3:
+        return "strongSell"
+    elif score <= -1:
+        return "sell"
+    return "hold"
+
+
+@router.post("/predictions")
+async def batch_predictions(
+    request: BatchPredictionRequest,
+    db: Session = Depends(get_db),
+):
+    """Batch prediction for multiple symbols using real market data."""
+    results = []
+
+    for symbol in request.symbols:
+        # Normalise symbol to DB format (BTCUSDT → BTC_USDT)
+        db_symbol = symbol
+        if "_" not in symbol and len(symbol) > 4 and symbol.endswith("USDT"):
+            db_symbol = symbol[:-4] + "_USDT"
+
+        try:
+            records = (
+                db.query(ContractMarket)
+                .filter(ContractMarket.symbol == db_symbol)
+                .order_by(ContractMarket.created_at.desc())
+                .limit(50)
+                .all()
+            )
+
+            if not records:
+                continue
+
+            records = list(reversed(records))
+            prices = np.array(
+                [float(r.last_price) for r in records if r.last_price is not None],
+                dtype=float,
+            )
+
+            if len(prices) == 0:
+                continue
+
+            latest = records[-1]
+            current_price = float(latest.last_price)
+            funding_rate = float(latest.funding_rate or 0.0)
+            change24h = float(latest.price_change_24h or 0.0)
+
+            rsi = _compute_rsi(prices)
+
+            # Simple linear trend slope
+            if len(prices) >= 3:
+                trend_slope = float(
+                    np.polyfit(np.arange(len(prices)), prices, 1)[0]
+                )
+            else:
+                trend_slope = change24h
+
+            rating = _rating_from_indicators(rsi, trend_slope, funding_rate)
+
+            # Confidence: distance from neutral (RSI 50) scaled to [50, 90]
+            confidence = int(min(90, 50 + abs(rsi - 50) * 0.8))
+
+            # Price target: simple projection based on trend direction
+            target_pct = 0.03 if rating in ("strongBuy", "buy") else -0.03
+            price_target = round(current_price * (1 + target_pct), 6)
+            upside_pct = round((price_target / current_price - 1) * 100, 2)
+
+            results.append(
+                {
+                    "symbol": symbol,
+                    "rating": rating,
+                    "confidence": confidence,
+                    "currentPrice": current_price,
+                    "priceTarget": price_target,
+                    "upsidePct": upside_pct,
+                    "forecastPeriod": "24h",
+                    "timeframe": "1D",
+                }
+            )
+
+        except Exception as e:
+            logger.warning(f"Batch prediction failed for {symbol}: {e}")
+
+    return results
+

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LineChart, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import '@/i18n/config'
@@ -8,9 +8,12 @@ import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart, { OHLCV } from '@/components/IndicatorChart'
-import { SparklineChart } from '@/components/IndicatorChart'
 
 
+const API_BASE_URL =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:8000'
 
 interface PatternResult {
   symbol: string
@@ -25,53 +28,44 @@ interface PatternResult {
 }
 
 async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
-  const now = Date.now()
-
-  return symbols.map((symbol, index) => {
-    const reliabilityCycle: Array<PatternResult['reliability']> = ['high', 'medium', 'low']
-    const statusCycle: Array<PatternResult['status']> = ['detected', 'pending', 'failed']
-
-    return {
-      symbol,
-      patternName: 'Mock Pattern',
-      direction: index % 2 === 0 ? 'bullish' : 'bearish',
-      pattern: 'mockPattern',
-      completion: Math.round(50 + Math.random() * 50),
-      breakoutLevel: 50000 + index * 1000,
-      targetPrice: 55000 + index * 1000,
-      reliability: reliabilityCycle[index % reliabilityCycle.length],
-      status: statusCycle[index % statusCycle.length],
-      detectedAt: new Date(now - index * 60 * 60 * 1000).toISOString(),
-    }
-  })
+  const params = new URLSearchParams()
+  if (symbols.length > 0) {
+    params.set('symbols', symbols.join(','))
+  }
+  const query = params.toString()
+  const url = `${API_BASE_URL}/api/v1/patterns/scan${query ? `?${query}` : ''}`
+  const response = await fetch(url, { cache: 'no-store' })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Failed to fetch patterns: ${response.status}`)
+  }
+  const data = await response.json() as { patterns: PatternResult[]; total: number }
+  return data.patterns ?? []
 }
 
-function generateMockOHLCV(symbol: string, days: number): OHLCV[] {
-  const data: OHLCV[] = []
-  const now = Date.now()
-  let lastClose = 50000
-
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now - i * 24 * 60 * 60 * 1000)
-    const open = lastClose
-    const high = open * (1 + Math.random() * 0.02)
-    const low = open * (1 - Math.random() * 0.02)
-    const close = low + Math.random() * (high - low)
-    const volume = 1000 + Math.random() * 5000
-
-    lastClose = close
-
-    data.push({
-      date: date.toISOString(),
-      open,
-      high,
-      low,
-      close,
-      volume,
+async function fetchKlines(symbol: string, limit = 90): Promise<OHLCV[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/contract/klines/${symbol}?interval=Min60&limit=${limit}`,
+      { cache: 'no-store' }
+    )
+    if (!response.ok) return []
+    const json = await response.json()
+    const rows: unknown[] = json?.data ?? []
+    return rows.map((k) => {
+      const row = k as Record<string, unknown>
+      return {
+        date: new Date(Number(row.time) * 1000).toISOString(),
+        open: parseFloat(String(row.open ?? 0)),
+        high: parseFloat(String(row.high ?? 0)),
+        low: parseFloat(String(row.low ?? 0)),
+        close: parseFloat(String(row.close ?? 0)),
+        volume: parseFloat(String(row.vol ?? row.volume ?? 0)),
+      }
     })
+  } catch {
+    return []
   }
-
-  return data
 }
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT']
@@ -97,6 +91,7 @@ export default function PatternDetectionPage() {
   const [patterns, setPatterns] = useState<PatternResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [chartData, setChartData] = useState<OHLCV[]>([])
 
   useEffect(() => {
     if (symbols.length === 0) return
@@ -118,16 +113,11 @@ export default function PatternDetectionPage() {
     }
   }, [symbols])
 
-  const chartData = useMemo(
-    () =>
-      selectedSymbol
-        ? generateMockOHLCV(
-            selectedSymbol,
-            timeframe === '1D' ? 1 : timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : 90
-          )
-        : [],
-    [selectedSymbol, timeframe]
-  )
+  useEffect(() => {
+    if (!selectedSymbol) return
+    const limit = timeframe === '1D' ? 24 : timeframe === '1W' ? 168 : timeframe === '1M' ? 720 : 2160
+    fetchKlines(selectedSymbol, limit).then(setChartData)
+  }, [selectedSymbol, timeframe])
 
   return (
     <div className="space-y-6">
@@ -234,14 +224,6 @@ export default function PatternDetectionPage() {
                       {STATUS_ICONS[pat.status]}
                       <span className="text-xs text-gray-400">{t(`patternDetection.${pat.status}`)}</span>
                     </div>
-                  </div>
-
-                  {/* Mini sparkline */}
-                  <div className="h-8 mb-2">
-                    <SparklineChart
-                      data={generateMockOHLCV(pat.symbol, 14)}
-                      color={pat.direction === 'bullish' ? '#22c55e' : '#ef4444'}
-                    />
                   </div>
 
                   <div className="text-xs font-semibold text-gray-200 mb-2">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { AlertTriangle, RefreshCw, X, TrendingUp, TrendingDown, Activity, Zap } from 'lucide-react'
+import { AlertTriangle, RefreshCw, X, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
 import '@/i18n/config'
 
@@ -45,57 +45,6 @@ interface SignalStats {
   pullback_count: number
   critical_count: number
   avg_confidence: number
-}
-
-// ─── Mock data (fallback when API unavailable) ───────────────────────────────
-
-function generateMockSignals(): ExtremeSignal[] {
-  const symbols = ['BTC_USDT', 'ETH_USDT', 'SOL_USDT', 'BNB_USDT', 'XRP_USDT', 'DOGE_USDT']
-  const timeframes = ['5m', '15m', '30m', '1h', '4h']
-  const now = new Date()
-
-  return symbols.flatMap((symbol, si) =>
-    timeframes.slice(0, 2).map((tf, ti) => {
-      const seed = si * 10 + ti
-      const isBounce = seed % 2 === 0
-      const conf = 60 + (seed * 7) % 37
-      const urgency: Urgency = conf >= 85 ? 'critical' : conf >= 75 ? 'high' : 'medium'
-      const rsi = isBounce ? 22 + (seed % 10) : 70 + (seed % 12)
-      const vol = 1.5 + (seed % 40) / 10
-
-      return {
-        id: `mock-${si}-${ti}`,
-        symbol,
-        signal_type: isBounce ? 'bounce' : 'pullback',
-        urgency,
-        timeframe: tf,
-        confidence: conf,
-        current_price: 100 + seed * 500,
-        price_change: isBounce ? -(3 + (seed % 12)) : 3 + (seed % 12),
-        predicted_move: 3 + (seed % 9),
-        rsi,
-        volume_multiplier: vol,
-        macd_status: isBounce ? 'bullish_divergence' : 'bearish_divergence',
-        bb_position: isBounce ? 'below_lower' : 'above_upper',
-        ai_score: 60 + (seed * 5) % 35,
-        lstm_prediction: 3 + (seed % 7),
-        xgb_prediction: 2.5 + (seed % 6),
-        arima_trend: isBounce ? 'upward' : 'downward',
-        funding_rate: -0.001 + seed * 0.0001,
-        open_interest_change: -3 + (seed % 8),
-        liquidation_amount: 500000 + seed * 100000,
-        triggers: [
-          ...(rsi < 30 || rsi > 70 ? ['RSI極端'] : []),
-          ...(vol > 2 ? ['放量異常'] : []),
-          '布林帶突破',
-          'MACD背離',
-          'AI模型觸發',
-        ],
-        detected_at: new Date(now.getTime() - seed * 60000).toISOString(),
-        created_at: new Date(now.getTime() - seed * 60000).toISOString(),
-      }
-    })
-  )
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -489,7 +438,7 @@ export default function ExtremeReversalPage() {
   const [signals, setSignals] = useState<ExtremeSignal[]>([])
   const [stats, setStats] = useState<SignalStats | null>(null)
   const [loading, setLoading] = useState(false)
-  const [usingMock, setUsingMock] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedSignal, setSelectedSignal] = useState<ExtremeSignal | null>(null)
 
   // Filters
@@ -509,6 +458,7 @@ export default function ExtremeReversalPage() {
 
   const fetchSignals = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({ sort: sortMode, limit: '100' })
       if (timeframe !== 'all') params.set('timeframe', timeframe)
@@ -524,32 +474,10 @@ export default function ExtremeReversalPage() {
       const data = await res.json()
       setSignals(data.signals ?? [])
       setStats(data.stats ?? null)
-      setUsingMock(false)
-    } catch {
-      // Graceful fallback to mock data
-      const mock = generateMockSignals()
-      let filtered = mock
-      if (timeframe !== 'all') filtered = filtered.filter((s) => s.timeframe === timeframe)
-      if (signalType !== 'all') filtered = filtered.filter((s) => s.signal_type === signalType)
-      if (urgencyFilter !== 'all') filtered = filtered.filter((s) => s.urgency === urgencyFilter)
-      filtered.sort((a, b) =>
-        sortMode === 'confidence'
-          ? b.confidence - a.confidence
-          : sortMode === 'change'
-          ? Math.abs(b.price_change ?? 0) - Math.abs(a.price_change ?? 0)
-          : sortMode === 'volume'
-          ? (b.volume_multiplier ?? 0) - (a.volume_multiplier ?? 0)
-          : new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
-      )
-      setSignals(filtered)
-      setStats({
-        total: mock.length,
-        bounce_count: mock.filter((s) => s.signal_type === 'bounce').length,
-        pullback_count: mock.filter((s) => s.signal_type === 'pullback').length,
-        critical_count: mock.filter((s) => s.urgency === 'critical').length,
-        avg_confidence: mock.reduce((a, s) => a + s.confidence, 0) / mock.length,
-      })
-      setUsingMock(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '無法獲取信號數據')
+      setSignals([])
+      setStats(null)
     } finally {
       setLoading(false)
     }
@@ -650,11 +578,11 @@ export default function ExtremeReversalPage() {
         </div>
       </div>
 
-      {/* Mock data banner */}
-      {usingMock && (
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-2 text-sm text-yellow-400 flex items-center gap-2">
-          <Zap className="w-4 h-4" />
-          後端暫不可用，目前顯示示例數據
+      {/* Error banner */}
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-400 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" />
+          {error}
         </div>
       )}
 

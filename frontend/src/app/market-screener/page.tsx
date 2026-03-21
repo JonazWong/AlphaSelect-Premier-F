@@ -7,8 +7,6 @@ import '@/i18n/config'
 import TimeframeSelector, { Timeframe } from '@/components/TimeframeSelector'
 import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
-import { SparklineChart } from '@/components/IndicatorChart'
-import { generateMockOHLCV } from '@/lib/mockData'
 
 export type ScreenerResult = {
   symbol: string
@@ -19,7 +17,6 @@ export type ScreenerResult = {
   change24h: number
   volume24h: number
   fundingRate: number
-  sparkline: number[]
 }
 
 const API_BASE_URL =
@@ -33,7 +30,7 @@ async function fetchScreenerData(symbols?: string[]): Promise<ScreenerResult[]> 
     params.set('symbols', symbols.join(','))
   }
 
-  const url = `${API_BASE_URL}/api/v1/contract_market/screener${
+  const url = `${API_BASE_URL}/api/v1/screener/scan${
     params.toString() ? `?${params.toString()}` : ''
   }`
 
@@ -50,8 +47,8 @@ async function fetchScreenerData(symbols?: string[]): Promise<ScreenerResult[]> 
     throw new Error(text || `Request failed with status ${response.status}`)
   }
 
-  const data = (await response.json()) as ScreenerResult[]
-  return data
+  const data = await response.json() as { results: ScreenerResult[]; total: number }
+  return data.results ?? []
 }
 
 type RiskFilter = 'all' | 'low' | 'medium' | 'high'
@@ -335,14 +332,6 @@ export default function MarketScreenerPage() {
                           <span className={`px-2 py-0.5 rounded text-xs font-bold ${riskColors[row.riskLevel]}`}>
                             {t(`common.levels.${row.riskLevel}`)}
                           </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="w-24 h-8">
-                            <SparklineChart
-                              data={generateMockOHLCV(row.symbol, 14)}
-                              color={row.change24h >= 0 ? '#22c55e' : '#ef4444'}
-                            />
-                          </div>
                         </td>
                       </tr>
                     ))}

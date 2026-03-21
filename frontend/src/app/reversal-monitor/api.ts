@@ -26,7 +26,7 @@ export async function fetchReversalSignals(symbols?: string[]): Promise<Reversal
   }
 
   const query = params.toString()
-  const url = `${API_BASE_URL}/api/v1/reversal-signals${query ? `?${query}` : ''}`
+  const url = `${API_BASE_URL}/api/v1/reversal/scan${query ? `?${query}` : ''}`
 
   const response = await fetch(url, {
     method: 'GET',
@@ -39,5 +39,6 @@ export async function fetchReversalSignals(symbols?: string[]): Promise<Reversal
     throw new Error(`Failed to fetch reversal signals (status ${response.status})`)
   }
 
-  return (await response.json()) as ReversalSignal[]
+  const data = await response.json() as { signals: ReversalSignal[]; total: number }
+  return data.signals ?? []
 }
