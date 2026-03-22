@@ -317,6 +317,12 @@ class BatchPredictionResult(BaseModel):
     timeframe: str = "1h"
     predicted_value: Optional[float] = None
     model_type: Optional[str] = None
+    currentPrice: Optional[float] = None
+    targetPrice: Optional[float] = None
+    upsidePct: Optional[float] = None
+    direction: Optional[str] = None
+    modelAccuracy: Optional[float] = None
+    forecastPeriod: Optional[str] = None
 
 
 def _determine_rating(predicted_value: float, current_price: float, confidence: float) -> str:
@@ -447,6 +453,17 @@ async def make_batch_predictions(
                 confidence = prediction_result['confidence_score'] * 100
                 rating = _determine_rating(predicted_value, current_price, confidence)
                 
+                # Calculate upside percentage
+                upside_pct = ((predicted_value - current_price) / current_price * 100) if current_price > 0 else 0
+                
+                # Determine direction
+                if upside_pct >= 2:
+                    direction = 'bullish'
+                elif upside_pct <= -2:
+                    direction = 'bearish'
+                else:
+                    direction = 'neutral'
+                
                 results.append(BatchPredictionResult(
                     symbol=symbol,
                     rating=rating,
@@ -454,7 +471,13 @@ async def make_batch_predictions(
                     priceTarget=round(predicted_value, 6),
                     timeframe="1h",
                     predicted_value=round(predicted_value, 6),
-                    model_type=prediction_result.get('model_type', 'unknown')
+                    model_type=prediction_result.get('model_type', 'unknown'),
+                    currentPrice=round(current_price, 6),
+                    targetPrice=round(predicted_value, 6),
+                    upsidePct=round(upside_pct, 2),
+                    direction=direction,
+                    modelAccuracy=round(confidence, 2),
+                    forecastPeriod="1h"
                 ))
                 
             except HTTPException:
