@@ -12,7 +12,13 @@ export type ReversalSignal = {
   direction: 'bullish' | 'bearish'
   urgency: 'critical' | 'high' | 'medium' | 'low'
   timestamp?: string
-  [key: string]: any
+  signalType?: 'bounce' | 'pullback'
+  description?: string
+  rsi?: number
+  bbPosition?: number
+  currentPrice?: number
+  targetPrice?: number
+  confidence?: number
 }
 
 const API_BASE_URL =
@@ -151,7 +157,9 @@ export default function ReversalMonitorPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {signals.map((signal, idx) => (
+          {signals.map((signal, idx) => {
+            const rsiValue = signal.rsi ?? 0
+            return (
             <div
               key={`${signal.symbol}-${idx}`}
               className={`glass-card p-5 bg-gradient-to-br ${
@@ -193,22 +201,22 @@ export default function ReversalMonitorPage() {
               <div className="grid grid-cols-2 gap-2 text-xs mb-3 p-3 rounded-lg bg-black/20 border border-gray-700/30">
                 <div>
                   <span className="text-gray-500">RSI: </span>
-                  <span className={`font-mono font-bold ${signal.rsi < 35 ? 'text-green-400' : signal.rsi > 65 ? 'text-red-400' : 'text-gray-300'}`}>
-                    {signal.rsi.toFixed(1)}
+                  <span className={`font-mono font-bold ${rsiValue < 35 ? 'text-green-400' : rsiValue > 65 ? 'text-red-400' : 'text-gray-300'}`}>
+                    {rsiValue.toFixed(1)}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-500">BB Pos: </span>
-                  <span className="font-mono font-bold text-gray-300">{(signal.bbPosition * 100).toFixed(0)}%</span>
+                  <span className="font-mono font-bold text-gray-300">{((signal.bbPosition ?? 0) * 100).toFixed(0)}%</span>
                 </div>
                 <div>
                   <span className="text-gray-500">{t('common.price')}: </span>
-                  <span className="font-mono font-bold text-primary">${signal.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
+                  <span className="font-mono font-bold text-primary">${(signal.currentPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">{t('aiPredictions.targetPrice')}: </span>
                   <span className={`font-mono font-bold ${signal.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
-                    ${signal.targetPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}
+                    ${(signal.targetPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
                   </span>
                 </div>
               </div>
@@ -217,12 +225,12 @@ export default function ReversalMonitorPage() {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">{t('common.confidence')}</span>
-                  <span className="text-primary font-bold">{signal.confidence}%</span>
+                  <span className="text-primary font-bold">{signal.confidence ?? 0}%</span>
                 </div>
                 <div
                   className="h-2 rounded-full bg-gray-800 overflow-hidden"
                   role="progressbar"
-                  aria-valuenow={signal.confidence}
+                  aria-valuenow={signal.confidence ?? 0}
                   aria-valuemin={0}
                   aria-valuemax={100}
                 >
@@ -232,12 +240,13 @@ export default function ReversalMonitorPage() {
                         ? 'bg-gradient-to-r from-green-500 to-emerald-400'
                         : 'bg-gradient-to-r from-red-500 to-orange-400'
                     }`}
-                    style={{ width: `${signal.confidence}%` }}
+                    style={{ width: `${signal.confidence ?? 0}%` }}
                   />
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

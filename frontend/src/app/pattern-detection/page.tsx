@@ -9,14 +9,7 @@ import SymbolSelector from '@/components/SymbolSelector'
 import ComparisonSelector from '@/components/ComparisonSelector'
 import IndicatorChart from '@/components/IndicatorChart'
 import { SparklineChart } from '@/components/IndicatorChart'
-
-
-
-interface PatternResult {
-  reliability: 'high' | 'medium' | 'low'
-  status: 'detected' | 'pending' | 'failed'
-  [key: string]: any
-}
+import { PatternResult, generateMockOHLCV } from '@/lib/mockData'
 
 async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
   const baseUrl =
@@ -43,35 +36,6 @@ async function fetchPatterns(symbols: string[]): Promise<PatternResult[]> {
 
   const data = await response.json()
   return data.patterns || []
-}
-
-function generateMockOHLCV(symbol: string, days: number): any[] {
-  const data: any[] = []
-  const now = Date.now()
-  let lastClose = 50000
-
-  for (let i = days - 1; i >= 0; i--) {
-    const time = new Date(now - i * 24 * 60 * 60 * 1000)
-    const open = lastClose
-    const high = open * (1 + Math.random() * 0.02)
-    const low = open * (1 - Math.random() * 0.02)
-    const close = low + Math.random() * (high - low)
-    const volume = 1000 + Math.random() * 5000
-
-    lastClose = close
-
-    data.push({
-      symbol,
-      time,
-      open,
-      high,
-      low,
-      close,
-      volume,
-    })
-  }
-
-  return data
 }
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT']

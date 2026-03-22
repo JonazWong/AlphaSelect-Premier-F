@@ -226,7 +226,7 @@ export default function AIPredictionsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold font-mono text-primary">
-                      ${pred.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                      ${(pred.currentPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.currentPrice')}</div>
                   </div>
@@ -236,22 +236,22 @@ export default function AIPredictionsPage() {
                   <div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.targetPrice')}</div>
                     <div className="font-mono font-bold text-sm text-white">
-                      ${pred.targetPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                      ${(pred.targetPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">{pred.upsidePct >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
-                    <div className={`font-bold text-sm ${pred.upsidePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {pred.upsidePct >= 0 ? '+' : ''}{pred.upsidePct}%
+                    <div className="text-xs text-gray-500">{(pred.upsidePct ?? 0) >= 0 ? t('aiPredictions.upside') : t('aiPredictions.downside')}</div>
+                    <div className={`font-bold text-sm ${(pred.upsidePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {(pred.upsidePct ?? 0) >= 0 ? '+' : ''}{pred.upsidePct ?? 0}%
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.modelAccuracy')}</div>
-                    <div className="font-bold text-sm text-cyan-400">{pred.modelAccuracy}%</div>
+                    <div className="font-bold text-sm text-cyan-400">{pred.modelAccuracy ?? 0}%</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">{t('aiPredictions.forecastPeriod')}</div>
-                    <div className="font-bold text-sm text-gray-300">{pred.forecastPeriod}</div>
+                    <div className="font-bold text-sm text-gray-300">{pred.forecastPeriod ?? '-'}</div>
                   </div>
                 </div>
 
