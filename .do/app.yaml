@@ -10,7 +10,7 @@ features:
 
 databases:
   - cluster_name: premier
-    db_name: alphaselect
+    db_name: defaultdb
     db_user: doadmin
     engine: PG
     name: premier

@@ -11,14 +11,14 @@
 | **App Name** | `alphaselect-premier` |
 | **Region** | Singapore (`sgp`) |
 | **Database Cluster** | `premier` |
-| **Database Name** | `alphaselect` |
-| **Database URL** | `postgresql://doadmin:[PASSWORD]@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/alphaselect?sslmode=require` |
+| **Database Name** | `defaultdb` |
+| **Database URL** | `postgresql://doadmin:[PASSWORD]@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require` |
 
 ### 更新内容
 
 #### 1. `.do/app.yaml`
 - ✅ App name: `alpha` → `alphaselect-premier`
-- ✅ Database name: `defaultdb` → `alphaselect`
+- ✅ Database name: `defaultdb` (使用默認數據庫)
 
 #### 2. 文档更新
 - ✅ `DEPLOYMENT_CHECKLIST.md` - DATABASE_URL 示例更新
@@ -65,8 +65,8 @@
 ### 必需环境变量
 
 Backend 和 Celery Worker 需要：
-- [x] `DATABASE_URL` - 连接到 `alphaselect` 数据库
-- [x] `REDIS_URL` - 自动注入 (来自 Redis managed database)
+- [x] `DATABASE_URL` - 連接到 `defaultdb` 數據庫（DigitalOcean 預設）
+- [x] `REDIS_URL` - 自動注入 (來自 Redis managed database)
 - [x] `SECRET_KEY` - JWT 签名密钥
 - [x] `MEXC_API_KEY` - MEXC API 密钥
 - [x] `MEXC_SECRET_KEY` - MEXC Secret 密钥
@@ -103,10 +103,10 @@ doctl apps update <APP_ID> --spec .do/app.yaml --wait
 ### 注意事项
 
 ⚠️ **重要:** 
-- 旧的 `alpha` 应用已删除
-- 数据库名称已从 `defaultdb` 改为 `alphaselect`
-- 确保所有环境变量中的 DATABASE_URL 使用新的数据库名称
-- API Token 已更新，请保管好新的 token
+- 舊的 `alpha` 應用已刪除
+- 數據庫名稱使用 DigitalOcean 預設的 `defaultdb`
+- 確保所有環境變數中的 DATABASE_URL 使用正確的數據庫名稱
+- API Token 已更新，請保管好新的 token
 
 ### 验证清单
 

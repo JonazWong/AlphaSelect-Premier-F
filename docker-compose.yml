@@ -2,7 +2,7 @@ services:
   postgres:
     image: timescale/timescaledb:2.25.2-pg16
     environment:
-      POSTGRES_DB: alphaselect
+      POSTGRES_DB: defaultdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
     ports:
@@ -68,7 +68,7 @@ services:
     environment:
       # Local development DB — override DATABASE_URL for production:
       # DATABASE_URL: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/defaultdb
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -98,7 +98,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/defaultdb
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}

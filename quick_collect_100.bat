@@ -64,7 +64,7 @@ echo    • 觸發重試：  !retried!
 echo.
 
 echo [CHECK] 查詢資料庫中的數據量...
-docker compose exec -T postgres psql -U postgres -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol IN ('BTC_USDT','ETH_USDT','SOL_USDT','BNB_USDT','DOGE_USDT') GROUP BY symbol ORDER BY symbol;" 2>NUL
+docker compose exec -T postgres psql -U postgres -d defaultdb -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol IN ('BTC_USDT','ETH_USDT','SOL_USDT','BNB_USDT','DOGE_USDT') GROUP BY symbol ORDER BY symbol;" 2>NUL
 if errorlevel 1 (
     echo [WARN] 無法查詢資料庫，請確認 postgres 容器正在運行
 )

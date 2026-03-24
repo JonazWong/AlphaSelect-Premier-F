@@ -159,7 +159,7 @@ for %%s in (%symbols%) do (
     )
 )
 
-docker compose exec -T postgres psql -U postgres -d alphaselect -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol IN (!sql_symbols!) GROUP BY symbol ORDER BY symbol;" 2>NUL
+docker compose exec -T postgres psql -U postgres -d defaultdb -c "SELECT symbol, COUNT(*) as count FROM contract_markets WHERE symbol IN (!sql_symbols!) GROUP BY symbol ORDER BY symbol;" 2>NUL
 if errorlevel 1 (
     echo [WARN] Cannot query database, ensure postgres container is running
 )
