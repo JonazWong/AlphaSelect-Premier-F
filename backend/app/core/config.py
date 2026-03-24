@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Security
     # WARNING: must be provided via SECRET_KEY env var (must be >= 32 chars)
-    SECRET_KEY: str = Field(default="", min_length=32)
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
 
     # CORS
@@ -53,11 +53,20 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = False
 
-    @field_validator('DATABASE_URL', 'REDIS_URL', 'SECRET_KEY')
+    @field_validator('DATABASE_URL', 'REDIS_URL')
     @classmethod
-    def validate_required_fields(cls, v, info):
+    def validate_database_and_redis_urls(cls, v, info):
         if not v:
             raise ValueError(f'{info.field_name} is required but not set in environment')
+        return v
+
+    @field_validator('SECRET_KEY')
+    @classmethod
+    def validate_secret_key(cls, v, info):
+        if not v:
+            raise ValueError('SECRET_KEY is required but not set in environment')
+        if len(v) < 32:
+            raise ValueError(f'SECRET_KEY must be at least 32 characters, got {len(v)}')
         return v
 
     @property
