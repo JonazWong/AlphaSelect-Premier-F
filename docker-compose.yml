@@ -41,7 +41,7 @@ services:
     environment:
       # Local development DB — override DATABASE_URL for production:
       # DATABASE_URL: postgresql://doadmin:<password>@premier-do-user-32973725-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/alphaselect
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-dev_password_123}@postgres:5432/defaultdb
       REDIS_URL: redis://redis:6379
       MEXC_API_KEY: ${MEXC_API_KEY:-}
       MEXC_SECRET_KEY: ${MEXC_SECRET_KEY:-}
@@ -127,6 +127,8 @@ services:
       PORT: "3000"
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_WS_URL: http://localhost:8000
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
     depends_on:
       - backend
 
