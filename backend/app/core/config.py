@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pydantic_settings import BaseSettings
 from typing import List
 from pydantic import field_validator
@@ -74,4 +75,29 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
 
 
-settings = Settings()
+@lru_cache()
+def get_settings() -> Settings:
+    """
+    Get cached Settings instance.
+    Uses lru_cache to ensure Settings is only instantiated once
+    and only when actually needed (lazy loading).
+    """
+    return Settings()
+
+
+class _SettingsProxy:
+    """
+    Proxy class that provides lazy loading of Settings.
+    This prevents Settings from being instantiated at module import time,
+    avoiding ValidationError when env vars are not yet available (e.g.
+    during Docker build or DigitalOcean health-check phases).
+
+    Thread safety is delegated to get_settings(), which uses lru_cache
+    (internally protected by a threading lock in CPython).
+    """
+
+    def __getattr__(self, name: str):
+        return getattr(get_settings(), name)
+
+
+settings = _SettingsProxy()
