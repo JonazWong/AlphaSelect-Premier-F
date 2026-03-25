@@ -14,7 +14,11 @@ databases:
     db_user: doadmin
     engine: PG
     name: premier
-    production: true 
+    production: true
+  - name: redis
+    engine: REDIS
+    production: true
+    version: "7"
 
 ingress:
   rules:
