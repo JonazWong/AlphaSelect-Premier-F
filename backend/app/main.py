@@ -77,9 +77,12 @@ fastapi_app.include_router(pattern_detection.router, prefix="/api/v1/patterns", 
 fastapi_app.include_router(market_screener.router, prefix="/api/v1/screener", tags=["Market Screener"])
 fastapi_app.include_router(reversal_monitor.router, prefix="/api/v1/reversal", tags=["Reversal Monitor"])
 
-# Static files directory (serves assets under /static)
+# Static files directory (serves assets under /static); skip if directory is absent
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
-fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+if _STATIC_DIR.is_dir():
+    fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+else:
+    logger.warning(f"Static directory not found at {_STATIC_DIR}; /static will not be served")
 
 # Frontend URL for status messages; falls back to localhost for dev if not configured
 _FRONTEND_URL = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
