@@ -25,6 +25,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Ensure logs are immediately visible (no buffering)
+ENV PYTHONUNBUFFERED=1
+
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -38,18 +41,14 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application code
 COPY . .
 
-# Create AI models directory with proper permissions
-RUN mkdir -p /app/ai_models && \
-    chmod 755 /app/ai_models
+# Create required directories with proper permissions
+RUN mkdir -p /app/ai_models /app/app/static && \
+    chmod 755 /app/ai_models /app/app/static
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
 
 EXPOSE 8000
 
