@@ -82,7 +82,7 @@ _STATIC_DIR = Path(__file__).resolve().parent / "static"
 if _STATIC_DIR.is_dir():
     fastapi_app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 else:
-    logger.warning(f"Static directory not found at {_STATIC_DIR}; /static will not be served")
+    logger.warning("Static directory not found at %s; /static will not be served", _STATIC_DIR)
 
 # Frontend URL for status messages; falls back to localhost for dev if not configured
 _FRONTEND_URL = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
