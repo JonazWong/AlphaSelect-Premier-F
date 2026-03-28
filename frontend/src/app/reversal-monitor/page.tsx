@@ -34,7 +34,7 @@ async function fetchReversalSignals(symbols?: string[]): Promise<ReversalSignal[
   }
 
   const query = params.toString()
-  const url = `${API_BASE_URL}/api/v1/reversal-signals${query ? `?${query}` : ''}`
+  const url = `${API_BASE_URL}/api/v1/reversal/scan${query ? `?${query}` : ''}`
 
   const response = await fetch(url, {
     method: 'GET',

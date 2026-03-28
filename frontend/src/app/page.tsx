@@ -2,8 +2,12 @@
 
 import Link from 'next/link'
 import { Activity, TrendingUp, Brain, LineChart, ChevronRight, Zap, AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import '@/i18n/config'
 
 export default function Home() {
+  const { t } = useTranslation('common')
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -12,30 +16,29 @@ export default function Home() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-6">
             <Zap className="w-4 h-4" />
-            AI-Powered Trading Intelligence
+            {t('home.badge')}
           </div>
           <h1 className="text-6xl font-bold mb-6">
-            <span className="text-gradient-cyan-purple">AlphaSelect Premier F</span>
+            <span className="text-gradient-cyan-purple">{t('home.title')}</span>
           </h1>
           <p className="text-2xl text-gray-300 mb-4">
-            AI-Driven MEXC Contract Trading Analysis Platform
+            {t('home.subtitle')}
           </p>
           <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-12">
-            Integrate deep learning prediction models and professional technical analysis
-            for MEXC perpetual contract trading pairs
+            {t('home.description')}
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center">
             <Link href="/crypto-radar" className="btn-primary flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              Start Trading Radar
+              {t('home.startTrading')}
             </Link>
             <Link
               href="/ai-training"
               className="px-6 py-2.5 rounded-lg border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-all flex items-center gap-2"
             >
               <Brain className="w-5 h-5" />
-              AI Training Center
+              {t('home.aiTrainingCenter')}
             </Link>
           </div>
         </div>
@@ -47,13 +50,13 @@ export default function Home() {
           <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex items-center gap-4 mb-4">
               <Activity className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-bold">Contract Radar</h3>
+              <h3 className="text-xl font-bold">{t('home.features.contractRadar.title')}</h3>
             </div>
             <p className="text-gray-400">
-              Real-time trading signals with AI-powered long/short analysis
+              {t('home.features.contractRadar.desc')}
             </p>
             <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium">
-              Explore <ChevronRight className="w-4 h-4" />
+              {t('home.explore')} <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         </Link>
@@ -62,13 +65,13 @@ export default function Home() {
           <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex items-center gap-4 mb-4">
               <Brain className="w-10 h-10 text-secondary" />
-              <h3 className="text-xl font-bold">AI Training</h3>
+              <h3 className="text-xl font-bold">{t('home.features.aiTraining.title')}</h3>
             </div>
             <p className="text-gray-400">
-              Train LSTM, XGBoost, and ensemble models for price prediction
+              {t('home.features.aiTraining.desc')}
             </p>
             <div className="mt-4 flex items-center gap-1 text-secondary text-sm font-medium">
-              Explore <ChevronRight className="w-4 h-4" />
+              {t('home.explore')} <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         </Link>
@@ -77,13 +80,13 @@ export default function Home() {
           <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex items-center gap-4 mb-4">
               <TrendingUp className="w-10 h-10 text-accent" />
-              <h3 className="text-xl font-bold">AI Predictions</h3>
+              <h3 className="text-xl font-bold">{t('home.features.aiPredictions.title')}</h3>
             </div>
             <p className="text-gray-400">
-              View price forecasts from trained AI models with confidence scores
+              {t('home.features.aiPredictions.desc')}
             </p>
             <div className="mt-4 flex items-center gap-1 text-accent text-sm font-medium">
-              Explore <ChevronRight className="w-4 h-4" />
+              {t('home.explore')} <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         </Link>
@@ -92,13 +95,13 @@ export default function Home() {
           <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex items-center gap-4 mb-4">
               <LineChart className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-bold">Pattern Detection</h3>
+              <h3 className="text-xl font-bold">{t('home.features.patternDetection.title')}</h3>
             </div>
             <p className="text-gray-400">
-              Identify chart patterns and technical analysis signals
+              {t('home.features.patternDetection.desc')}
             </p>
             <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium">
-              Explore <ChevronRight className="w-4 h-4" />
+              {t('home.explore')} <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         </Link>
@@ -107,13 +110,13 @@ export default function Home() {
           <div className="glass-card neon-glow p-6 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex items-center gap-4 mb-4">
               <AlertTriangle className="w-10 h-10 text-orange-400" />
-              <h3 className="text-xl font-bold">Reversal Monitor</h3>
+              <h3 className="text-xl font-bold">{t('home.features.reversalMonitor.title')}</h3>
             </div>
             <p className="text-gray-400">
-              AI-powered extreme bounce/pullback signal detection with LSTM, XGBoost & ARIMA
+              {t('home.features.reversalMonitor.desc')}
             </p>
             <div className="mt-4 flex items-center gap-1 text-orange-400 text-sm font-medium">
-              Explore <ChevronRight className="w-4 h-4" />
+              {t('home.explore')} <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         </Link>
@@ -122,39 +125,39 @@ export default function Home() {
       {/* Stats Section */}
       <section className="glass-card p-8">
         <h2 className="text-3xl font-bold mb-8 text-center">
-          Platform <span className="text-gradient-cyan-purple">Statistics</span>
+          <span className="text-gradient-cyan-purple">{t('home.stats.title')}</span>
         </h2>
         
         <div className="grid md:grid-cols-4 gap-8">
           <div className="text-center">
             <div className="text-5xl font-bold text-primary mb-2">6</div>
-            <div className="text-gray-400">AI Models</div>
+            <div className="text-gray-400">{t('home.stats.aiModels')}</div>
             <div className="text-sm text-gray-500 mt-2">
-              LSTM, XGBoost, Random Forest, ARIMA, Linear Regression, Ensemble
+              {t('home.stats.aiModelsDesc')}
             </div>
           </div>
           
           <div className="text-center">
             <div className="text-5xl font-bold text-secondary mb-2">20+</div>
-            <div className="text-gray-400">Technical Indicators</div>
+            <div className="text-gray-400">{t('home.stats.indicators')}</div>
             <div className="text-sm text-gray-500 mt-2">
-              RSI, MACD, Bollinger Bands, EMA, SMA, and more
+              {t('home.stats.indicatorsDesc')}
             </div>
           </div>
           
           <div className="text-center">
             <div className="text-5xl font-bold text-accent mb-2">Real-time</div>
-            <div className="text-gray-400">Market Data</div>
+            <div className="text-gray-400">{t('home.stats.marketData')}</div>
             <div className="text-sm text-gray-500 mt-2">
-              Live prices, funding rates, and open interest
+              {t('home.stats.marketDataDesc')}
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-5xl font-bold text-primary mb-2">24/7</div>
-            <div className="text-gray-400">Monitoring</div>
+            <div className="text-gray-400">{t('home.stats.monitoring')}</div>
             <div className="text-sm text-gray-500 mt-2">
-              Continuous data crawling and signal generation
+              {t('home.stats.monitoringDesc')}
             </div>
           </div>
         </div>
@@ -163,12 +166,12 @@ export default function Home() {
       {/* Technology Stack */}
       <section>
         <h2 className="text-3xl font-bold mb-8 text-center">
-          Technology <span className="text-gradient-cyan-purple">Stack</span>
+          <span className="text-gradient-cyan-purple">{t('home.techStack.title')}</span>
         </h2>
         
         <div className="grid md:grid-cols-2 gap-8">
           <div className="glass-card p-6">
-            <h3 className="text-xl font-bold mb-4 text-primary">Backend</h3>
+            <h3 className="text-xl font-bold mb-4 text-primary">{t('home.techStack.backend')}</h3>
             <ul className="space-y-2 text-gray-400">
               <li>• FastAPI (Python 3.11)</li>
               <li>• PostgreSQL 16 + TimescaleDB</li>
@@ -178,7 +181,7 @@ export default function Home() {
           </div>
           
           <div className="glass-card p-6">
-            <h3 className="text-xl font-bold mb-4 text-secondary">Frontend</h3>
+            <h3 className="text-xl font-bold mb-4 text-secondary">{t('home.techStack.frontend')}</h3>
             <ul className="space-y-2 text-gray-400">
               <li>• Next.js 15.2.9 (App Router)</li>
               <li>• TypeScript</li>
@@ -188,7 +191,7 @@ export default function Home() {
           </div>
           
           <div className="glass-card p-6">
-            <h3 className="text-xl font-bold mb-4 text-accent">AI/ML</h3>
+            <h3 className="text-xl font-bold mb-4 text-accent">{t('home.techStack.aiml')}</h3>
             <ul className="space-y-2 text-gray-400">
               <li>• TensorFlow 2.x (LSTM)</li>
               <li>• XGBoost</li>
@@ -198,7 +201,7 @@ export default function Home() {
           </div>
           
           <div className="glass-card p-6">
-            <h3 className="text-xl font-bold mb-4 text-primary">Infrastructure</h3>
+            <h3 className="text-xl font-bold mb-4 text-primary">{t('home.techStack.infrastructure')}</h3>
             <ul className="space-y-2 text-gray-400">
               <li>• Docker + Docker Compose</li>
               <li>• DigitalOcean App Platform</li>

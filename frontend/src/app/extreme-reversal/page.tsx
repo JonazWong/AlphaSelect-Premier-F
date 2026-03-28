@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AlertTriangle, RefreshCw, X, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
+import { useTranslation } from 'react-i18next'
 import '@/i18n/config'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -77,15 +78,16 @@ function ConfidenceBar({ value, urgency }: { value: number; urgency: Urgency }) 
 }
 
 function UrgencyBadge({ urgency }: { urgency: Urgency }) {
+  const { t } = useTranslation('common')
   const styles: Record<Urgency, string> = {
     critical: 'bg-red-500/20 text-red-400 border border-red-500/40',
     high: 'bg-orange-500/20 text-orange-400 border border-orange-500/40',
     medium: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40',
   }
   const labels: Record<Urgency, string> = {
-    critical: '極高',
-    high: '高',
-    medium: '中',
+    critical: t('extremeReversal.urgency.critical'),
+    high: t('extremeReversal.urgency.high'),
+    medium: t('extremeReversal.urgency.medium'),
   }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[urgency]}`}>
@@ -127,6 +129,7 @@ function SignalCard({
   onClick: () => void
 }) {
   const isBounce = signal.signal_type === 'bounce'
+  const { t } = useTranslation('common')
   const borderColor = isBounce ? 'border-emerald-500/40' : 'border-red-500/40'
   const gradientFrom = isBounce ? 'from-emerald-900/20' : 'from-red-900/20'
 
@@ -161,7 +164,7 @@ function SignalCard({
             <TrendingDown className="w-4 h-4 text-red-400" />
           )}
           <span className={`text-sm font-semibold ${isBounce ? 'text-emerald-400' : 'text-red-400'}`}>
-            {isBounce ? '極端反彈' : '極端回調'}
+            {isBounce ? t('extremeReversal.bounce') : t('extremeReversal.pullback')}
           </span>
         </div>
 
@@ -175,7 +178,7 @@ function SignalCard({
           </span>
           {signal.predicted_move != null && (
             <span className="text-primary text-xs">
-              預測 {isBounce ? '+' : '-'}{signal.predicted_move.toFixed(1)}%
+              {t('extremeReversal.predicted')} {isBounce ? '+' : '-'}{signal.predicted_move.toFixed(1)}%
             </span>
           )}
         </div>
@@ -183,7 +186,7 @@ function SignalCard({
         {/* Confidence bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-gray-400">
-            <span>AI 信心度</span>
+            <span>{ t('extremeReversal.aiConfidence') }</span>
             <span className="font-bold text-white">{signal.confidence.toFixed(1)}%</span>
           </div>
           <ConfidenceBar value={signal.confidence} urgency={signal.urgency} />
@@ -204,13 +207,13 @@ function SignalCard({
             </div>
           </div>
           <div className="bg-card/50 rounded p-1.5">
-            <div className="text-xs text-gray-500">量能倍數</div>
+            <div className="text-xs text-gray-500">{t('extremeReversal.volumeMultiplier')}</div>
             <div className={`text-sm font-bold ${signal.volume_multiplier != null && signal.volume_multiplier > 2 ? 'text-orange-400' : 'text-white'}`}>
               {signal.volume_multiplier != null ? `${signal.volume_multiplier.toFixed(1)}x` : '—'}
             </div>
           </div>
           <div className="bg-card/50 rounded p-1.5">
-            <div className="text-xs text-gray-500">AI 分數</div>
+            <div className="text-xs text-gray-500">{t('extremeReversal.aiScore')}</div>
             <div className="text-sm font-bold text-secondary">
               {signal.ai_score != null ? signal.ai_score.toFixed(0) : '—'}
             </div>
@@ -251,19 +254,19 @@ function SignalCard({
         {/* Contract data */}
         <div className="grid grid-cols-3 gap-2 text-xs pt-1 border-t border-gray-800">
           <div>
-            <div className="text-gray-500">資金費率</div>
+            <div className="text-gray-500">{t('extremeReversal.fundingRate')}</div>
             <div className={`font-medium ${signal.funding_rate != null && signal.funding_rate < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {signal.funding_rate != null ? `${(signal.funding_rate * 100).toFixed(4)}%` : '—'}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">OI 變化</div>
+            <div className="text-gray-500">{t('extremeReversal.oiChange')}</div>
             <div className="text-white font-medium">
               {signal.open_interest_change != null ? `${signal.open_interest_change > 0 ? '+' : ''}${signal.open_interest_change.toFixed(1)}%` : '—'}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">清算量</div>
+            <div className="text-gray-500">{t('extremeReversal.liquidation')}</div>
             <div className="text-white font-medium">
               {signal.liquidation_amount != null
                 ? signal.liquidation_amount >= 1e6
@@ -286,6 +289,7 @@ function DetailModal({
   onClose: () => void
 }) {
   const isBounce = signal.signal_type === 'bounce'
+  const { t } = useTranslation('common')
 
   return (
     <div
@@ -305,7 +309,7 @@ function DetailModal({
               <h2 className="text-xl font-bold text-white">{signal.symbol}</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={`text-sm font-medium ${isBounce ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {isBounce ? '極端反彈信號' : '極端回調信號'}
+                  {isBounce ? t('extremeReversal.bounceSignal') : t('extremeReversal.pullbackSignal')}
                 </span>
                 <UrgencyBadge urgency={signal.urgency} />
                 <span className="text-xs text-gray-500">{signal.timeframe}</span>
@@ -324,7 +328,7 @@ function DetailModal({
           {/* Confidence */}
           <div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-400">AI 信心度</span>
+              <span className="text-gray-400">{t('extremeReversal.aiConfidence')}</span>
               <span className="font-bold text-white">{signal.confidence.toFixed(1)}%</span>
             </div>
             <ConfidenceBar value={signal.confidence} urgency={signal.urgency} />
@@ -332,13 +336,13 @@ function DetailModal({
 
           {/* Technical indicators */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">技術指標詳情</h3>
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('extremeReversal.techIndicators')}</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'RSI (14)', value: signal.rsi != null ? signal.rsi.toFixed(2) : '—' },
-                { label: 'MACD 狀態', value: signal.macd_status?.replace('_', ' ') ?? '—' },
-                { label: '布林帶位置', value: signal.bb_position?.replace('_', ' ') ?? '—' },
-                { label: '成交量倍數', value: signal.volume_multiplier != null ? `${signal.volume_multiplier.toFixed(2)}x` : '—' },
+                { label: t('extremeReversal.macdStatus'), value: signal.macd_status?.replace('_', ' ') ?? '—' },
+                { label: t('extremeReversal.bbPosition'), value: signal.bb_position?.replace('_', ' ') ?? '—' },
+                { label: t('extremeReversal.volumeMultiplier'), value: signal.volume_multiplier != null ? `${signal.volume_multiplier.toFixed(2)}x` : '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-card/40 rounded-lg p-3">
                   <div className="text-xs text-gray-500 mb-1">{label}</div>
@@ -350,11 +354,11 @@ function DetailModal({
 
           {/* AI models */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">AI 模型分析</h3>
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('extremeReversal.aiModels')}</h3>
             <div className="space-y-2">
               {[
-                { name: 'LSTM 深度學習', value: signal.lstm_prediction, color: 'text-primary' },
-                { name: 'XGBoost 集成學習', value: signal.xgb_prediction, color: 'text-secondary' },
+                { name: t('extremeReversal.lstmDeep'), value: signal.lstm_prediction, color: 'text-primary' },
+                { name: t('extremeReversal.xgbEnsemble'), value: signal.xgb_prediction, color: 'text-secondary' },
               ].map(({ name, value, color }) => (
                 <div key={name} className="flex justify-between items-center bg-card/40 rounded-lg p-3">
                   <span className="text-sm text-gray-400">{name}</span>
@@ -364,11 +368,11 @@ function DetailModal({
                 </div>
               ))}
               <div className="flex justify-between items-center bg-card/40 rounded-lg p-3">
-                <span className="text-sm text-gray-400">ARIMA 時序分析</span>
+                <span className="text-sm text-gray-400">{t('extremeReversal.arimaTimeseries')}</span>
                 <span className="font-bold text-accent">{signal.arima_trend ?? '—'}</span>
               </div>
               <div className="flex justify-between items-center bg-card/40 rounded-lg p-3">
-                <span className="text-sm text-gray-400">綜合 AI 信心度</span>
+                <span className="text-sm text-gray-400">{t('extremeReversal.overallConfidence')}</span>
                 <span className="font-bold text-white">{signal.ai_score != null ? `${signal.ai_score.toFixed(1)}%` : '—'}</span>
               </div>
             </div>
@@ -376,21 +380,21 @@ function DetailModal({
 
           {/* Contract data */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">合約數據</h3>
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('extremeReversal.contractData')}</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
                 {
-                  label: '資金費率',
+                  label: t('extremeReversal.fundingRate'),
                   value: signal.funding_rate != null ? `${(signal.funding_rate * 100).toFixed(4)}%` : '—',
                 },
                 {
-                  label: '持倉量變化',
+                  label: t('extremeReversal.oiChange'),
                   value: signal.open_interest_change != null
                     ? `${signal.open_interest_change > 0 ? '+' : ''}${signal.open_interest_change.toFixed(2)}%`
                     : '—',
                 },
                 {
-                  label: '近期清算',
+                  label: t('extremeReversal.liquidation'),
                   value: signal.liquidation_amount != null
                     ? signal.liquidation_amount >= 1e6
                       ? `$${(signal.liquidation_amount / 1e6).toFixed(2)}M`
@@ -398,7 +402,7 @@ function DetailModal({
                     : '—',
                 },
                 {
-                  label: '預測幅度',
+                  label: t('extremeReversal.predictedMove'),
                   value: signal.predicted_move != null ? `${signal.predicted_move.toFixed(2)}%` : '—',
                 },
               ].map(({ label, value }) => (
@@ -413,7 +417,7 @@ function DetailModal({
           {/* Triggers */}
           {signal.triggers.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">觸發條件</h3>
+              <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('extremeReversal.triggers')}</h3>
               <div className="flex flex-wrap gap-2">
                 {signal.triggers.map((t) => (
                   <TriggerTag key={t} label={t} />
@@ -424,7 +428,7 @@ function DetailModal({
 
           {/* Risk disclaimer */}
           <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs text-yellow-400">
-            ⚠️ 此預測僅供參考，不構成投資建議。加密貨幣交易具有高風險，請謹慎評估後再做決策。
+            {t('extremeReversal.disclaimer')}
           </div>
         </div>
       </div>
@@ -435,6 +439,7 @@ function DetailModal({
 // ─── Main page ─────────────────────────────────────────────────────────────
 
 export default function ExtremeReversalPage() {
+  const { t } = useTranslation('common')
   const [signals, setSignals] = useState<ExtremeSignal[]>([])
   const [stats, setStats] = useState<SignalStats | null>(null)
   const [loading, setLoading] = useState(false)
@@ -475,7 +480,7 @@ export default function ExtremeReversalPage() {
       setSignals(data.signals ?? [])
       setStats(data.stats ?? null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '無法獲取信號數據')
+      setError(err instanceof Error ? err.message : t('extremeReversal.loadError'))
       setSignals([])
       setStats(null)
     } finally {
@@ -558,10 +563,10 @@ export default function ExtremeReversalPage() {
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-1">
-              <span className="text-gradient-cyan-purple">極端反轉監察</span>
+              <span className="text-gradient-cyan-purple">{t('extremeReversal.title')}</span>
             </h1>
             <p className="text-gray-400 text-sm">
-              AI 驅動 MEXC 合約極端反彈/回調信號偵測 · RSI · MACD · Bollinger Bands · LSTM · XGBoost · ARIMA
+              {t('extremeReversal.subtitle')}
             </p>
           </div>
         </div>
@@ -573,7 +578,7 @@ export default function ExtremeReversalPage() {
             className="btn-primary flex items-center gap-2 text-sm"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            刷新
+            {t('extremeReversal.refresh')}
           </button>
         </div>
       </div>
@@ -588,12 +593,12 @@ export default function ExtremeReversalPage() {
 
       {/* Stats overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="活躍信號" value={displayStats.total} color="text-white" />
-        <StatCard label="反彈信號" value={displayStats.bounce_count} color="text-emerald-400" />
-        <StatCard label="回調信號" value={displayStats.pullback_count} color="text-red-400" />
-        <StatCard label="極高緊急" value={displayStats.critical_count} color="text-orange-400" />
+        <StatCard label={t('extremeReversal.stats.activeSignals')} value={displayStats.total} color="text-white" />
+        <StatCard label={t('extremeReversal.stats.bounceSignals')} value={displayStats.bounce_count} color="text-emerald-400" />
+        <StatCard label={t('extremeReversal.stats.pullbackSignals')} value={displayStats.pullback_count} color="text-red-400" />
+        <StatCard label={t('extremeReversal.stats.criticalUrgency')} value={displayStats.critical_count} color="text-orange-400" />
         <StatCard
-          label="平均信心度"
+          label={t('extremeReversal.stats.avgConfidence')}
           value={`${displayStats.avg_confidence.toFixed(1)}%`}
           color="text-secondary"
         />
@@ -604,7 +609,7 @@ export default function ExtremeReversalPage() {
         <div className="flex flex-wrap gap-3 items-center">
           {/* Timeframe */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400 mr-1">時間框架:</span>
+            <span className="text-xs text-gray-400 mr-1">{t('extremeReversal.filters.timeframe')}</span>
             {(['all', '5m', '15m', '30m', '1h', '4h'] as Timeframe[]).map((tf) => (
               <button
                 key={tf}
@@ -615,18 +620,18 @@ export default function ExtremeReversalPage() {
                     : 'bg-card/50 text-gray-400 hover:text-white'
                 }`}
               >
-                {tf === 'all' ? '全部' : tf}
+                {tf === 'all' ? t('extremeReversal.filters.all') : tf}
               </button>
             ))}
           </div>
 
           {/* Signal type */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400 mr-1">類型:</span>
+            <span className="text-xs text-gray-400 mr-1">{t('extremeReversal.filters.signalType')}</span>
             {[
-              { value: 'all', label: '全部' },
-              { value: 'bounce', label: '反彈' },
-              { value: 'pullback', label: '回調' },
+              { value: 'all', label: t('extremeReversal.filters.all') },
+              { value: 'bounce', label: t('extremeReversal.bounce') },
+              { value: 'pullback', label: t('extremeReversal.pullback') },
             ].map(({ value, label }) => (
               <button
                 key={value}
@@ -644,12 +649,12 @@ export default function ExtremeReversalPage() {
 
           {/* Urgency */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400 mr-1">緊急度:</span>
+            <span className="text-xs text-gray-400 mr-1">{t('extremeReversal.filters.urgency')}</span>
             {[
-              { value: 'all', label: '全部' },
-              { value: 'critical', label: '極高' },
-              { value: 'high', label: '高' },
-              { value: 'medium', label: '中' },
+              { value: 'all', label: t('extremeReversal.filters.all') },
+              { value: 'critical', label: t('extremeReversal.urgency.critical') },
+              { value: 'high', label: t('extremeReversal.urgency.high') },
+              { value: 'medium', label: t('extremeReversal.urgency.medium') },
             ].map(({ value, label }) => (
               <button
                 key={value}
@@ -667,12 +672,12 @@ export default function ExtremeReversalPage() {
 
           {/* Sort */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400 mr-1">排序:</span>
+            <span className="text-xs text-gray-400 mr-1">{t('extremeReversal.filters.sort')}</span>
             {[
-              { value: 'confidence', label: '信心度' },
-              { value: 'time', label: '最新' },
-              { value: 'volume', label: '成交量' },
-              { value: 'change', label: '變動幅度' },
+              { value: 'confidence', label: t('extremeReversal.filters.confidence') },
+              { value: 'time', label: t('extremeReversal.filters.time') },
+              { value: 'volume', label: t('extremeReversal.filters.volume') },
+              { value: 'change', label: t('extremeReversal.filters.change') },
             ].map(({ value, label }) => (
               <button
                 key={value}
@@ -691,11 +696,11 @@ export default function ExtremeReversalPage() {
 
         {/* Auto-refresh control */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400">自動更新:</span>
+          <span className="text-xs text-gray-400">{t('extremeReversal.filters.autoRefresh')}</span>
           {[
-            { value: 'off', label: '關閉' },
-            { value: '30m', label: '30 分鐘' },
-            { value: 'realtime', label: '即時 (10s)' },
+            { value: 'off', label: t('extremeReversal.filters.off') },
+            { value: '30m', label: t('extremeReversal.filters.30m') },
+            { value: 'realtime', label: t('extremeReversal.filters.realtime') },
           ].map(({ value, label }) => (
             <button
               key={value}
@@ -712,7 +717,7 @@ export default function ExtremeReversalPage() {
           {autoRefresh !== 'off' && (
             <span className="text-xs text-primary flex items-center gap-1">
               <Activity className="w-3 h-3 animate-pulse" />
-              {autoRefresh === 'realtime' ? '即時更新中' : '每 30 分鐘更新'}
+              {autoRefresh === 'realtime' ? t('extremeReversal.filters.realtime') : t('extremeReversal.filters.30m')}
             </span>
           )}
         </div>
@@ -722,13 +727,13 @@ export default function ExtremeReversalPage() {
       {loading ? (
         <div className="text-center py-20 text-gray-400">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />
-          掃描中...
+          {t('common.loading')}
         </div>
       ) : signals.length === 0 ? (
         <div className="text-center py-20 text-gray-400 glass-card">
           <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg">暫無符合條件的信號</p>
-          <p className="text-sm text-gray-500 mt-1">請嘗試調整篩選條件或等待下次掃描</p>
+          <p className="text-lg">{t('extremeReversal.noSignals')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('extremeReversal.noSignalsHint')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

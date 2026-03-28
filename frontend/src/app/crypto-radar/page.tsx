@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Zap, Target, Activity, AlertCircle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import '@/i18n/config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -33,6 +35,7 @@ interface MarketStats {
 }
 
 export default function CryptoRadar() {
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<'long' | 'short'>('long');
   const [signals, setSignals] = useState<ContractSignal[]>([]);
   const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
@@ -48,7 +51,7 @@ export default function CryptoRadar() {
     } catch (err: unknown) {
       console.error('Failed to fetch market stats:', err);
       // Don't block main data loading, but inform the user that stats may be outdated/unavailable
-      setError((prev) => prev ?? '市場統計無法載入，部分指標可能過期或不可用');
+      setError((prev) => prev ?? t('cryptoRadar.statsUnavailable'));
     }
   };
 
@@ -75,11 +78,11 @@ export default function CryptoRadar() {
       console.error('Failed to fetch signals:', err);
       if (axios.isAxiosError(err)) {
         const data = err.response?.data as { detail?: string } | undefined;
-        setError(data?.detail || err.message || '無法載入數據');
+        setError(data?.detail || err.message || t('cryptoRadar.loadError'));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('無法載入數據');
+        setError(t('cryptoRadar.loadError'));
       }
     } finally {
       setLoading(false);
@@ -116,10 +119,10 @@ export default function CryptoRadar() {
           </div>
           <div>
             <h1 className="text-5xl font-bold mb-2">
-              <span className="text-gradient-cyan-purple">合約交易雷達</span>
+              <span className="text-gradient-cyan-purple">{t('cryptoRadar.title')}</span>
             </h1>
             <p className="text-xl text-gray-400">
-              AI 驅動的永續合約交易信號 (USD)
+              {t('cryptoRadar.subtitle')}
             </p>
           </div>
         </div>
@@ -130,7 +133,7 @@ export default function CryptoRadar() {
           className="px-6 py-3 rounded-lg bg-card hover:bg-card/70 border border-gray-700 flex items-center gap-2 transition-all disabled:opacity-50"
         >
           <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-          刷新
+          {t('cryptoRadar.refresh')}
         </button>
       </div>
 
@@ -138,25 +141,25 @@ export default function CryptoRadar() {
       {marketStats && (
         <div className="grid md:grid-cols-4 gap-6">
           <div className="glass-card p-6 bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
-            <div className="text-sm text-gray-400 mb-2">市場強度</div>
+            <div className="text-sm text-gray-400 mb-2">{t('cryptoRadar.marketStrength')}</div>
             <div className="text-4xl font-bold text-green-400">
               {marketStats.strength}/10
             </div>
           </div>
           <div className="glass-card p-6 bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
-            <div className="text-sm text-gray-400 mb-2">30 天勝率</div>
+            <div className="text-sm text-gray-400 mb-2">{t('cryptoRadar.winRate30d')}</div>
             <div className="text-4xl font-bold text-gradient-cyan-purple">
               {marketStats.winRate}%
             </div>
           </div>
           <div className="glass-card p-6 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
-            <div className="text-sm text-gray-400 mb-2">平均資金費率</div>
+            <div className="text-sm text-gray-400 mb-2">{t('cryptoRadar.avgFundingRate')}</div>
             <div className="text-4xl font-bold font-mono text-purple-400">
               {(marketStats.avgFundingRate * 100).toFixed(4)}%
             </div>
           </div>
           <div className="glass-card p-6 bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
-            <div className="text-sm text-gray-400 mb-2">總持倉量</div>
+            <div className="text-sm text-gray-400 mb-2">{t('cryptoRadar.totalOI')}</div>
             <div className="text-4xl font-bold font-mono text-blue-400">
               {marketStats.totalOI}
             </div>
@@ -175,7 +178,7 @@ export default function CryptoRadar() {
           }`}
         >
           <TrendingUp className="w-6 h-6" />
-          做多信號
+          {t('cryptoRadar.longSignals')}
         </button>
         <button
           onClick={() => setActiveTab('short')}
@@ -186,7 +189,7 @@ export default function CryptoRadar() {
           }`}
         >
           <TrendingDown className="w-6 h-6" />
-          做空信號
+          {t('cryptoRadar.shortSignals')}
         </button>
       </div>
 
@@ -196,7 +199,7 @@ export default function CryptoRadar() {
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="h-6 w-6 text-red-400" />
             <div>
-              <div className="font-bold text-red-400">載入失敗</div>
+              <div className="font-bold text-red-400">{t('cryptoRadar.loadFailed')}</div>
               <div className="text-sm text-gray-400">{error}</div>
             </div>
           </div>
@@ -204,7 +207,7 @@ export default function CryptoRadar() {
             onClick={() => fetchSignals()}
             className="px-6 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 transition-all"
           >
-            重試
+            {t('common.retry')}
           </button>
         </div>
       )}
@@ -213,7 +216,7 @@ export default function CryptoRadar() {
       {loading && !error && (
         <div className="text-center py-12">
           <Activity className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-gray-400">載入信號中...</p>
+          <p className="text-gray-400">{t('cryptoRadar.loading')}</p>
         </div>
       )}
 
@@ -277,25 +280,25 @@ export default function CryptoRadar() {
               {/* Trading Levels */}
               <div className="grid grid-cols-2 gap-4 mb-6 p-4 rounded-xl bg-black/20 border border-gray-700/50">
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">入場價 (USD)</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.entryPrice')}</div>
                   <div className="text-lg font-bold font-mono text-cyan-400">
                     ${signal.entryPrice.toFixed(5)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">止損 (USD)</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.stopLoss')}</div>
                   <div className="text-lg font-bold font-mono text-red-400">
                     ${signal.stopLoss.toFixed(5)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">目標 1 (USD)</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.target1')}</div>
                   <div className="text-lg font-bold font-mono text-green-400">
                     ${signal.target1.toFixed(5)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">目標 2 (USD)</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.target2')}</div>
                   <div className="text-lg font-bold font-mono text-green-400">
                     ${signal.target2.toFixed(5)}
                   </div>
@@ -305,7 +308,9 @@ export default function CryptoRadar() {
               {/* Confidence Bar */}
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-gray-400">AI 信心分數</span>
+                  <span className="text-gray-400">
+                    {t('cryptoRadar.aiConfidence')}
+                  </span>
                   <span className="font-bold text-primary">{signal.confidence}%</span>
                 </div>
                 <div className="h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
@@ -319,7 +324,7 @@ export default function CryptoRadar() {
               {/* Risk Level and OI */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">風險等級</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.riskLevel')}</div>
                   <span
                     className={`px-3 py-1 rounded-lg text-sm font-bold inline-block ${
                       signal.riskLevel === 'Low'
@@ -333,7 +338,7 @@ export default function CryptoRadar() {
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">持倉量變化</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.oiChange')}</div>
                   <div className="text-sm font-bold text-cyan-400">
                     {(signal.openInterestChange ?? 0) > 0 ? '+' : ''}
                     {(signal.openInterestChange ?? 0).toFixed(2)}%
@@ -345,7 +350,7 @@ export default function CryptoRadar() {
               <div>
                 <div className="text-sm text-gray-400 mb-2 flex items-center gap-2">
                   <Target className="w-4 h-4" />
-                  技術信號
+                  {t('cryptoRadar.techSignals')}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {signal.signals.map((sig, i) => (
@@ -368,9 +373,9 @@ export default function CryptoRadar() {
         <div className="glass-card p-12 text-center">
           <Zap className="w-16 h-16 mx-auto mb-4 text-gray-600" />
           <p className="text-xl text-gray-400">
-            當前沒有符合條件的{activeTab === 'long' ? '做多' : '做空'}信號
+            {activeTab === 'long' ? t('cryptoRadar.noSignalsLong') : t('cryptoRadar.noSignalsShort')}
           </p>
-          <p className="text-sm text-gray-500 mt-2">請稍後再試或切換方向</p>
+          <p className="text-sm text-gray-500 mt-2">{t('cryptoRadar.tryLater')}</p>
         </div>
       )}
     </div>

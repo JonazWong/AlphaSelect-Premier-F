@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useTranslation, Trans } from 'react-i18next'
+import '@/i18n/config'
 import {
   Brain, RefreshCw, CheckCircle2, Loader2, XCircle,
   Clock, Database, BarChart3, Zap, Activity, TrendingUp,
@@ -28,21 +30,18 @@ const MODEL_COLORS: Record<string, string> = {
   ensemble: 'pink',
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG_KEYS = {
   trained: {
-    label: '已完成',
     icon: CheckCircle2,
     cls: 'bg-green-500/20 text-green-400 border-green-500/40',
     dot: 'bg-green-400',
   },
   training: {
-    label: '訓練中',
     icon: Loader2,
     cls: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
     dot: 'bg-cyan-400 animate-pulse',
   },
   failed: {
-    label: '失敗',
     icon: XCircle,
     cls: 'bg-red-500/20 text-red-400 border-red-500/40',
     dot: 'bg-red-400',
@@ -77,14 +76,14 @@ interface Summary {
   failed: number
 }
 
-const navItems = [
-  { href: '/', label: '首頁', icon: Home },
-  { href: '/crypto-radar', label: '合約雷達', icon: Activity },
-  { href: '/ai-training', label: 'AI 訓練', icon: Brain },
-  { href: '/ai-training-monitor', label: '訓練記錄', icon: Database },
-  { href: '/ai-predictions', label: 'AI 預測', icon: TrendingUp },
-  { href: '/pattern-detection', label: '形態偵測', icon: LineChart },
-  { href: '/market-screener', label: '市場篩選', icon: Filter },
+const NAV_ITEMS = [
+  { href: '/', key: 'home', icon: Home },
+  { href: '/crypto-radar', key: 'cryptoRadar', icon: Activity },
+  { href: '/ai-training', key: 'aiTraining', icon: Brain },
+  { href: '/ai-training-monitor', key: 'aiTrainingMonitor', icon: Database },
+  { href: '/ai-predictions', key: 'aiPredictions', icon: TrendingUp },
+  { href: '/pattern-detection', key: 'patternDetection', icon: LineChart },
+  { href: '/market-screener', key: 'marketScreener', icon: Filter },
 ]
 
 function formatDate(iso: string | null) {
@@ -127,6 +126,13 @@ interface DataStatus {
 }
 
 export default function AITrainingMonitorPage() {
+  const { t } = useTranslation('common')
+  const STATUS_CONFIG = {
+    trained: { label: t('aiTrainingMonitor.completed'), ...STATUS_CONFIG_KEYS.trained },
+    training: { label: t('aiTrainingMonitor.training'), ...STATUS_CONFIG_KEYS.training },
+    failed: { label: t('aiTrainingMonitor.failed'), ...STATUS_CONFIG_KEYS.failed },
+  }
+
   const [summary, setSummary] = useState<Summary>({ total: 0, trained: 0, training: 0, failed: 0 })
   const [models, setModels] = useState<ModelRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -170,12 +176,12 @@ export default function AITrainingMonitorPage() {
   // Auto-refresh every 15s if any model is still training
   useEffect(() => {
     if (summary.training === 0) return
-    const t = setInterval(() => fetchData(true), 15000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => fetchData(true), 15000)
+    return () => clearInterval(timer)
   }, [summary.training, fetchData])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('確定刪除此模型記錄？此操作無法復原。')) return
+    if (!confirm(t('aiTrainingMonitor.deleteConfirm'))) return
     try {
       const res = await fetch(`${API_URL}/api/v1/ai/training/model/${id}`, { method: 'DELETE' })
       if (res.ok) fetchData(true)
@@ -193,7 +199,7 @@ export default function AITrainingMonitorPage() {
       {/* ── Page nav ── */}
       <div className="glass-card px-5 py-3">
         <div className="flex flex-wrap items-center gap-1 text-sm">
-          {navItems.map((item, i) => {
+          {NAV_ITEMS.map((item, i) => {
             const Icon = item.icon
             const isCurrent = item.href === '/ai-training-monitor'
             return (
@@ -206,7 +212,7 @@ export default function AITrainingMonitorPage() {
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}>
                     <Icon className="w-3.5 h-3.5" />
-                    <span>{item.label}</span>
+                    <span>{t(`nav.${item.key}`)}</span>
                   </div>
                 </Link>
               </div>
@@ -223,17 +229,17 @@ export default function AITrainingMonitorPage() {
           </div>
           <div>
             <h1 className="text-4xl font-bold">
-              <span className="text-gradient-cyan-purple">AI 訓練記錄</span>
+              <span className="text-gradient-cyan-purple">{t('aiTrainingMonitor.title')}</span>
             </h1>
             <p className="text-gray-400 mt-1">
-              監察所有 AI 模型的訓練狀態、效能指標及資料庫記錄
+              {t('aiTrainingMonitor.subtitle')}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {lastRefresh && (
             <span className="text-xs text-gray-500">
-              最後更新：{lastRefresh.toLocaleTimeString('zh-HK', { hour12: false })}
+              {t('aiTrainingMonitor.lastRefresh')}{lastRefresh.toLocaleTimeString([], { hour12: false })}
             </span>
           )}
           <button
@@ -242,12 +248,12 @@ export default function AITrainingMonitorPage() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-card hover:bg-card/70 border border-gray-700 transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            刷新
+            {t('aiTrainingMonitor.refresh')}
           </button>
           <Link href="/ai-training">
             <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/40 text-cyan-400 transition-all">
               <Zap className="w-4 h-4" />
-              開始訓練
+              {t('aiTrainingMonitor.startTraining')}
             </button>
           </Link>
         </div>
@@ -265,15 +271,15 @@ export default function AITrainingMonitorPage() {
             : <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 animate-pulse" />}
           <div className="flex-1">
             <div className={`font-semibold text-sm ${dataStatus.ready ? 'text-green-400' : 'text-yellow-400'}`}>
-              {dataStatus.symbol} 訓練數據：{dataStatus.count.toLocaleString()} 筆
+              {t('aiTrainingMonitor.dataReadiness.currentData', { symbol: dataStatus.symbol, count: dataStatus.count.toLocaleString() })}
+              {'　'}
               {dataStatus.ready
-                ? '　✓ 已達到訓練門檻（100 筆）'
-                : `　— 尚差 ${dataStatus.missing} 筆才能訓練`}
+                ? t('aiTrainingMonitor.dataReadiness.ready')
+                : t('aiTrainingMonitor.dataReadiness.missing', { count: dataStatus.missing })}
             </div>
             {!dataStatus.ready && (
               <div className="text-xs text-gray-400 mt-1">
-                請先執行 <code className="bg-black/40 px-1.5 py-0.5 rounded text-yellow-300">quick_collect_100.bat</code> 收集數據，
-                或重複呼叫 <code className="bg-black/40 px-1.5 py-0.5 rounded text-yellow-300">GET /api/v1/contract/ticker/{dataStatus.symbol}</code> 累積到 100 筆後再訓練。
+                {t('aiTrainingMonitor.dataReadiness.hint')}
               </div>
             )}
           </div>
@@ -297,33 +303,33 @@ export default function AITrainingMonitorPage() {
         <div className="glass-card p-6 bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
           <div className="flex items-center gap-3 mb-3">
             <Database className="w-5 h-5 text-cyan-400" />
-            <span className="text-sm text-gray-400">總模型數</span>
+            <span className="text-sm text-gray-400">{t('aiTrainingMonitor.totalModels')}</span>
           </div>
           <div className="text-4xl font-bold text-cyan-400">{summary.total}</div>
         </div>
         <div className="glass-card p-6 bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
           <div className="flex items-center gap-3 mb-3">
             <CheckCircle2 className="w-5 h-5 text-green-400" />
-            <span className="text-sm text-gray-400">已完成</span>
+            <span className="text-sm text-gray-400">{t('aiTrainingMonitor.completed')}</span>
           </div>
           <div className="text-4xl font-bold text-green-400">{summary.trained}</div>
         </div>
         <div className="glass-card p-6 bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
           <div className="flex items-center gap-3 mb-3">
             <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
-            <span className="text-sm text-gray-400">訓練中</span>
+            <span className="text-sm text-gray-400">{t('aiTrainingMonitor.training')}</span>
           </div>
           <div className="text-4xl font-bold text-cyan-300">
             {summary.training}
             {summary.training > 0 && (
-              <span className="ml-2 text-xs font-normal text-cyan-500 animate-pulse">● 進行中</span>
+              <span className="ml-2 text-xs font-normal text-cyan-500 animate-pulse">● {t('aiTrainingMonitor.inProgress')}</span>
             )}
           </div>
         </div>
         <div className="glass-card p-6 bg-gradient-to-br from-red-500/10 to-transparent border-red-500/20">
           <div className="flex items-center gap-3 mb-3">
             <XCircle className="w-5 h-5 text-red-400" />
-            <span className="text-sm text-gray-400">失敗</span>
+            <span className="text-sm text-gray-400">{t('aiTrainingMonitor.failed')}</span>
           </div>
           <div className="text-4xl font-bold text-red-400">{summary.failed}</div>
         </div>
@@ -332,13 +338,13 @@ export default function AITrainingMonitorPage() {
       {/* ── Filters ── */}
       <div className="glass-card p-5 flex flex-wrap items-center gap-4">
         <BarChart3 className="w-4 h-4 text-gray-400 shrink-0" />
-        <span className="text-sm text-gray-400">篩選：</span>
+        <span className="text-sm text-gray-400">{t('aiTrainingMonitor.filters')}</span>
         <select
           value={filterSymbol}
           onChange={e => setFilterSymbol(e.target.value)}
           className="bg-card text-white border border-gray-600 rounded-lg px-3 py-1.5 text-sm"
         >
-          <option value="">全部交易對</option>
+          <option value="">{t('aiTrainingMonitor.allSymbols')}</option>
           {symbols.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select
@@ -346,55 +352,72 @@ export default function AITrainingMonitorPage() {
           onChange={e => setFilterStatus(e.target.value)}
           className="bg-card text-white border border-gray-600 rounded-lg px-3 py-1.5 text-sm"
         >
-          <option value="">全部狀態</option>
-          <option value="trained">已完成</option>
-          <option value="training">訓練中</option>
-          <option value="failed">失敗</option>
+          <option value="">{t('aiTrainingMonitor.allStatuses')}</option>
+          <option value="trained">{t('aiTrainingMonitor.completed')}</option>
+          <option value="training">{t('aiTrainingMonitor.training')}</option>
+          <option value="failed">{t('aiTrainingMonitor.failed')}</option>
         </select>
         {(filterSymbol || filterStatus) && (
           <button
             onClick={() => { setFilterSymbol(''); setFilterStatus('') }}
             className="text-xs text-gray-400 hover:text-white underline"
           >
-            清除篩選
+            {t('aiTrainingMonitor.clearFilter')}
           </button>
         )}
-        <span className="ml-auto text-sm text-gray-500">顯示 {models.length} 筆記錄</span>
+        <span className="ml-auto text-sm text-gray-500">{t('aiTrainingMonitor.showingRecords', { count: models.length })}</span>
       </div>
 
       {/* ── Model Cards ── */}
       {loading ? (
         <div className="text-center py-20">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-cyan-400" />
-          <p className="text-gray-400">載入模型記錄中...</p>
+          <p className="text-gray-400">{t('aiTrainingMonitor.loadingModels')}</p>
         </div>
       ) : models.length === 0 ? (
         <div className="glass-card p-16 text-center space-y-4">
           <FileDown className="w-16 h-16 mx-auto text-gray-600" />
-          <p className="text-xl text-gray-300 font-semibold">尚無訓練記錄</p>
+          <p className="text-xl text-gray-300 font-semibold">{t('aiTrainingMonitor.noRecords')}</p>
           <div className="max-w-md mx-auto text-sm text-gray-400 space-y-2 text-left bg-black/30 rounded-xl p-5 border border-gray-700">
             <div className="flex items-start gap-2">
-              <span className="text-cyan-400 font-bold shrink-0">第一步</span>
-              <span>收集至少 <strong className="text-white">100 筆</strong>市場數據：執行 <code className="bg-black/50 px-1 rounded text-yellow-300">quick_collect_100.bat</code>，或在瀏覽器重複呼叫 Crypto Radar 頁面刷新數據</span>
+              <span className="text-cyan-400 font-bold shrink-0">{t('aiTrainingMonitor.step1')}</span>
+              <span>
+                <Trans
+                  i18nKey="aiTrainingMonitor.step1Desc"
+                  ns="common"
+                  components={{
+                    strong: <strong className="text-white" />,
+                    code: <code className="bg-black/50 px-1 rounded text-yellow-300" />,
+                  }}
+                />
+              </span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-cyan-400 font-bold shrink-0">第二步</span>
-              <span>前往 AI Training 頁面，選擇交易對 & 模型，按下 <strong className="text-white">Train Model</strong></span>
+              <span className="text-cyan-400 font-bold shrink-0">{t('aiTrainingMonitor.step2')}</span>
+              <span>
+                <Trans
+                  i18nKey="aiTrainingMonitor.step2Desc"
+                  ns="common"
+                  components={{ strong: <strong className="text-white" /> }}
+                />
+              </span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-cyan-400 font-bold shrink-0">第三步</span>
-              <span>回到此頁查看訓練進度、指標與模型記錄</span>
+              <span className="text-cyan-400 font-bold shrink-0">{t('aiTrainingMonitor.step3')}</span>
+              <span>{t('aiTrainingMonitor.step3Desc')}</span>
             </div>
           </div>
           {dataStatus && !dataStatus.ready && (
             <p className="text-sm text-yellow-400">
-              目前 BTC_USDT 只有 <strong>{dataStatus.count}</strong> 筆，再收集 <strong>{dataStatus.missing}</strong> 筆即可開始訓練
+              {t('aiTrainingMonitor.dataReadiness.currentData', { symbol: dataStatus.symbol, count: dataStatus.count })}
+              {' — '}
+              {t('aiTrainingMonitor.dataReadiness.missing', { count: dataStatus.missing })}
             </p>
           )}
           {dataStatus?.ready && (
             <Link href="/ai-training">
               <button className="mt-2 px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 font-bold transition-all">
-                數據已就緒，立即訓練
+                {t('aiTrainingMonitor.readyToTrain')}
               </button>
             </Link>
           )}
@@ -442,7 +465,7 @@ export default function AITrainingMonitorPage() {
                     </span>
                     <button
                       onClick={() => handleDelete(model.id)}
-                      title="刪除記錄"
+                      title={t('aiTrainingMonitor.deleteRecord')}
                       className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -458,7 +481,7 @@ export default function AITrainingMonitorPage() {
                     <MetricBadge label="RMSE" value={model.metrics.rmse} color="purple" />
                     {model.metrics.directional_accuracy != null ? (
                       <MetricBadge
-                        label="方向準確率"
+                        label={t('aiTrainingMonitor.dirAccuracy')}
                         value={model.metrics.directional_accuracy * 100}
                         unit="%"
                         color="green"
@@ -469,7 +492,7 @@ export default function AITrainingMonitorPage() {
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 italic text-center py-2">
-                    {model.status === 'training' ? '訓練中，指標尚未生成...' : '無可用指標'}
+                    {model.status === 'training' ? t('aiTrainingMonitor.trainingInProgress') : t('aiTrainingMonitor.noMetrics')}
                   </div>
                 )}
 
@@ -477,15 +500,15 @@ export default function AITrainingMonitorPage() {
                 <div className="space-y-1.5 text-xs text-gray-400 border-t border-gray-700/50 pt-3">
                   <div className="flex items-center gap-2">
                     <Clock className="w-3 h-3 shrink-0" />
-                    <span>開始：{formatDate(model.training_started_at)}</span>
+                    <span>{t('aiTrainingMonitor.started')}{formatDate(model.training_started_at)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 shrink-0" />
-                    <span>完成：{formatDate(model.training_completed_at)}</span>
+                    <span>{t('aiTrainingMonitor.completed_at')}{formatDate(model.training_completed_at)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-3 h-3 shrink-0" />
-                    <span>耗時：{duration(model.training_started_at, model.training_completed_at)}</span>
+                    <span>{t('aiTrainingMonitor.duration')}{duration(model.training_started_at, model.training_completed_at)}</span>
                   </div>
                 </div>
 
@@ -493,7 +516,7 @@ export default function AITrainingMonitorPage() {
                 {(model.config && Object.keys(model.config).length > 0) && (
                   <details className="text-xs">
                     <summary className="text-gray-500 cursor-pointer hover:text-gray-300 select-none">
-                      訓練參數 ▸
+                      {t('aiTrainingMonitor.trainingParams')} ▸
                     </summary>
                     <pre className="mt-2 p-2 bg-black/40 rounded text-gray-400 overflow-auto max-h-28 text-[11px]">
                       {JSON.stringify(model.config, null, 2)}

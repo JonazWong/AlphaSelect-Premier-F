@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
+import '@/i18n/config'
 import { io, Socket } from 'socket.io-client'
 import Link from 'next/link'
 import { Database, ChevronRight } from 'lucide-react'
@@ -43,6 +45,7 @@ const MODEL_TYPES = [
 ]
 
 export default function AITrainingPage() {
+  const { t } = useTranslation('common')
   const [socket, setSocket] = useState<Socket | null>(null)
   const [selectedSymbol, setSelectedSymbol] = useState('BTC_USDT')
   const [selectedModel, setSelectedModel] = useState('lstm')
@@ -75,15 +78,13 @@ export default function AITrainingPage() {
     })
 
     socketInstance.on('connect', () => {
-      console.log('✅ WebSocket connected')
     })
 
     socketInstance.on('disconnect', () => {
-      console.log('⚠️ WebSocket disconnected')
     })
 
     socketInstance.on('connect_error', (error) => {
-      console.error('❌ WebSocket connection error:', error)
+      console.error('WebSocket connection error:', error)
     })
 
     setSocket(socketInstance)
@@ -157,7 +158,6 @@ export default function AITrainingPage() {
     }
 
     try {
-      console.log('🚀 Starting training...', { symbol: selectedSymbol, model: selectedModel })
       setIsTraining(true)
       setTrainingProgress({ status: 'Initializing...', progress: 0 })
 
@@ -172,26 +172,23 @@ export default function AITrainingPage() {
         })
       })
 
-      console.log('📡 Response status:', response.status)
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        console.error('❌ Training API error:', errData)
+        console.error('Training API error:', errData)
         throw new Error(errData.detail || `Server error ${response.status}`)
       }
 
       const data = await response.json()
-      console.log('✅ Training started:', data)
 
       if (data.session_id) {
         setSessionId(data.session_id)
         setSuccessMsg(`Training started! Session: ${data.session_id.substring(0, 8)}...`)
       }
     } catch (error: unknown) {
-      console.error('❌ Failed to start training:', error)
+      console.error('Failed to start training:', error)
       setIsTraining(false)
       setTrainingProgress(null)
-      setErrorMsg(error instanceof Error ? error.message : `無法連接後端（${API_URL}），請確認服務已啟動`)
+      setErrorMsg(error instanceof Error ? error.message : t('aiTraining.connectError'))
     }
   }
 
@@ -200,10 +197,10 @@ export default function AITrainingPage() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold mb-2">
-          <span className="text-gradient-cyan-purple">AI Training Center</span>
+          <span className="text-gradient-cyan-purple">{t('aiTraining.title')}</span>
         </h1>
         <p className="text-gray-400">
-          Train AI models for cryptocurrency price prediction
+          {t('aiTraining.subtitle')}
         </p>
       </div>
 
@@ -215,8 +212,8 @@ export default function AITrainingPage() {
               <Database className="w-4 h-4 text-cyan-400" />
             </div>
             <div>
-              <div className="font-semibold text-cyan-400">AI 訓練記錄監察板</div>
-              <div className="text-xs text-gray-400">查看所有模型狀態、效能指標及資料庫記錄</div>
+              <div className="font-semibold text-cyan-400">{t('aiTraining.monitorTitle')}</div>
+              <div className="text-xs text-gray-400">{t('aiTraining.monitorSubtitle')}</div>
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
@@ -228,10 +225,10 @@ export default function AITrainingPage() {
         <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 text-sm">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 animate-pulse" />
           <span>
-            <strong>後端離線</strong> — 無法連接 <code className="bg-black/30 px-1 rounded">{API_URL}</code>。
+            <strong>{t('aiTraining.backendOffline')}</strong> — <code className="bg-black/30 px-1 rounded">{API_URL}</code>
             {API_URL.includes('localhost')
-              ? <> 請執行 <code className="bg-black/30 px-1 rounded">docker-compose up -d</code> 啟動後端服務後再試。</>
-              : <> 請確認 DigitalOcean 後端服務正常運行。</>
+              ? <> {t('aiTraining.backendOfflineLocal')}</>
+              : <> {t('aiTraining.backendOfflineDO')}</>
             }
           </span>
         </div>
@@ -239,7 +236,7 @@ export default function AITrainingPage() {
       {backendOnline === true && (
         <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm">
           <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
-          後端已連線
+          {t('aiTraining.backendOnline')}
         </div>
       )}
 
@@ -323,7 +320,7 @@ export default function AITrainingPage() {
           {isTraining
             ? 'Training in Progress...'
             : backendOnline === false
-            ? '後端離線，無法訓練'
+            ? t('aiTraining.trainButtonOffline')
             : `Train ${MODEL_TYPES.find(m => m.id === selectedModel)?.name} Model`}
         </button>
       </div>
