@@ -1,7 +1,7 @@
 """
 Schemas for contract market endpoints
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
@@ -20,8 +20,7 @@ class ContractMarketResponse(BaseModel):
     low_24h: Optional[float] = Field(None, alias="low24Price", description="24h low in USD")
     currency: str = Field(default="USD", description="Currency unit")
     
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ContractSignalResponse(BaseModel):
@@ -42,8 +41,7 @@ class ContractSignalResponse(BaseModel):
     signals: List[str] = Field(..., description="Technical signals")
     currency: str = Field(default="USD", description="Currency unit")
     
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class MarketStatsResponse(BaseModel):
@@ -53,6 +51,5 @@ class MarketStatsResponse(BaseModel):
     avg_funding_rate: float = Field(..., alias="avgFundingRate", description="Average funding rate")
     total_oi: str = Field(..., alias="totalOI", description="Total open interest")
     currency: str = Field(default="USD", description="Currency unit")
-    
-    class Config:
-        populate_by_name = True
+
+    model_config = ConfigDict(populate_by_name=True)

@@ -379,5 +379,18 @@
     "noResults": "No results match your filters",
     "clearFilters": "Clear Filters",
     "showing": "Showing {{count}} results"
+  },
+  "reversalMonitor": {
+    "title": "Reversal Monitor",
+    "subtitle": "Reversal Scan",
+    "description": "Real-time reversal signal detection using RSI, MACD, and Bollinger Bands",
+    "filterSymbols": "Filter by Symbols (leave empty for all)",
+    "totalSignals": "Total Signals",
+    "bullishSignals": "Bullish",
+    "bearishSignals": "Bearish",
+    "criticalSignals": "Critical",
+    "noSignals": "No reversal signals detected. Collect more market data to enable analysis.",
+    "bounce": "⬆ Bounce",
+    "pullback": "⬇ Pullback"
   }
 }

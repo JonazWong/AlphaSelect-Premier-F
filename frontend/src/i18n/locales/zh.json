@@ -379,5 +379,18 @@
     "noResults": "暂无符合条件的结果",
     "clearFilters": "清除筛选",
     "showing": "共 {{count}} 条结果"
+  },
+  "reversalMonitor": {
+    "title": "反轉監察",
+    "subtitle": "反轉掃描",
+    "description": "使用 RSI、MACD 和布林帶的即時反轉信號偵測",
+    "filterSymbols": "按交易對篩選（留空為全部）",
+    "totalSignals": "總信號數",
+    "bullishSignals": "看漲",
+    "bearishSignals": "看跌",
+    "criticalSignals": "極高",
+    "noSignals": "未偵測到反轉信號。請收集更多市場數據後重試。",
+    "bounce": "⬆ 反彈",
+    "pullback": "⬇ 回調"
   }
 }

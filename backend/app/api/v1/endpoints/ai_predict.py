@@ -88,7 +88,7 @@ async def make_prediction(
         df.index = [record.created_at for record in recent_data]
         
         # Forward fill then backward fill to handle None values
-        df = df.fillna(method='ffill').fillna(method='bfill').fillna(0)
+        df = df.ffill().bfill().fillna(0)
         
         # Make prediction
         if request.use_ensemble and not request.model_id:
@@ -403,7 +403,7 @@ async def make_batch_predictions(
             df.index = [record.created_at for record in recent_data]
             
             # Forward fill then backward fill to handle None values
-            df = df.fillna(method='ffill').fillna(method='bfill').fillna(0)
+            df = df.ffill().bfill().fillna(0)
             
             # Try to make prediction
             try:

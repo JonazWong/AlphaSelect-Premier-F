@@ -47,7 +47,8 @@ async function fetchReversalSignals(symbols?: string[]): Promise<ReversalSignal[
     throw new Error(`Failed to fetch reversal signals (status ${response.status})`)
   }
 
-  return (await response.json()) as ReversalSignal[]
+  const data = await response.json()
+  return (Array.isArray(data) ? data : (data.signals ?? [])) as ReversalSignal[]
 }
 
 const URGENCY_COLORS: Record<ReversalSignal['urgency'], string> = {
