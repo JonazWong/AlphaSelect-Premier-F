@@ -581,15 +581,41 @@ def get_market_stats(db: Session = Depends(get_db)):
         else:
             strength = 5
         
-        # TODO: Replace with actual historical prediction data
-        # Currently using placeholder calculation based on market strength
-        # In production: query predictions table and calculate actual win rate
-        win_rate = 50.0 + (strength * 2.5)  # Scale with market strength
-        
-        # TODO: Replace with actual average from funding_rate_history table
-        # This is a placeholder default value for demonstration
-        # In production: calculate average from recent funding rate data
-        avg_funding_rate = 0.0001
+        # Calculate win rate from predictions with resolved actual values
+        try:
+            from app.models.prediction import Prediction
+            from sqlalchemy import func
+            total_resolved = db.query(func.count(Prediction.id)).filter(
+                Prediction.actual_value.isnot(None),
+                Prediction.actual_value > 0
+            ).scalar() or 0
+            if total_resolved > 0:
+                # Win = prediction within 5% of actual value
+                win_count = db.query(func.count(Prediction.id)).filter(
+                    Prediction.actual_value.isnot(None),
+                    Prediction.actual_value > 0,
+                    func.abs(Prediction.predicted_value - Prediction.actual_value) / Prediction.actual_value < 0.05
+                ).scalar() or 0
+                win_rate = round((win_count / total_resolved) * 100, 2)
+                win_rate = max(0.0, min(100.0, win_rate))
+            else:
+                win_rate = 50.0 + (strength * 2.5)
+        except Exception as pred_err:
+            logger.warning(f"Could not calculate win rate from predictions: {pred_err}")
+            win_rate = 50.0 + (strength * 2.5)
+
+        # Calculate average funding rate from the last 24 hours of history
+        try:
+            from datetime import timedelta
+            from sqlalchemy import func as sqlfunc
+            cutoff = datetime.utcnow() - timedelta(hours=24)
+            avg_result = db.query(sqlfunc.avg(FundingRateHistory.funding_rate)).filter(
+                FundingRateHistory.settle_time >= cutoff
+            ).scalar()
+            avg_funding_rate = float(avg_result) if avg_result is not None else 0.0001
+        except Exception as fr_err:
+            logger.warning(f"Could not calculate avg funding rate: {fr_err}")
+            avg_funding_rate = 0.0001
         
         # Format total OI
         total_oi_value = total_volume / 1e9  # Convert to billions

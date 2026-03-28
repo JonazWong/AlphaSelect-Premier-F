@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Brain, TrendingUp, LineChart, Filter, Home, AlertTriangle, BarChart2 } from 'lucide-react'
+import { Activity, Brain, TrendingUp, LineChart, Filter, Home, AlertTriangle, BarChart2, Database } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLanguage } from '@/components/I18nProvider'
 import '@/i18n/config'
@@ -16,6 +16,7 @@ export default function Navigation() {
     { href: '/', labelKey: 'nav.home', icon: Home },
     { href: '/crypto-radar', labelKey: 'nav.cryptoRadar', icon: Activity },
     { href: '/ai-training', labelKey: 'nav.aiTraining', icon: Brain },
+    { href: '/ai-training-monitor', labelKey: 'nav.aiTrainingMonitor', icon: Database },
     { href: '/ai-predictions', labelKey: 'nav.aiPredictions', icon: TrendingUp },
     { href: '/pattern-detection', labelKey: 'nav.patternDetection', icon: LineChart },
     { href: '/market-screener', labelKey: 'nav.marketScreener', icon: Filter },

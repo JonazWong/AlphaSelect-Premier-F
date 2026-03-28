@@ -3,10 +3,11 @@
     "home": "Home",
     "cryptoRadar": "Crypto Radar",
     "aiTraining": "AI Training",
+    "aiTrainingMonitor": "Training Records",
     "aiPredictions": "AI Predictions",
     "patternDetection": "Patterns",
     "marketScreener": "Screener",
-    "extremeReversal": "Reversal Monitor",
+    "extremeReversal": "Extreme Reversal",
     "reversalMonitor": "Reversal Scan",
     "switchToChinese": "Switch to Chinese",
     "switchToEnglish": "Switch to English"
