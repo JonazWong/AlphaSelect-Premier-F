@@ -6,7 +6,7 @@ echo ========================================
 echo.
 
 echo [1] 測試 Socket.IO 端點...
-curl -v http://localhost:8000/socket.io/?EIO=4^&transport=polling 2>&1 | findstr "HTTP"
+curl -v http://localhost:8000/ws/socket.io/?EIO=4^&transport=polling 2>&1 | findstr "HTTP"
 echo.
 
 echo [2] 檢查 Backend 日誌（最後 30 行）...
