@@ -17,8 +17,8 @@ echo [3] 連接到 defaultdb 資料庫...
 docker compose exec -T postgres psql -U postgres -d defaultdb -c "SELECT current_user, current_database();"
 echo.
 
-echo [4] 檢查表...
-docker compose exec -T postgres psql -U postgres -d alphaselect -c "\dt"
+echo [4] 檢查 defaultdb 中的表...
+docker compose exec -T postgres psql -U postgres -d defaultdb -c "\dt"
 echo.
 
 pause
