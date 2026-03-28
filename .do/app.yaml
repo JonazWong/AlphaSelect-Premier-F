@@ -15,10 +15,6 @@ databases:
     engine: PG
     name: premier
     production: true
-  - name: redis
-    engine: REDIS
-    production: true
-    version: "7"
 
 ingress:
   rules:
@@ -60,7 +56,7 @@ services:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${redis.REDIS_URL}
+        type: SECRET
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -129,7 +125,7 @@ workers:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${redis.REDIS_URL}
+        type: SECRET
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -159,7 +155,7 @@ workers:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${redis.REDIS_URL}
+        type: SECRET
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
