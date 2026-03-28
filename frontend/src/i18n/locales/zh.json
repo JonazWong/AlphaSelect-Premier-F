@@ -177,7 +177,17 @@
     "aiConfidence": "AI 信心分數",
     "riskLevel": "風險等級",
     "oiChange": "持倉量變化",
-    "techSignals": "技術信號"
+    "techSignals": "技術信號",
+    "searchSymbol": "搜尋交易對...",
+    "minConfidence": "最低信心度",
+    "sortBy": "排序:",
+    "sortConfDesc": "信心度 ↓",
+    "sortConfAsc": "信心度 ↑",
+    "sortRisk": "風險 ↑",
+    "sortChange": "OI 變化 ↓",
+    "volume24h": "24h 成交量",
+    "change24h": "24h 漲跌",
+    "noMatchFilters": "沒有符合篩選條件的信號"
   },
   "extremeReversal": {
     "title": "極端反轉監察",
@@ -193,6 +203,12 @@
     "aiScore": "AI 分數",
     "fundingRate": "資金費率",
     "oiChange": "OI 變化",
+    "searchSymbol": "搜尋交易對...",
+    "minConfidence": "最低信心度:",
+    "noMatchFilters": "沒有符合篩選條件的信號",
+    "suggestEntry": "建議入場",
+    "suggestSL": "止損",
+    "suggestTP": "止盈",
     "liquidation": "清算量",
     "techIndicators": "技術指標詳情",
     "macdStatus": "MACD 狀態",
@@ -235,7 +251,13 @@
       "off": "關閉",
       "30m": "每 30 分鐘",
       "realtime": "即時更新"
-    }
+    },
+    "searchSymbol": "搜尋交易對...",
+    "minConfidence": "最低信心度:",
+    "noMatchFilters": "沒有符合篩選條件的信號",
+    "suggestEntry": "建議入場",
+    "suggestSL": "止損",
+    "suggestTP": "止盈"
   },
   "aiTraining": {
     "title": "AI 訓練中心",
@@ -327,7 +349,18 @@
     "sell": "卖出",
     "strongSell": "强力卖出",
     "selectSymbolsHint": "选择交易对以查看预测",
-    "noResults": "所选交易对暂无预测数据"
+    "noResults": "所选交易对暂无预测数据",
+    "ensemble": "集成模型",
+    "singleModel": "單一模型",
+    "horizon": "預測週期",
+    "minConfidence": "最低信心度",
+    "sortBy": "排序:",
+    "ratingFilter": "評級:",
+    "modelType": "模型",
+    "sortConfDesc": "信心度 ↓",
+    "sortUpsideDesc": "漲幅 ↓",
+    "sortAccuracyDesc": "準確度 ↓",
+    "noMatchFilters": "沒有符合篩選條件的預測"
   },
   "patternDetection": {
     "title": "形态识别",
@@ -357,7 +390,19 @@
     "wedge": "楔形",
     "channel": "通道形态",
     "noPatterns": "所选交易对未检测到形态",
-    "selectSymbolsHint": "选择交易对以检测形态"
+    "selectSymbolsHint": "选择交易对以检测形态",
+    "filterByType": "形態類型:",
+    "allPatterns": "全部形態",
+    "reliabilityFilter": "可靠度:",
+    "directionFilter": "方向:",
+    "bullish": "看漲",
+    "bearish": "看跌",
+    "statusFilter": "狀態:",
+    "sortBy": "排序:",
+    "sortCompletionDesc": "完成度 ↓",
+    "sortReliability": "可靠度",
+    "sortSymbol": "交易對 A→Z",
+    "noMatchFilters": "沒有符合篩選條件的形態"
   },
   "marketScreener": {
     "title": "市场筛选器",
@@ -391,6 +436,18 @@
     "criticalSignals": "極高",
     "noSignals": "未偵測到反轉信號。請收集更多市場數據後重試。",
     "bounce": "⬆ 反彈",
-    "pullback": "⬇ 回調"
+    "pullback": "⬇ 回調",
+    "signalTypeFilter": "類型:",
+    "urgencyFilter": "緊急:",
+    "directionFilter": "方向:",
+    "minConfidence": "最低信心度:",
+    "sortBy": "排序:",
+    "sortConfDesc": "信心度 ↓",
+    "sortRsiDesc": "RSI ↓",
+    "sortRsiAsc": "RSI ↑",
+    "sortUrgency": "緊急程度",
+    "showing": "顯示 {{count}} 個信號",
+    "noMatchFilters": "沒有符合篩選條件的信號",
+    "macd": "MACD"
   }
 }

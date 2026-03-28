@@ -192,6 +192,34 @@ function SignalCard({
           <ConfidenceBar value={signal.confidence} urgency={signal.urgency} />
         </div>
 
+        {/* Suggested Levels */}
+        {signal.current_price != null && (
+          (() => {
+            const price = signal.current_price as number
+            const stopLoss = isBounce ? price * 0.98 : price * 1.02
+            const predictedMove = signal.predicted_move ?? 2
+            const takeProfit = isBounce
+              ? price * (1 + predictedMove / 100)
+              : price * (1 - Math.abs(predictedMove) / 100)
+            return (
+              <div className="grid grid-cols-3 gap-2 mt-3 p-3 rounded-lg bg-black/20 border border-gray-700/30 text-xs">
+                <div>
+                  <div className="text-gray-500 mb-1">{t('extremeReversal.suggestEntry', { defaultValue: 'Entry' })}</div>
+                  <div className="text-cyan-400 font-mono">${price.toFixed(4)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 mb-1">{t('extremeReversal.suggestSL', { defaultValue: 'Stop Loss' })}</div>
+                  <div className="text-red-400 font-mono">${stopLoss.toFixed(4)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 mb-1">{t('extremeReversal.suggestTP', { defaultValue: 'Take Profit' })}</div>
+                  <div className="text-green-400 font-mono">${takeProfit.toFixed(4)}</div>
+                </div>
+              </div>
+            )
+          })()
+        )}
+
         {/* Indicator grid */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-card/50 rounded p-1.5">
@@ -452,6 +480,8 @@ export default function ExtremeReversalPage() {
   const [urgencyFilter, setUrgencyFilter] = useState<'all' | Urgency>('all')
   const [sortMode, setSortMode] = useState<SortMode>('confidence')
   const [autoRefresh, setAutoRefresh] = useState<AutoRefreshMode>('off')
+  const [symbolSearch, setSymbolSearch] = useState('')
+  const [minConfidence, setMinConfidence] = useState(0)
 
   const socketRef = useRef<Socket | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -550,6 +580,12 @@ export default function ExtremeReversalPage() {
         ? signals.reduce((a, s) => a + s.confidence, 0) / signals.length
         : 0,
   }
+
+  // ── Client-side filtered signals ─────────────────────────────────────────
+
+  const filteredSignals = signals
+    .filter((s) => symbolSearch === '' || s.symbol.toLowerCase().includes(symbolSearch.toLowerCase()))
+    .filter((s) => s.confidence >= minConfidence)
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -721,6 +757,43 @@ export default function ExtremeReversalPage() {
             </span>
           )}
         </div>
+
+        {/* Symbol search + confidence threshold */}
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          {/* Symbol search */}
+          <div className="relative">
+            <input
+              type="text"
+              value={symbolSearch}
+              onChange={(e) => setSymbolSearch(e.target.value)}
+              placeholder={t('extremeReversal.searchSymbol', { defaultValue: 'Search symbol...' })}
+              className="bg-black/30 border border-gray-700 rounded-lg pl-3 pr-8 py-2 text-white placeholder-gray-500 text-sm focus:border-primary focus:outline-none w-44"
+            />
+            {symbolSearch && (
+              <button
+                onClick={() => setSymbolSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* Confidence threshold slider */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{t('extremeReversal.minConfidence', { defaultValue: 'Min Confidence:' })}</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={minConfidence}
+              onChange={(e) => setMinConfidence(Number(e.target.value))}
+              className="w-28 accent-cyan-400"
+            />
+            <span className="text-xs text-primary w-8">{minConfidence}%</span>
+          </div>
+        </div>
       </div>
 
       {/* Signal grid */}
@@ -729,7 +802,7 @@ export default function ExtremeReversalPage() {
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />
           {t('common.loading')}
         </div>
-      ) : signals.length === 0 ? (
+      ) : filteredSignals.length === 0 ? (
         <div className="text-center py-20 text-gray-400 glass-card">
           <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-lg">{t('extremeReversal.noSignals')}</p>
@@ -737,7 +810,7 @@ export default function ExtremeReversalPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {signals.map((sig) => (
+          {filteredSignals.map((sig) => (
             <SignalCard
               key={sig.id}
               signal={sig}

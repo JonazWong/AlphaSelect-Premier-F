@@ -8,6 +8,13 @@ import '@/i18n/config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+function formatVolume(v: number | undefined): string {
+  if (!v) return '—'
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
+  return `$${v.toLocaleString()}`
+}
+
 interface ContractSignal {
   symbol: string;
   direction: 'Long' | 'Short';
@@ -24,6 +31,8 @@ interface ContractSignal {
   riskLevel: 'Low' | 'Medium' | 'High';
   signals: string[];
   currency?: string;
+  priceChange24h?: number;
+  volume24h?: number;
 }
 
 interface MarketStats {
@@ -42,6 +51,24 @@ export default function CryptoRadar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [symbolSearch, setSymbolSearch] = useState('');
+  const [minConfidence, setMinConfidence] = useState(0);
+  const [riskFilter, setRiskFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
+  const [sortMode, setSortMode] = useState<'confidence_desc' | 'confidence_asc' | 'risk_asc' | 'change_desc'>('confidence_desc');
+
+  const filteredSignals = signals
+    .filter(s => symbolSearch === '' || s.symbol.toLowerCase().includes(symbolSearch.toLowerCase()))
+    .filter(s => s.confidence >= minConfidence)
+    .filter(s => riskFilter === 'All' || s.riskLevel === riskFilter)
+    .sort((a, b) => {
+      if (sortMode === 'confidence_desc') return b.confidence - a.confidence;
+      if (sortMode === 'confidence_asc') return a.confidence - b.confidence;
+      if (sortMode === 'risk_asc') {
+        const order: Record<string, number> = { Low: 0, Medium: 1, High: 2 };
+        return (order[a.riskLevel] ?? 1) - (order[b.riskLevel] ?? 1);
+      }
+      return (b.openInterestChange ?? 0) - (a.openInterestChange ?? 0);
+    });
 
   // Fetch market statistics
   const fetchMarketStats = async () => {
@@ -193,6 +220,77 @@ export default function CryptoRadar() {
         </button>
       </div>
 
+      {/* Filter / Control Bar */}
+      <div className="flex flex-wrap gap-3 items-center mb-6 p-4 bg-card rounded-xl border border-gray-700/50">
+        {/* Symbol search */}
+        <div className="relative">
+          <input
+            type="text"
+            value={symbolSearch}
+            onChange={e => setSymbolSearch(e.target.value)}
+            placeholder={t('cryptoRadar.searchSymbol', { defaultValue: 'Search symbol...' })}
+            className="bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:border-primary focus:outline-none w-48 pr-8"
+          />
+          {symbolSearch && (
+            <button
+              onClick={() => setSymbolSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-sm leading-none"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Confidence slider */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-400 whitespace-nowrap">
+            {t('cryptoRadar.minConfidence', { defaultValue: 'Min Confidence' })}: {minConfidence}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={minConfidence}
+            onChange={e => setMinConfidence(Number(e.target.value))}
+            className="w-28 accent-cyan-400"
+          />
+        </div>
+
+        {/* Risk pills */}
+        <div className="flex gap-1">
+          {(['All', 'Low', 'Medium', 'High'] as const).map(level => (
+            <button
+              key={level}
+              onClick={() => setRiskFilter(level)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all border ${
+                riskFilter === level
+                  ? 'bg-primary/20 text-primary border-primary/50'
+                  : 'bg-black/20 text-gray-400 border-gray-700'
+              }`}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-xs text-gray-400">{t('cryptoRadar.sortBy', { defaultValue: 'Sort:' })}</span>
+          <select
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as typeof sortMode)}
+            className="bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-primary focus:outline-none"
+          >
+            <option value="confidence_desc">{t('cryptoRadar.sortConfDesc', { defaultValue: 'Confidence ↓' })}</option>
+            <option value="confidence_asc">{t('cryptoRadar.sortConfAsc', { defaultValue: 'Confidence ↑' })}</option>
+            <option value="risk_asc">{t('cryptoRadar.sortRisk', { defaultValue: 'Risk ↑' })}</option>
+            <option value="change_desc">{t('cryptoRadar.sortChange', { defaultValue: 'OI Change ↓' })}</option>
+          </select>
+        </div>
+      </div>
+
       {/* Error Display */}
       {error && (
         <div className="glass-card p-6 bg-red-500/10 border-red-500/50">
@@ -221,9 +319,9 @@ export default function CryptoRadar() {
       )}
 
       {/* Signals Grid */}
-      {!loading && !error && signals.length > 0 && (
+      {!loading && !error && filteredSignals.length > 0 && (
         <div className="grid lg:grid-cols-2 gap-6">
-          {signals.map((signal, idx) => (
+          {filteredSignals.map((signal, idx) => (
             <div
               key={idx}
               className={`glass-card p-6 bg-gradient-to-br ${
@@ -273,6 +371,11 @@ export default function CryptoRadar() {
                   <div className="text-3xl font-bold font-mono text-primary">
                     ${signal.currentPrice.toLocaleString('en-US')}
                   </div>
+                  {signal.priceChange24h !== undefined && (
+                    <div className={`text-sm font-semibold mt-1 ${signal.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {signal.priceChange24h >= 0 ? '+' : ''}{signal.priceChange24h.toFixed(2)}%
+                    </div>
+                  )}
                   <div className="text-sm text-gray-400">Current</div>
                 </div>
               </div>
@@ -321,8 +424,8 @@ export default function CryptoRadar() {
                 </div>
               </div>
 
-              {/* Risk Level and OI */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Risk Level, OI, and Volume */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
                   <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.riskLevel')}</div>
                   <span
@@ -344,6 +447,12 @@ export default function CryptoRadar() {
                     {(signal.openInterestChange ?? 0).toFixed(2)}%
                   </div>
                 </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">{t('cryptoRadar.volume24h', { defaultValue: 'Vol 24h' })}</div>
+                  <div className="text-sm font-bold text-purple-400">
+                    {formatVolume(signal.volume24h)}
+                  </div>
+                </div>
               </div>
 
               {/* Technical Signals */}
@@ -363,12 +472,14 @@ export default function CryptoRadar() {
                   ))}
                 </div>
               </div>
+
+              <span className="text-xs text-gray-600 mt-2 block">Live</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State — no signals from API */}
       {!loading && !error && signals.length === 0 && (
         <div className="glass-card p-12 text-center">
           <Zap className="w-16 h-16 mx-auto mb-4 text-gray-600" />
@@ -376,6 +487,19 @@ export default function CryptoRadar() {
             {activeTab === 'long' ? t('cryptoRadar.noSignalsLong') : t('cryptoRadar.noSignalsShort')}
           </p>
           <p className="text-sm text-gray-500 mt-2">{t('cryptoRadar.tryLater')}</p>
+        </div>
+      )}
+
+      {/* Empty State — signals exist but filters hide them all */}
+      {!loading && !error && signals.length > 0 && filteredSignals.length === 0 && (
+        <div className="glass-card p-12 text-center">
+          <Activity className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+          <p className="text-xl text-gray-400">
+            {t('cryptoRadar.noSignalsFilter', { defaultValue: 'No signals match your filters' })}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            {t('cryptoRadar.adjustFilters', { defaultValue: 'Try adjusting the search, confidence threshold, or risk level.' })}
+          </p>
         </div>
       )}
     </div>

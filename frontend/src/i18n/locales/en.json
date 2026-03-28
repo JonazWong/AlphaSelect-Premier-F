@@ -177,7 +177,17 @@
     "aiConfidence": "AI Confidence Score",
     "riskLevel": "Risk Level",
     "oiChange": "OI Change",
-    "techSignals": "Technical Signals"
+    "techSignals": "Technical Signals",
+    "searchSymbol": "Search symbol...",
+    "minConfidence": "Min Confidence",
+    "sortBy": "Sort:",
+    "sortConfDesc": "Confidence ↓",
+    "sortConfAsc": "Confidence ↑",
+    "sortRisk": "Risk ↑",
+    "sortChange": "OI Change ↓",
+    "volume24h": "Vol 24h",
+    "change24h": "24h Change",
+    "noMatchFilters": "No signals match your filters"
   },
   "extremeReversal": {
     "title": "Extreme Reversal Monitor",
@@ -235,7 +245,13 @@
       "off": "Off",
       "30m": "Every 30 min",
       "realtime": "Real-time"
-    }
+    },
+    "searchSymbol": "Search symbol...",
+    "minConfidence": "Min Confidence:",
+    "noMatchFilters": "No signals match the selected filters",
+    "suggestEntry": "Entry",
+    "suggestSL": "Stop Loss",
+    "suggestTP": "Take Profit"
   },
   "aiTraining": {
     "title": "AI Training Center",
@@ -327,7 +343,18 @@
     "sell": "Sell",
     "strongSell": "Strong Sell",
     "selectSymbolsHint": "Select symbols to view predictions",
-    "noResults": "No predictions available for selected symbols"
+    "noResults": "No predictions available for selected symbols",
+    "ensemble": "Ensemble",
+    "singleModel": "Single Model",
+    "horizon": "Forecast Horizon",
+    "minConfidence": "Min Confidence",
+    "sortBy": "Sort:",
+    "ratingFilter": "Rating:",
+    "modelType": "Model",
+    "sortConfDesc": "Confidence ↓",
+    "sortUpsideDesc": "Upside % ↓",
+    "sortAccuracyDesc": "Accuracy ↓",
+    "noMatchFilters": "No predictions match the selected filters"
   },
   "patternDetection": {
     "title": "Pattern Detection",
@@ -357,7 +384,19 @@
     "wedge": "Wedge",
     "channel": "Channel",
     "noPatterns": "No patterns detected for selected symbols",
-    "selectSymbolsHint": "Select symbols to detect patterns"
+    "selectSymbolsHint": "Select symbols to detect patterns",
+    "filterByType": "Pattern Type:",
+    "allPatterns": "All Patterns",
+    "reliabilityFilter": "Reliability:",
+    "directionFilter": "Direction:",
+    "bullish": "Bullish",
+    "bearish": "Bearish",
+    "statusFilter": "Status:",
+    "sortBy": "Sort:",
+    "sortCompletionDesc": "Completion ↓",
+    "sortReliability": "Reliability",
+    "sortSymbol": "Symbol A→Z",
+    "noMatchFilters": "No patterns match the selected filters"
   },
   "marketScreener": {
     "title": "Market Screener",
@@ -391,6 +430,18 @@
     "criticalSignals": "Critical",
     "noSignals": "No reversal signals detected. Collect more market data to enable analysis.",
     "bounce": "⬆ Bounce",
-    "pullback": "⬇ Pullback"
+    "pullback": "⬇ Pullback",
+    "signalTypeFilter": "Type:",
+    "urgencyFilter": "Urgency:",
+    "directionFilter": "Direction:",
+    "minConfidence": "Min Confidence:",
+    "sortBy": "Sort:",
+    "sortConfDesc": "Confidence ↓",
+    "sortRsiDesc": "RSI ↓",
+    "sortRsiAsc": "RSI ↑",
+    "sortUrgency": "Urgency",
+    "showing": "Showing {{count}} signals",
+    "noMatchFilters": "No signals match the selected filters",
+    "macd": "MACD"
   }
 }

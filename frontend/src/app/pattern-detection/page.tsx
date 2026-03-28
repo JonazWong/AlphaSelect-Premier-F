@@ -61,6 +61,11 @@ export default function PatternDetectionPage() {
   const [patterns, setPatterns] = useState<PatternResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [patternTypeFilter, setPatternTypeFilter] = useState('')
+  const [reliabilityFilter, setReliabilityFilter] = useState<'All' | 'high' | 'medium' | 'low'>('All')
+  const [directionFilter, setDirectionFilter] = useState<'All' | 'bullish' | 'bearish'>('All')
+  const [statusFilter, setStatusFilter] = useState<'All' | 'detected' | 'pending'>('All')
+  const [sortMode, setSortMode] = useState('completion_desc')
 
   useEffect(() => {
     if (symbols.length === 0) return
@@ -81,6 +86,28 @@ export default function PatternDetectionPage() {
       isCancelled = true
     }
   }, [symbols])
+
+  const reliabilityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 }
+
+  const filteredPatterns = patterns
+    .filter((p) => {
+      const name = p.pattern.toLowerCase()
+      if (patternTypeFilter === 'double') return name.includes('double')
+      if (patternTypeFilter === 'headshoulders') return name.includes('head') || name.includes('shoulder')
+      if (patternTypeFilter === 'triangle') return name.includes('triangle')
+      if (patternTypeFilter === 'flag') return name.includes('flag')
+      if (patternTypeFilter === 'other')
+        return !name.includes('double') && !name.includes('head') && !name.includes('shoulder') && !name.includes('triangle') && !name.includes('flag')
+      return true
+    })
+    .filter((p) => reliabilityFilter === 'All' || p.reliability === reliabilityFilter)
+    .filter((p) => directionFilter === 'All' || p.direction === directionFilter)
+    .filter((p) => statusFilter === 'All' || p.status === statusFilter)
+    .sort((a, b) => {
+      if (sortMode === 'completion_desc') return (b.completion ?? 0) - (a.completion ?? 0)
+      if (sortMode === 'reliability') return (reliabilityOrder[b.reliability] ?? 0) - (reliabilityOrder[a.reliability] ?? 0)
+      return a.symbol.localeCompare(b.symbol)
+    })
 
   const chartData = useMemo(
     () =>
@@ -123,6 +150,90 @@ export default function PatternDetectionPage() {
         {symbols.length === 0 && (
           <p className="text-xs text-yellow-400" role="alert">{t('trade.validation.symbolRequired')}</p>
         )}
+      </div>
+
+      {/* Filter bar */}
+      <div className="bg-card rounded-xl p-4 border border-gray-700/50 mb-6">
+        <div className="flex flex-wrap gap-3 items-center">
+          {/* Pattern type dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 whitespace-nowrap">{t('patternDetection.filterByType', { defaultValue: 'Pattern Type:' })}</span>
+            <select
+              value={patternTypeFilter}
+              onChange={(e) => setPatternTypeFilter(e.target.value)}
+              className="bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-primary focus:outline-none"
+            >
+              <option value="">{t('patternDetection.allPatterns', { defaultValue: 'All Patterns' })}</option>
+              <option value="double">Double Top / Bottom</option>
+              <option value="headshoulders">Head &amp; Shoulders</option>
+              <option value="triangle">Triangle</option>
+              <option value="flag">Flag</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Reliability pills */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400 whitespace-nowrap mr-1">{t('patternDetection.reliabilityFilter', { defaultValue: 'Reliability:' })}</span>
+            {(['All', 'high', 'medium', 'low'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setReliabilityFilter(v)}
+                className={reliabilityFilter === v
+                  ? 'px-3 py-1 rounded-lg text-xs font-bold border bg-primary/20 text-primary border-primary/50 cursor-pointer'
+                  : 'px-3 py-1 rounded-lg text-xs font-bold border bg-black/20 text-gray-400 border-gray-700 cursor-pointer'}
+              >
+                {v === 'All' ? 'All' : t(`common.levels.${v}`)}
+              </button>
+            ))}
+          </div>
+
+          {/* Direction pills */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400 whitespace-nowrap mr-1">{t('patternDetection.directionFilter', { defaultValue: 'Direction:' })}</span>
+            {(['All', 'bullish', 'bearish'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setDirectionFilter(v)}
+                className={directionFilter === v
+                  ? 'px-3 py-1 rounded-lg text-xs font-bold border bg-primary/20 text-primary border-primary/50 cursor-pointer'
+                  : 'px-3 py-1 rounded-lg text-xs font-bold border bg-black/20 text-gray-400 border-gray-700 cursor-pointer'}
+              >
+                {v === 'All' ? 'All' : v === 'bullish' ? t('patternDetection.bullish', { defaultValue: 'Bullish' }) : t('patternDetection.bearish', { defaultValue: 'Bearish' })}
+              </button>
+            ))}
+          </div>
+
+          {/* Status pills */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400 whitespace-nowrap mr-1">{t('patternDetection.statusFilter', { defaultValue: 'Status:' })}</span>
+            {(['All', 'detected', 'pending'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setStatusFilter(v)}
+                className={statusFilter === v
+                  ? 'px-3 py-1 rounded-lg text-xs font-bold border bg-primary/20 text-primary border-primary/50 cursor-pointer'
+                  : 'px-3 py-1 rounded-lg text-xs font-bold border bg-black/20 text-gray-400 border-gray-700 cursor-pointer'}
+              >
+                {v === 'All' ? 'All' : v === 'detected' ? t('patternDetection.detected') : t('patternDetection.pending')}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-gray-400 whitespace-nowrap">{t('patternDetection.sortBy', { defaultValue: 'Sort:' })}</span>
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value)}
+              className="bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-primary focus:outline-none"
+            >
+              <option value="completion_desc">Completion ↓</option>
+              <option value="reliability">Reliability</option>
+              <option value="symbol_az">Symbol A→Z</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {symbols.length === 0 ? (
@@ -172,8 +283,12 @@ export default function PatternDetectionPage() {
               <div className="glass-card p-8 text-center">
                 <p className="text-gray-500 text-sm">{t('patternDetection.noPatterns')}</p>
               </div>
+            ) : filteredPatterns.length === 0 ? (
+              <div className="glass-card p-8 text-center">
+                <p className="text-gray-500 text-sm">{t('patternDetection.noMatchFilters', { defaultValue: 'No patterns match the selected filters' })}</p>
+              </div>
             ) : (
-              patterns.map((pat, idx) => (
+              filteredPatterns.map((pat, idx) => (
                 <div
                   key={idx}
                   className={`glass-card p-4 bg-gradient-to-r ${
