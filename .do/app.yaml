@@ -9,11 +9,11 @@ features:
   - buildpack-stack=ubuntu-22
 
 databases:
-  - cluster_name: preimer
+  - cluster_name: premier
     db_name: defaultdb
     db_user: doadmin
     engine: PG
-    name: preimer
+    name: premier
     production: true
 
 ingress:
@@ -53,7 +53,7 @@ services:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${preimer.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
         type: SECRET
@@ -68,7 +68,7 @@ services:
         type: SECRET
       - key: ADMIN_DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${preimer.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: db_cluster_name
         scope: RUN_AND_BUILD_TIME
         type: SECRET
@@ -122,7 +122,7 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${preimer.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
         type: SECRET
@@ -152,7 +152,7 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${preimer.DATABASE_URL}
+        value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
         type: SECRET
