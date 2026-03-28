@@ -57,11 +57,9 @@ services:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
@@ -72,10 +70,8 @@ services:
       - key: SECRET_KEY
         scope: RUN_AND_BUILD_TIME
         type: SECRET
-        value: ${APP_SECRET_KEY}
       - key: ADMIN_DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${premier.DATABASE_URL}
       - key: db_cluster_name
         scope: RUN_AND_BUILD_TIME
@@ -130,11 +126,9 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
@@ -145,7 +139,6 @@ workers:
       - key: SECRET_KEY
         scope: RUN_AND_BUILD_TIME
         type: SECRET
-        value: ${APP_SECRET_KEY}
       - key: AI_MODEL_DIR
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
@@ -163,11 +156,9 @@ workers:
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
         value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
@@ -178,7 +169,6 @@ workers:
       - key: SECRET_KEY
         scope: RUN_AND_BUILD_TIME
         type: SECRET
-        value: ${APP_SECRET_KEY}
       - key: AI_MODEL_DIR
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
