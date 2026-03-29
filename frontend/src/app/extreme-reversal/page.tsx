@@ -516,7 +516,7 @@ export default function ExtremeReversalPage() {
     } finally {
       setLoading(false)
     }
-  }, [apiBase, timeframe, signalType, urgencyFilter, sortMode])
+  }, [apiBase, timeframe, signalType, urgencyFilter, sortMode, t])
 
   // ── Initial load + filter-change reload ──────────────────────────────────
 

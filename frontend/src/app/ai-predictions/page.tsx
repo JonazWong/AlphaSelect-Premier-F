@@ -96,6 +96,7 @@ function SectionHeader({
       </div>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <h2 className="font-bold text-white text-sm uppercase tracking-wider">{title}</h2>
+        {subtitle && <span className="text-xs text-gray-400 truncate">{subtitle}</span>}
         {badge && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/20 text-secondary border border-secondary/30 shrink-0">
             {badge}
