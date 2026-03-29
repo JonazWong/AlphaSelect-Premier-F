@@ -69,9 +69,6 @@ services:
       - key: ADMIN_DATABASE_URL
         scope: RUN_AND_BUILD_TIME
         value: ${premier.DATABASE_URL}
-      - key: db_cluster_name
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
       - key: AI_MODEL_DIR
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
