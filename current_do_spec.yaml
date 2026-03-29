@@ -132,5 +132,5 @@ workers:
   instance_count: 1
   instance_size_slug: basic-xs
   name: celery-worker
-  run_command: celery -A app.tasks.celery_app worker --loglevel=info
+  run_command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=50 --max-memory-per-child=400000
   source_dir: backend

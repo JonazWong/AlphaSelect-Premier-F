@@ -64,14 +64,15 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
         self.update_state(state='PROGRESS', meta={'status': 'Loading data...', 'progress': 10})
         sync_send_progress('Loading data...', 10)
         
-        # Fetch contract data
+        # Fetch contract data (limit to recent 10000 records to save memory)
+        max_records = 10000
         contract_data = db.query(ContractMarket).filter(
             ContractMarket.symbol == symbol
-        ).order_by(ContractMarket.created_at).all()
+        ).order_by(ContractMarket.created_at.desc()).limit(max_records).all()
         
         logger.info(f"Loaded {len(contract_data)} data points for {symbol}")
         
-        # Convert to DataFrame
+        # Convert to DataFrame (use only needed columns, drop extras)
         df = pd.DataFrame([{
             'created_at': record.created_at,
             'last_price': record.last_price,
@@ -87,6 +88,11 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
             'basis_rate': record.basis_rate
         } for record in contract_data])
         
+        # Free memory immediately
+        del contract_data
+        import gc
+        gc.collect()
+        
         # Update progress
         self.update_state(state='PROGRESS', meta={'status': 'Training model...', 'progress': 30})
         sync_send_progress('Training model...', 30)
@@ -94,6 +100,11 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
         # Train model using service
         training_service = AITrainingService()
         result = training_service.train_model(symbol, model_type, df, config)
+        
+        # Free DataFrame memory immediately after training
+        del df
+        import gc
+        gc.collect()
         
         logger.info(f"Model training completed with metrics: {result['train_metrics']}")
         
@@ -125,6 +136,11 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
         # Send completion
         self.update_state(state='SUCCESS', meta={'status': 'Training completed', 'progress': 100})
         sync_send_progress('Training completed', 100, metrics=result['test_metrics'])
+        
+        # Final memory cleanup
+        del result, training_service
+        import gc
+        gc.collect()
         
         # Broadcast completion
         try:

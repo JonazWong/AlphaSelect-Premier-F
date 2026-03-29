@@ -135,7 +135,7 @@ workers:
       - key: AI_MODEL_DIR
         scope: RUN_AND_BUILD_TIME
         value: /app/ai_models
-    run_command: celery -A app.tasks.celery_app worker --loglevel=info
+    run_command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=50 --max-memory-per-child=400000
 
   - name: celery-beat
     github:

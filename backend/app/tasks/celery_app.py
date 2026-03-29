@@ -67,6 +67,20 @@ celery_app.conf.update(
     task_time_limit=3600,  # 1 hour max
     task_soft_time_limit=3000,  # 50 minutes soft limit
     broker_connection_retry_on_startup=True,
+    
+    # Memory management (critical for 512MB instances)
+    worker_prefetch_multiplier=1,  # Only fetch 1 task at a time
+    worker_max_tasks_per_child=50,  # Restart worker after 50 tasks (prevent memory leaks)
+    worker_max_memory_per_child=400000,  # 400MB limit, restart worker if exceeded
+    
+    # Task execution settings
+    task_acks_late=True,  # Acknowledge tasks after completion
+    task_reject_on_worker_lost=True,  # Requeue tasks if worker dies
+    
+    # Result backend optimization
+    result_expires=3600,  # Clean up results after 1 hour
+    result_compression='gzip',  # Compress results to save memory
+    
     beat_schedule={
         'scan-extreme-reversals-every-minute': {
             'task': 'scan_extreme_reversals',
