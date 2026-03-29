@@ -354,7 +354,20 @@
     "sortConfDesc": "Confidence ↓",
     "sortUpsideDesc": "Upside % ↓",
     "sortAccuracyDesc": "Accuracy ↓",
-    "noMatchFilters": "No predictions match the selected filters"
+    "noMatchFilters": "No predictions match the selected filters",
+    "configSection": "Prediction Configuration",
+    "configDesc": "Select symbols, model type, and forecast parameters",
+    "chartSection": "Price & Forecast Chart",
+    "resultsSection": "All Predictions",
+    "customSymbol": "Add custom symbol",
+    "customSymbolPlaceholder": "e.g. BNBUSDT",
+    "addSymbol": "Add",
+    "modelTypeSelect": "Model Type",
+    "allModels": "All Models",
+    "predictionMode": "Mode",
+    "symbolRequired": "Please add at least one symbol to run predictions.",
+    "selectSymbolHint": "Click a symbol tab or a result card to see detailed prediction.",
+    "noData": "No prediction data available. Please train an AI model first."
   },
   "patternDetection": {
     "title": "Pattern Detection",

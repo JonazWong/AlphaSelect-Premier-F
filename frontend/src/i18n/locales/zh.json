@@ -360,7 +360,20 @@
     "sortConfDesc": "信心度 ↓",
     "sortUpsideDesc": "漲幅 ↓",
     "sortAccuracyDesc": "準確度 ↓",
-    "noMatchFilters": "沒有符合篩選條件的預測"
+    "noMatchFilters": "沒有符合篩選條件的預測",
+    "configSection": "預測配置",
+    "configDesc": "選擇交易對、模型類型及預測參數",
+    "chartSection": "價格與預測圖表",
+    "resultsSection": "全部預測結果",
+    "customSymbol": "新增自定義交易對",
+    "customSymbolPlaceholder": "例如 BNBUSDT",
+    "addSymbol": "新增",
+    "modelTypeSelect": "模型類型",
+    "allModels": "全部模型",
+    "predictionMode": "模式",
+    "symbolRequired": "請至少新增一個交易對以執行預測。",
+    "selectSymbolHint": "點擊上方交易對標籤或下方結果卡片以查看詳細預測。",
+    "noData": "暫無預測數據，請先訓練 AI 模型。"
   },
   "patternDetection": {
     "title": "形态识别",
