@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrendingUp, TrendingDown, RefreshCw, AlertCircle, Loader2, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, AlertCircle, Loader2, Activity, Clock } from 'lucide-react'
 import '@/i18n/config'
 import SymbolSelector from '@/components/SymbolSelector'
+
+export type Timeframe = 'Min15' | 'Hour1' | 'Hour4' | 'Day1'
 
 export type ReversalSignal = {
   id: string
@@ -18,38 +20,41 @@ export type ReversalSignal = {
   bbPosition?: number
   bbUpper?: number
   bbLower?: number
+  bbMid?: number
+  atr?: number
   currentPrice?: number
   targetPrice?: number
   confidence?: number
   macdHistogram?: number
+  fundingRate?: number
 }
+
+const TIMEFRAME_OPTIONS: { value: Timeframe; label: string; points: number }[] = [
+  { value: 'Min15', label: '15m', points: 50 },
+  { value: 'Hour1', label: '1H', points: 100 },
+  { value: 'Hour4', label: '4H', points: 200 },
+  { value: 'Day1', label: '1D', points: 400 },
+]
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0
     ? process.env.NEXT_PUBLIC_API_URL
     : 'http://localhost:8000'
 
-async function fetchReversalSignals(symbols?: string[]): Promise<ReversalSignal[]> {
+async function fetchReversalSignals(
+  symbols?: string[],
+  timeframe: Timeframe = 'Hour1'
+): Promise<ReversalSignal[]> {
   const params = new URLSearchParams()
-
+  params.set('timeframe', timeframe)
   if (symbols && symbols.length > 0) {
     params.set('symbols', symbols.join(','))
   }
-
-  const query = params.toString()
-  const url = `${API_BASE_URL}/api/v1/reversal/scan${query ? `?${query}` : ''}`
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-
+  const url = `${API_BASE_URL}/api/v1/reversal/scan?${params.toString()}`
+  const response = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
   if (!response.ok) {
     throw new Error(`Failed to fetch reversal signals (status ${response.status})`)
   }
-
   const data = await response.json()
   return (Array.isArray(data) ? data : (data.signals ?? [])) as ReversalSignal[]
 }
@@ -64,6 +69,7 @@ const URGENCY_COLORS: Record<ReversalSignal['urgency'], string> = {
 export default function ReversalMonitorPage() {
   const { t } = useTranslation('common')
   const [symbols, setSymbols] = useState<string[]>([])
+  const [timeframe, setTimeframe] = useState<Timeframe>('Hour1')
   const [signals, setSignals] = useState<ReversalSignal[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,18 +94,18 @@ export default function ReversalMonitorPage() {
       return (urgencyOrder[b.urgency] ?? 0) - (urgencyOrder[a.urgency] ?? 0)
     })
 
-  const loadSignals = useCallback((syms?: string[]) => {
+  const loadSignals = useCallback((syms?: string[], tf: Timeframe = 'Hour1') => {
     setLoading(true)
     setError(null)
-    fetchReversalSignals(syms && syms.length > 0 ? syms : undefined)
+    fetchReversalSignals(syms && syms.length > 0 ? syms : undefined, tf)
       .then((data) => setSignals(data))
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    loadSignals(symbols.length > 0 ? symbols : undefined)
-  }, [symbols, loadSignals])
+    loadSignals(symbols.length > 0 ? symbols : undefined, timeframe)
+  }, [symbols, timeframe, loadSignals])
 
   return (
     <div className="space-y-6">
@@ -115,12 +121,12 @@ export default function ReversalMonitorPage() {
               <span className="ml-3 text-2xl text-gray-500 font-normal">{t('reversalMonitor.subtitle', { defaultValue: '反轉監控' })}</span>
             </h1>
             <p className="text-gray-400 text-sm">
-              {t('reversalMonitor.description', { defaultValue: 'Real-time reversal signal detection using RSI, MACD, and Bollinger Bands' })}
+              {t('reversalMonitor.description', { defaultValue: 'Real-time reversal signal detection using Wilder RSI, MACD crossover, Bollinger Bands & divergence analysis' })}
             </p>
           </div>
         </div>
         <button
-          onClick={() => loadSignals(symbols.length > 0 ? symbols : undefined)}
+          onClick={() => loadSignals(symbols.length > 0 ? symbols : undefined, timeframe)}
           aria-label={t('common.refresh')}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
         >
@@ -129,8 +135,36 @@ export default function ReversalMonitorPage() {
         </button>
       </div>
 
-      {/* Controls */}
-      <div className="glass-card p-4">
+      {/* Controls: Timeframe + Symbol Selector */}
+      <div className="glass-card p-4 space-y-4">
+        {/* Timeframe row */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Clock className="w-4 h-4 text-gray-500 shrink-0" />
+          <span className="text-xs text-gray-500 font-medium">
+            {t('reversalMonitor.timeframe', { defaultValue: 'Timeframe:' })}
+          </span>
+          {TIMEFRAME_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setTimeframe(opt.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                timeframe === opt.value
+                  ? 'bg-primary/20 text-primary border-primary/60 shadow-sm shadow-primary/20'
+                  : 'bg-black/20 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {opt.label}
+              <span className="ml-1 opacity-50 text-[10px]">{opt.points}pts</span>
+            </button>
+          ))}
+          <span className="text-[11px] text-gray-600 ml-auto hidden sm:block">
+            {t('reversalMonitor.dataPointsHint', {
+              defaultValue: 'More data points = higher indicator accuracy',
+            })}
+          </span>
+        </div>
+
+        {/* Symbol selector */}
         <SymbolSelector
           multi
           value={symbols}
@@ -317,11 +351,25 @@ export default function ReversalMonitorPage() {
                     <span className="font-mono font-bold text-primary">${(signal.currentPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">{t('aiPredictions.targetPrice')}: </span>
+                    <span className="text-gray-500">{t('aiPredictions.targetPrice', { defaultValue: 'Target' })}: </span>
                     <span className={`font-mono font-bold ${signal.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
                       ${(signal.targetPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
                     </span>
                   </div>
+                  {signal.atr !== undefined && (
+                    <div>
+                      <span className="text-gray-500">ATR: </span>
+                      <span className="font-mono text-gray-300">{signal.atr.toFixed(4)}</span>
+                    </div>
+                  )}
+                  {signal.fundingRate !== undefined && signal.fundingRate !== 0 && (
+                    <div>
+                      <span className="text-gray-500">Funding: </span>
+                      <span className={`font-mono font-bold ${signal.fundingRate > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {signal.fundingRate > 0 ? '+' : ''}{(signal.fundingRate * 100).toFixed(4)}%
+                      </span>
+                    </div>
+                  )}
                   {signal.macdHistogram !== undefined && (
                     <div className="col-span-2">
                       <span className="text-gray-500">{t('reversalMonitor.macd', { defaultValue: 'MACD' })}: </span>
@@ -340,6 +388,10 @@ export default function ReversalMonitorPage() {
                       <span className="font-mono text-xs text-gray-400">
                         {signal.bbLower !== undefined ? signal.bbLower.toLocaleString('en-US', { maximumFractionDigits: 4 }) : '—'}
                         {' – '}
+                        {signal.bbMid !== undefined ? (
+                          <span className="text-yellow-500/80">{signal.bbMid.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
+                        ) : null}
+                        {signal.bbMid !== undefined ? ' – ' : ''}
                         {signal.bbUpper !== undefined ? signal.bbUpper.toLocaleString('en-US', { maximumFractionDigits: 4 }) : '—'}
                       </span>
                     </div>

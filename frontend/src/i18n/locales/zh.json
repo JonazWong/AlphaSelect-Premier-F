@@ -461,6 +461,12 @@
     "sortUrgency": "緊急程度",
     "showing": "顯示 {{count}} 個信號",
     "noMatchFilters": "沒有符合篩選條件的信號",
-    "macd": "MACD"
+    "macd": "MACD",
+    "timeframe": "時間框架:",
+    "dataPointsHint": "數據點越多，指標準確度越高",
+    "critical": "極高",
+    "high": "高",
+    "medium": "中",
+    "low": "低"
   }
 }

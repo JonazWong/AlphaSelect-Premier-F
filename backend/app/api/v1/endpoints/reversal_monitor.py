@@ -3,6 +3,12 @@ Reversal Monitor API endpoints
 
 GET /api/v1/reversal/scan  — scan all symbols for potential reversal signals
 GET /api/v1/reversal/{symbol} — reversal signals for a single symbol
+
+Timeframe controls the data window used for indicator calculation:
+  Min15  →  50 rows  (~15-min granularity)
+  Hour1  → 100 rows  (default, ~1-hour window)
+  Hour4  → 200 rows  (~4-hour window)
+  Day1   → 400 rows  (~daily window)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 import logging
+import uuid
 import numpy as np
 
 from app.db.session import get_db
@@ -19,6 +26,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Timeframe → number of DB rows to pull per symbol
+TIMEFRAME_LIMITS: dict[str, int] = {
+    "Min15": 50,
+    "Hour1": 100,
+    "Hour4": 200,
+    "Day1": 400,
+}
+
 
 def normalize_symbol(symbol: str) -> str:
     """Convert frontend BTCUSDT format to DB BTC_USDT format."""
@@ -27,8 +42,12 @@ def normalize_symbol(symbol: str) -> str:
     return symbol
 
 
-def _compute_rsi(prices: np.ndarray, period: int = 14) -> float:
-    """Compute the RSI for the last data point."""
+def _compute_rsi_wilder(prices: np.ndarray, period: int = 14) -> float:
+    """
+    Compute RSI using Wilder's smoothed moving average (the standard used by
+    TradingView, MetaTrader, and most brokers). This is more accurate than
+    simple averaging, especially over long price series.
+    """
     if len(prices) < period + 1:
         return 50.0
 
@@ -36,8 +55,14 @@ def _compute_rsi(prices: np.ndarray, period: int = 14) -> float:
     gains = np.where(deltas > 0, deltas, 0.0)
     losses = np.where(deltas < 0, -deltas, 0.0)
 
-    avg_gain = float(np.mean(gains[-period:]))
-    avg_loss = float(np.mean(losses[-period:]))
+    # Seed with simple average of first `period` bars
+    avg_gain = float(np.mean(gains[:period]))
+    avg_loss = float(np.mean(losses[:period]))
+
+    # Apply Wilder smoothing for the remaining bars
+    for i in range(period, len(deltas)):
+        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
 
     if avg_loss == 0:
         return 100.0
@@ -77,7 +102,76 @@ def _compute_bollinger(prices: np.ndarray, period: int = 20) -> tuple:
     return mid + 2 * std, mid, mid - 2 * std
 
 
-def _detect_reversals(symbol: str, prices: List[float], funding_rate: float = 0.0) -> List[dict]:
+def _compute_atr(prices: np.ndarray, period: int = 14) -> float:
+    """Compute Average True Range (simplified, using closing prices only)."""
+    if len(prices) < period + 1:
+        return float(np.std(prices)) if len(prices) > 1 else 0.0
+    ranges = np.abs(np.diff(prices[-period - 1:]))
+    return float(np.mean(ranges))
+
+
+def _detect_rsi_divergence(prices: np.ndarray, rsi_series: List[float]) -> Optional[str]:
+    """
+    Detect simple price/RSI divergence over the last 5 bars.
+    Returns 'bullish', 'bearish', or None.
+    """
+    if len(prices) < 5 or len(rsi_series) < 5:
+        return None
+    p = prices[-5:]
+    r = rsi_series[-5:]
+    price_fell = p[-1] < p[0]
+    rsi_rose = r[-1] > r[0]
+    price_rose = p[-1] > p[0]
+    rsi_fell = r[-1] < r[0]
+    if price_fell and rsi_rose:
+        return "bullish"   # Hidden bullish divergence
+    if price_rose and rsi_fell:
+        return "bearish"   # Hidden bearish divergence
+    return None
+
+
+def _compute_rsi_series(prices: np.ndarray, period: int = 14) -> List[float]:
+    """Compute RSI for all bars (Wilder method) for divergence detection."""
+    if len(prices) < period + 2:
+        return [50.0] * len(prices)
+    deltas = np.diff(prices)
+    gains = np.where(deltas > 0, deltas, 0.0)
+    losses = np.where(deltas < 0, -deltas, 0.0)
+    avg_gain = float(np.mean(gains[:period]))
+    avg_loss = float(np.mean(losses[:period]))
+    rsi_vals = [50.0] * (period + 1)
+    for i in range(period, len(deltas)):
+        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+        rs = avg_gain / avg_loss if avg_loss > 0 else 100.0
+        rsi_vals.append(100.0 - 100.0 / (1.0 + rs))
+    return rsi_vals
+
+
+def _confidence_score(
+    *,
+    base: float,
+    rsi_extreme: float,     # How extreme RSI is beyond threshold (0–25)
+    bb_extreme: float,      # How far price is outside BB midpoint (0–0.5)
+    macd_confirms: bool,    # MACD histogram confirms direction
+    divergence: bool,       # RSI divergence detected
+    funding_confirms: bool, # Funding rate confirms direction
+) -> int:
+    """Multi-factor confidence weighting."""
+    score = base
+    score += rsi_extreme * 1.2          # up to +30
+    score += bb_extreme * 50            # up to +25
+    score += 8 if macd_confirms else 0
+    score += 12 if divergence else 0
+    score += 6 if funding_confirms else 0
+    return int(min(95, max(10, score)))
+
+
+def _detect_reversals(
+    symbol: str,
+    prices: List[float],
+    funding_rate: float = 0.0,
+) -> List[dict]:
     """Detect potential reversal signals from price data."""
     if len(prices) < 10:
         return []
@@ -85,158 +179,185 @@ def _detect_reversals(symbol: str, prices: List[float], funding_rate: float = 0.
     arr = np.array(prices, dtype=float)
     current_price = float(arr[-1])
 
-    rsi = _compute_rsi(arr)
-    macd, macd_signal, macd_hist = _compute_macd(arr)
+    rsi = _compute_rsi_wilder(arr)
+    macd, macd_sig, macd_hist = _compute_macd(arr)
     bb_upper, bb_mid, bb_lower = _compute_bollinger(arr)
 
-    results: List[dict] = []
-
-    # ── Oversold bounce signal ────────────────────────────────────────
-    # RSI < 30 + price near lower Bollinger Band + MACD histogram rising
     bb_range = bb_upper - bb_lower
     bb_pos = (current_price - bb_lower) / bb_range if bb_range > 0 else 0.5
 
+    atr = _compute_atr(arr)
+
+    # RSI series for divergence check
+    rsi_series = _compute_rsi_series(arr)
+    divergence = _detect_rsi_divergence(arr, rsi_series)
+
+    results: List[dict] = []
+
+    def _signal(
+        signal_type: str,
+        direction: str,
+        urgency: str,
+        confidence: int,
+        description: str,
+    ) -> dict:
+        return {
+            "id": str(uuid.uuid4()),
+            "symbol": symbol,
+            "signalType": signal_type,
+            "direction": direction,
+            "confidence": confidence,
+            "urgency": urgency,
+            "rsi": round(rsi, 2),
+            "macdHistogram": round(macd_hist, 6),
+            "bbPosition": round(bb_pos, 4),
+            "bbUpper": round(bb_upper, 6),
+            "bbLower": round(bb_lower, 6),
+            "bbMid": round(bb_mid, 6),
+            "atr": round(atr, 6),
+            "currentPrice": round(current_price, 6),
+            "targetPrice": round(bb_mid, 6),
+            "fundingRate": round(funding_rate, 6),
+            "description": description,
+        }
+
+    # ── Oversold bounce ─────────────────────────────────────────────────────
     if rsi < 40 and bb_pos < 0.30:
-        confidence = int(min(90, 50 + (40 - rsi) * 1.5 + (0.30 - bb_pos) * 60))
-        macd_bonus = 10 if macd_hist > 0 else 0
-        confidence = min(90, confidence + macd_bonus)
-
-        results.append(
-            {
-                "symbol": symbol,
-                "signalType": "bounce",
-                "direction": "bullish",
-                "confidence": confidence,
-                "urgency": "critical" if rsi < 25 else "high" if rsi < 30 else "medium",
-                "rsi": round(rsi, 2),
-                "macdHistogram": round(macd_hist, 6),
-                "bbPosition": round(bb_pos, 4),
-                "currentPrice": round(current_price, 6),
-                "targetPrice": round(float(bb_mid), 6),
-                "description": f"RSI oversold ({rsi:.1f}), price near lower BB",
-            }
+        conf = _confidence_score(
+            base=50.0,
+            rsi_extreme=max(0.0, 40.0 - rsi),
+            bb_extreme=max(0.0, 0.30 - bb_pos),
+            macd_confirms=(macd_hist > 0),
+            divergence=(divergence == "bullish"),
+            funding_confirms=(funding_rate < -0.0003),
         )
+        urgency = "critical" if rsi < 25 else "high" if rsi < 30 else "medium"
+        results.append(_signal(
+            "bounce", "bullish", urgency, conf,
+            f"RSI oversold ({rsi:.1f}), price near lower BB ({bb_pos*100:.0f}% position)"
+        ))
 
-    # ── Overbought pullback signal ────────────────────────────────────
+    # ── Overbought pullback ─────────────────────────────────────────────────
     if rsi > 60 and bb_pos > 0.70:
-        confidence = int(min(90, 50 + (rsi - 60) * 1.5 + (bb_pos - 0.70) * 60))
-        macd_bonus = 10 if macd_hist < 0 else 0
-        confidence = min(90, confidence + macd_bonus)
-
-        results.append(
-            {
-                "symbol": symbol,
-                "signalType": "pullback",
-                "direction": "bearish",
-                "confidence": confidence,
-                "urgency": "critical" if rsi > 75 else "high" if rsi > 70 else "medium",
-                "rsi": round(rsi, 2),
-                "macdHistogram": round(macd_hist, 6),
-                "bbPosition": round(bb_pos, 4),
-                "currentPrice": round(current_price, 6),
-                "targetPrice": round(float(bb_mid), 6),
-                "description": f"RSI overbought ({rsi:.1f}), price near upper BB",
-            }
+        conf = _confidence_score(
+            base=50.0,
+            rsi_extreme=max(0.0, rsi - 60.0),
+            bb_extreme=max(0.0, bb_pos - 0.70),
+            macd_confirms=(macd_hist < 0),
+            divergence=(divergence == "bearish"),
+            funding_confirms=(funding_rate > 0.0003),
         )
+        urgency = "critical" if rsi > 75 else "high" if rsi > 70 else "medium"
+        results.append(_signal(
+            "pullback", "bearish", urgency, conf,
+            f"RSI overbought ({rsi:.1f}), price near upper BB ({bb_pos*100:.0f}% position)"
+        ))
 
-    # ── MACD crossover signal ─────────────────────────────────────────
+    # ── MACD crossover ──────────────────────────────────────────────────────
     if len(arr) >= 28:
         _, _, prev_hist = _compute_macd(arr[:-1])
-        # Bullish crossover: histogram crosses from negative to positive
         if prev_hist < 0 < macd_hist and rsi < 60:
-            confidence = int(min(85, 55 + abs(macd_hist) / (current_price + 1e-9) * 1000))
-            results.append(
-                {
-                    "symbol": symbol,
-                    "signalType": "bounce",
-                    "direction": "bullish",
-                    "confidence": confidence,
-                    "urgency": "medium",
-                    "rsi": round(rsi, 2),
-                    "macdHistogram": round(macd_hist, 6),
-                    "bbPosition": round(bb_pos, 4),
-                    "currentPrice": round(current_price, 6),
-                    "targetPrice": round(current_price * 1.03, 6),
-                    "description": "MACD bullish crossover",
-                }
+            conf = _confidence_score(
+                base=55.0,
+                rsi_extreme=max(0.0, 50.0 - rsi) * 0.4,
+                bb_extreme=max(0.0, 0.40 - bb_pos),
+                macd_confirms=True,
+                divergence=(divergence == "bullish"),
+                funding_confirms=(funding_rate < -0.0003),
             )
-        # Bearish crossover
+            results.append(_signal(
+                "bounce", "bullish", "medium", conf,
+                "MACD bullish crossover confirmed"
+            ))
         elif prev_hist > 0 > macd_hist and rsi > 40:
-            confidence = int(min(85, 55 + abs(macd_hist) / (current_price + 1e-9) * 1000))
-            results.append(
-                {
-                    "symbol": symbol,
-                    "signalType": "pullback",
-                    "direction": "bearish",
-                    "confidence": confidence,
-                    "urgency": "medium",
-                    "rsi": round(rsi, 2),
-                    "macdHistogram": round(macd_hist, 6),
-                    "bbPosition": round(bb_pos, 4),
-                    "currentPrice": round(current_price, 6),
-                    "targetPrice": round(current_price * 0.97, 6),
-                    "description": "MACD bearish crossover",
-                }
+            conf = _confidence_score(
+                base=55.0,
+                rsi_extreme=max(0.0, rsi - 50.0) * 0.4,
+                bb_extreme=max(0.0, bb_pos - 0.60),
+                macd_confirms=True,
+                divergence=(divergence == "bearish"),
+                funding_confirms=(funding_rate > 0.0003),
             )
+            results.append(_signal(
+                "pullback", "bearish", "medium", conf,
+                "MACD bearish crossover confirmed"
+            ))
 
-    # ── Extreme funding rate signal ───────────────────────────────────
-    if abs(funding_rate) > 0.001:  # > 0.1%
+    # ── RSI Divergence ──────────────────────────────────────────────────────
+    if divergence == "bullish" and rsi < 55 and not any(r["signalType"] == "bounce" for r in results):
+        conf = _confidence_score(
+            base=52.0,
+            rsi_extreme=max(0.0, 50.0 - rsi),
+            bb_extreme=max(0.0, 0.40 - bb_pos),
+            macd_confirms=(macd_hist > 0),
+            divergence=True,
+            funding_confirms=(funding_rate < -0.0003),
+        )
+        results.append(_signal(
+            "bounce", "bullish", "medium", conf,
+            "Bullish RSI divergence: price lower low, RSI higher low"
+        ))
+    elif divergence == "bearish" and rsi > 45 and not any(r["signalType"] == "pullback" for r in results):
+        conf = _confidence_score(
+            base=52.0,
+            rsi_extreme=max(0.0, rsi - 50.0),
+            bb_extreme=max(0.0, bb_pos - 0.60),
+            macd_confirms=(macd_hist < 0),
+            divergence=True,
+            funding_confirms=(funding_rate > 0.0003),
+        )
+        results.append(_signal(
+            "pullback", "bearish", "medium", conf,
+            "Bearish RSI divergence: price higher high, RSI lower high"
+        ))
+
+    # ── Extreme funding rate ────────────────────────────────────────────────
+    if abs(funding_rate) > 0.001:
         if funding_rate > 0.001:
-            # Extreme positive funding → shorts likely to profit, bearish reversal
-            confidence = int(min(80, 50 + abs(funding_rate) * 5000))
-            results.append(
-                {
-                    "symbol": symbol,
-                    "signalType": "pullback",
-                    "direction": "bearish",
-                    "confidence": confidence,
-                    "urgency": "high" if funding_rate > 0.003 else "medium",
-                    "rsi": round(rsi, 2),
-                    "macdHistogram": round(macd_hist, 6),
-                    "bbPosition": round(bb_pos, 4),
-                    "currentPrice": round(current_price, 6),
-                    "targetPrice": round(current_price * 0.97, 6),
-                    "description": f"Extreme positive funding rate ({funding_rate*100:.3f}%)",
-                }
+            conf = _confidence_score(
+                base=48.0,
+                rsi_extreme=max(0.0, rsi - 50.0) * 0.5,
+                bb_extreme=max(0.0, bb_pos - 0.50),
+                macd_confirms=(macd_hist < 0),
+                divergence=(divergence == "bearish"),
+                funding_confirms=True,
             )
+            urgency = "high" if funding_rate > 0.003 else "medium"
+            s = _signal("pullback", "bearish", urgency, conf,
+                        f"Extreme positive funding ({funding_rate*100:.3f}%) → bearish pressure")
+            s["targetPrice"] = round(current_price * 0.97, 6)
+            results.append(s)
         else:
-            # Extreme negative funding → longs likely to profit, bullish reversal
-            confidence = int(min(80, 50 + abs(funding_rate) * 5000))
-            results.append(
-                {
-                    "symbol": symbol,
-                    "signalType": "bounce",
-                    "direction": "bullish",
-                    "confidence": confidence,
-                    "urgency": "high" if funding_rate < -0.003 else "medium",
-                    "rsi": round(rsi, 2),
-                    "macdHistogram": round(macd_hist, 6),
-                    "bbPosition": round(bb_pos, 4),
-                    "currentPrice": round(current_price, 6),
-                    "targetPrice": round(current_price * 1.03, 6),
-                    "description": f"Extreme negative funding rate ({funding_rate*100:.3f}%)",
-                }
+            conf = _confidence_score(
+                base=48.0,
+                rsi_extreme=max(0.0, 50.0 - rsi) * 0.5,
+                bb_extreme=max(0.0, 0.50 - bb_pos),
+                macd_confirms=(macd_hist > 0),
+                divergence=(divergence == "bullish"),
+                funding_confirms=True,
             )
+            urgency = "high" if funding_rate < -0.003 else "medium"
+            s = _signal("bounce", "bullish", urgency, conf,
+                        f"Extreme negative funding ({funding_rate*100:.3f}%) → bullish pressure")
+            s["targetPrice"] = round(current_price * 1.03, 6)
+            results.append(s)
 
     return results
 
 
-def _get_reversals_for_symbol(symbol: str, db: Session) -> List[dict]:
+def _get_reversals_for_symbol(symbol: str, db: Session, limit: int = 100) -> List[dict]:
     """Fetch price data and detect reversals for a given symbol."""
     db_symbol = normalize_symbol(symbol)
     records = (
         db.query(ContractMarket)
         .filter(ContractMarket.symbol == db_symbol)
         .order_by(ContractMarket.created_at.desc())
-        .limit(100)
+        .limit(limit)
         .all()
     )
     if not records:
         return []
-
-    # Reverse to get oldest → newest ordering for indicator calculations.
     records = list(reversed(records))
-
     prices = [float(r.last_price) for r in records if r.last_price is not None]
     latest_funding = float(records[-1].funding_rate or 0.0)
     return _detect_reversals(symbol, prices, latest_funding)
@@ -246,24 +367,19 @@ def _get_reversals_for_symbols(
     symbols: List[str], db: Session, per_symbol_limit: int = 100
 ) -> List[dict]:
     """
-    Fetch price data and detect reversals for multiple symbols in a single batched query.
-
-    This avoids issuing one query per symbol (N+1 pattern) by using a window function
-    to select the last `per_symbol_limit` records per symbol.
+    Fetch price data and detect reversals for multiple symbols in a single
+    batched query using a window function (avoids N+1 pattern).
     """
     if not symbols:
         return []
 
-    # Map DB symbols (e.g. BTC_USDT) to original frontend symbols (e.g. BTCUSDT).
     db_symbol_map: dict[str, str] = {}
     for s in symbols:
         db_sym = normalize_symbol(s)
-        # In case of duplicates, the last occurrence wins; this is fine for our use.
         db_symbol_map[db_sym] = s
 
     db_symbols = list(db_symbol_map.keys())
 
-    # Use a window function to get the last N rows per symbol by created_at.
     subq = (
         db.query(
             ContractMarket.id,
@@ -297,24 +413,21 @@ def _get_reversals_for_symbols(
     prices_by_symbol: dict[str, List[float]] = {}
     funding_by_symbol: dict[str, float] = {}
 
-    for symbol, last_price, funding_rate, created_at in rows:
+    for sym, last_price, funding_rate, _ in rows:
         if last_price is None:
             continue
-        prices_by_symbol.setdefault(symbol, []).append(float(last_price))
-        # Because we order by created_at ascending in the outer query, the last assignment
-        # here corresponds to the most recent funding rate.
-        funding_by_symbol[symbol] = float(funding_rate or 0.0)
+        prices_by_symbol.setdefault(sym, []).append(float(last_price))
+        funding_by_symbol[sym] = float(funding_rate or 0.0)
 
     all_signals: List[dict] = []
-
     for db_symbol, prices in prices_by_symbol.items():
         if not prices:
             continue
         frontend_symbol = db_symbol_map.get(db_symbol, db_symbol.replace("_", ""))
         latest_funding = funding_by_symbol.get(db_symbol, 0.0)
         try:
-            signals = _detect_reversals(frontend_symbol, prices, latest_funding)
-            all_signals.extend(signals)
+            sigs = _detect_reversals(frontend_symbol, prices, latest_funding)
+            all_signals.extend(sigs)
         except Exception as e:
             logger.warning(f"Reversal detection failed for {frontend_symbol}: {e}")
 
@@ -328,9 +441,24 @@ def scan_reversals(
         description="Comma-separated list of symbols (e.g. BTCUSDT,ETHUSDT). "
         "Defaults to all symbols in the database.",
     ),
+    timeframe: str = Query(
+        "Hour1",
+        description="Data window for indicator calculation: Min15 | Hour1 (default) | Hour4 | Day1",
+    ),
     db: Session = Depends(get_db),
 ):
-    """Scan for potential reversal signals across multiple symbols."""
+    """
+    Scan for potential reversal signals across multiple symbols.
+
+    - **symbols**: Optional comma-separated list; defaults to all DB symbols.
+    - **timeframe**: Controls how many data points are used per symbol for indicator accuracy:
+      - `Min15` → 50 rows (fast, less accurate)
+      - `Hour1` → 100 rows (default, balanced)
+      - `Hour4` → 200 rows (more accurate, slower)
+      - `Day1` → 400 rows (most accurate, slowest)
+    """
+    per_symbol_limit = TIMEFRAME_LIMITS.get(timeframe, 100)
+
     try:
         if symbols:
             symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
@@ -340,13 +468,15 @@ def scan_reversals(
                 return {"signals": [], "total": 0}
             symbol_list = [row[0].replace("_", "") for row in rows]
 
-        # Fetch and detect reversals for all symbols in a single batched query
-        all_signals: List[dict] = _get_reversals_for_symbols(symbol_list, db)
-
-        # Sort by confidence descending
+        all_signals = _get_reversals_for_symbols(symbol_list, db, per_symbol_limit)
         all_signals.sort(key=lambda s: s["confidence"], reverse=True)
 
-        return {"signals": all_signals, "total": len(all_signals)}
+        return {
+            "signals": all_signals,
+            "total": len(all_signals),
+            "timeframe": timeframe,
+            "data_points_per_symbol": per_symbol_limit,
+        }
 
     except Exception as exc:
         logger.error(f"Error scanning reversals: {exc}")
@@ -354,11 +484,21 @@ def scan_reversals(
 
 
 @router.get("/{symbol}")
-def get_symbol_reversals(symbol: str, db: Session = Depends(get_db)):
+def get_symbol_reversals(
+    symbol: str,
+    timeframe: str = Query("Hour1", description="Data window: Min15 | Hour1 | Hour4 | Day1"),
+    db: Session = Depends(get_db),
+):
     """Get reversal signals for a single symbol."""
+    per_symbol_limit = TIMEFRAME_LIMITS.get(timeframe, 100)
     try:
-        signals = _get_reversals_for_symbol(symbol, db)
-        return {"symbol": symbol, "signals": signals, "total": len(signals)}
+        sigs = _get_reversals_for_symbol(symbol, db, per_symbol_limit)
+        return {
+            "symbol": symbol,
+            "signals": sigs,
+            "total": len(sigs),
+            "timeframe": timeframe,
+        }
     except Exception as exc:
         logger.error(f"Error detecting reversals for {symbol}: {exc}")
         raise HTTPException(status_code=500, detail="Reversal detection failed")
