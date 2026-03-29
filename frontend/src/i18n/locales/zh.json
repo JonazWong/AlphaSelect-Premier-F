@@ -311,7 +311,7 @@
     "dataReadiness": {
       "ready": "✓ 已達到訓練門檻（100 筆）",
       "missing": "尚差 {{count}} 筆才能訓練",
-      "currentData": "{{symbol}} 訓練數據：{{count}} 筆",
+      "currentData": "{{symbol}} 訓練數據：{{formattedCount}} 筆",
       "hint": "請先執行 quick_collect_100.bat 收集數據，或重複呼叫 GET /api/v1/contract/ticker/{symbol} 累積到 100 筆後再訓練。"
     },
     "filters": "篩選：",

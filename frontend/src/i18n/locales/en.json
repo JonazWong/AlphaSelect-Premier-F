@@ -305,7 +305,7 @@
     "dataReadiness": {
       "ready": "✓ Training threshold reached (100 records)",
       "missing": "Still needs {{count}} more records to train",
-      "currentData": "{{symbol}} training data: {{count}} records",
+      "currentData": "{{symbol}} training data: {{formattedCount}} records",
       "hint": "Run quick_collect_100.bat to collect data, or call GET /api/v1/contract/ticker/{symbol} repeatedly to accumulate 100 records."
     },
     "filters": "Filter:",
