@@ -271,7 +271,7 @@ export default function AITrainingMonitorPage() {
             : <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 animate-pulse" />}
           <div className="flex-1">
             <div className={`font-semibold text-sm ${dataStatus.ready ? 'text-green-400' : 'text-yellow-400'}`}>
-              {t('aiTrainingMonitor.dataReadiness.currentData', { symbol: dataStatus.symbol, count: dataStatus.count.toLocaleString() })}
+              {t('aiTrainingMonitor.dataReadiness.currentData', { symbol: dataStatus.symbol, count: dataStatus.count })}
               {'　'}
               {dataStatus.ready
                 ? t('aiTrainingMonitor.dataReadiness.ready')
