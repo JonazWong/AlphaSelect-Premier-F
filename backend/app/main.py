@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
 )
 from app.websocket.manager import sio
 from app.db.init_db import init_db
+import asyncio
 import socketio
 import datetime
 import logging
@@ -50,9 +51,10 @@ async def startup_event():
     logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info("=" * 60)
     
-    # 初始化數據庫
+    # 初始化數據庫 — run in a thread so the event loop (and health-check
+    # endpoint) remain responsive while the blocking DB operations complete.
     try:
-        init_db()
+        await asyncio.to_thread(init_db)
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
         # 不阻止應用啟動，允許應用運行（可能只是表已存在）
