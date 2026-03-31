@@ -7,6 +7,16 @@ RUN npm ci --legacy-peer-deps
 # Stage 2: Builder
 FROM dependencies AS builder
 WORKDIR /app
+
+# Declare build-time arguments so DigitalOcean App Platform can inject
+# NEXT_PUBLIC_* variables (RUN_AND_BUILD_TIME scope) during `docker build`.
+# Without ARG declarations here, --build-arg values passed by DO are silently
+# ignored and Next.js falls back to the localhost:8000 default.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
 COPY . .
 RUN npm run build
 

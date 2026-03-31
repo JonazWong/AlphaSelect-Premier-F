@@ -43,7 +43,7 @@ jobs:
   deploy:
     name: Deploy to DigitalOcean App Platform
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: read
 
@@ -81,7 +81,7 @@ jobs:
         run: |
           APP_ID="${{ secrets.DIGITALOCEAN_APP_ID }}"
           DEPLOY_ID="${{ steps.deploy.outputs.deploy_id }}"
-          MAX_ATTEMPTS=72   # 72 × 10 s = 720 s ≈ 12 min
+          MAX_ATTEMPTS=108  # 108 × 10 s = 1080 s ≈ 18 min
           ATTEMPT=0
 
           echo "Polling deployment $DEPLOY_ID …"
