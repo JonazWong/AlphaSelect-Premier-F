@@ -15,11 +15,10 @@ databases:
     engine: PG
     name: premier
     production: true
-  - cluster_name: redis-premier
+  - cluster_name: redis-alphaselect
     engine: REDIS
     name: redis
     production: true
-    version: "7"
 
 ingress:
   rules:
