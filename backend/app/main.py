@@ -56,7 +56,7 @@ async def startup_event():
     try:
         await asyncio.to_thread(init_db)
     except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
+        logger.exception("❌ Database initialization failed during startup")
         # 不阻止應用啟動，允許應用運行（可能只是表已存在）
     
     logger.info("✅ Application startup complete")
