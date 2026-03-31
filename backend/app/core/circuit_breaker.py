@@ -100,52 +100,6 @@ class CircuitBreaker:
         except redis.RedisError as e:
             logger.error(f"Redis error checking circuit state: {e}")
             return True  # Fail open
-        """Get current failure count"""
-        count = self.redis_client.get(f"circuit:{key}:failures")
-        return int(count) if count else 0
-    
-    def record_success(self, key: str):
-        """Record successful request"""
-        self.redis_client.delete(f"circuit:{key}:failures")
-        self.redis_client.set(f"circuit:{key}:state", CircuitState.CLOSED.value)
-    
-    def record_failure(self, key: str):
-        """Record failed request"""
-        failures = self.redis_client.incr(f"circuit:{key}:failures")
-        
-        if failures >= self.failure_threshold:
-            # Trip the circuit
-            self.redis_client.set(
-                f"circuit:{key}:state",
-                CircuitState.OPEN.value,
-                ex=self.timeout
-            )
-            self.redis_client.set(
-                f"circuit:{key}:open_at",
-                time.time(),
-                ex=self.timeout
-            )
-    
-    def can_request(self, key: str) -> bool:
-        """Check if request can proceed"""
-        state = self.get_state(key)
-        
-        if state == CircuitState.CLOSED:
-            return True
-        
-        if state == CircuitState.OPEN:
-            # Check if timeout expired
-            open_at = self.redis_client.get(f"circuit:{key}:open_at")
-            if open_at:
-                elapsed = time.time() - float(open_at)
-                if elapsed >= self.timeout:
-                    # Move to half-open state
-                    self.redis_client.set(f"circuit:{key}:state", CircuitState.HALF_OPEN.value)
-                    return True
-            return False
-        
-        # HALF_OPEN state - allow one request to test
-        return True
 
 
 def circuit_breaker(key: str):
