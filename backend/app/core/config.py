@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     CIRCUIT_BREAKER_TIMEOUT: int = 60  # seconds
 
     # Database Pool
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
 
     # App
     APP_NAME: str = "AlphaSelect Premier F"

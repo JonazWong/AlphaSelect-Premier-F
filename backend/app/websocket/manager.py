@@ -22,14 +22,25 @@ REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 
 # python-socketio's AsyncRedisManager may not support rediss:// schema directly.
 # Convert rediss:// to redis:// and pass ssl_context via Redis connection options.
-if REDIS_URL.startswith('rediss://'):
-    REDIS_URL = REDIS_URL.replace('rediss://', 'redis://', 1)
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    redis_manager = socketio.AsyncRedisManager(REDIS_URL, redis_options={'ssl': ssl_context})
-else:
-    redis_manager = socketio.AsyncRedisManager(REDIS_URL)
+# Wrapped in try/except so a Redis unavailability at startup doesn't prevent the
+# entire backend from loading — falls back to the in-process manager instead.
+try:
+    if REDIS_URL.startswith('rediss://'):
+        converted_redis_url = REDIS_URL.replace('rediss://', 'redis://', 1)
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        redis_manager = socketio.AsyncRedisManager(converted_redis_url, redis_options={'ssl': ssl_context})
+    else:
+        redis_manager = socketio.AsyncRedisManager(REDIS_URL)
+    logger.info(f"✅ AsyncRedisManager initialized ({REDIS_URL[:30]}...)")
+except Exception as e:
+    logger.warning(
+        f"⚠️  AsyncRedisManager could not connect ({e}); "
+        "falling back to in-process pub/sub manager. "
+        "Multi-instance WebSocket broadcasting will not work until Redis is reachable."
+    )
+    redis_manager = None
 
 sio = socketio.AsyncServer(
     async_mode='asgi',
