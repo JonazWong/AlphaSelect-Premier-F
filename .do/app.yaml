@@ -15,6 +15,11 @@ databases:
     engine: PG
     name: premier
     production: true
+  - cluster_name: redis-premier
+    engine: REDIS
+    name: redis
+    production: true
+    version: "7"
 
 ingress:
   rules:
@@ -56,7 +61,7 @@ services:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
+        value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -115,14 +120,14 @@ workers:
     source_dir: backend
     dockerfile_path: backend/Dockerfile
     instance_count: 1
-    instance_size_slug: apps-s-1vcpu-1gb
+    instance_size_slug: apps-s-1vcpu-2gb
     envs:
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
+        value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -152,7 +157,7 @@ workers:
         value: ${premier.DATABASE_URL}
       - key: REDIS_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
+        value: ${redis.REDIS_URL}
       - key: MEXC_API_KEY
         scope: RUN_TIME
         type: SECRET
