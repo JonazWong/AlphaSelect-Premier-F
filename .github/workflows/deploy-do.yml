@@ -47,10 +47,8 @@ jobs:
     permissions:
       contents: read
 
-    # For workflow_run: only deploy if CI passed; always run for manual trigger
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+    # PAUSED – 部署已暫停，需手動移除此行後 push 以恢復自動部署
+    if: false
 
     steps:
       # ------------------------------------------------------------------ #
