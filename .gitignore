@@ -87,6 +87,7 @@ logs/
 tmp/
 temp/
 *.tmp
+tmp_do_spec.yaml
 
 # Backup directories created by fix scripts
 backup_fix_*/
