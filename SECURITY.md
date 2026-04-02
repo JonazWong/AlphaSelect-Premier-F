@@ -223,3 +223,37 @@ All identified vulnerabilities have been resolved through dependency updates.
 
 **Last Updated**: 2026-02-18
 **Next Review**: 2026-03-18
+
+## 2026-04-02 Secret Rotation Plan
+
+### Scope
+- Rotate `MEXC_API_KEY` and `MEXC_SECRET_KEY` in DigitalOcean App Platform.
+- Rotate application `SECRET_KEY` used by backend JWT signing.
+- Rotate database and Redis credentials if these values were ever shared outside controlled channels.
+
+### Why This Is Required
+- Repository contains encrypted environment placeholders (`EV[...]`) in deployment spec snapshots such as `current_spec.yaml` and `current_do_spec.yaml`.
+- A temporary spec file with secret-like values existed locally and is now ignored by `.gitignore` (`tmp_do_spec.yaml`).
+- Rotating now reduces residual exposure risk.
+
+### Execution Checklist
+1. Create new MEXC read-only API credentials in MEXC console.
+2. Generate a new backend `SECRET_KEY` using `python generate_secret_key.py`.
+3. Update DigitalOcean App env vars for backend and worker components.
+4. Trigger a fresh deployment and verify all components reach healthy state.
+5. Run smoke tests:
+   - `GET /api/v1/health` returns 200
+   - login/token flow works with new JWT signing key
+   - MEXC market endpoints return valid data
+   - Celery tasks can read model dir and Redis queue
+6. Revoke old MEXC keys after verification.
+7. Record rotation date and next due date in this file.
+
+### Target Timebox
+- Start: 2026-04-02
+- Complete within: 24 hours
+
+### Post-Rotation Validation
+- `docker-compose` local stack starts without secret-related errors.
+- Frontend pages that call `/api/v1/` endpoints load without auth failures.
+- No plain secrets committed to git history after rotation.
