@@ -133,9 +133,12 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
             
         logger.info(f"Model {model_id} saved to {file_path}")
         
+        # Save metrics before freeing result from memory
+        test_metrics = result['test_metrics']
+
         # Send completion
         self.update_state(state='SUCCESS', meta={'status': 'Training completed', 'progress': 100})
-        sync_send_progress('Training completed', 100, metrics=result['test_metrics'])
+        sync_send_progress('Training completed', 100, metrics=test_metrics)
         
         # Final memory cleanup
         del result, training_service
@@ -150,7 +153,7 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
             loop.run_until_complete(broadcast_training_complete(session_id, {
                 'model_id': model_id,
                 'model_type': model_type,
-                'metrics': result['test_metrics'],
+                'metrics': test_metrics,
                 'file_path': file_path
             }))
             loop.close()
@@ -160,7 +163,7 @@ def train_single_model_task(self, session_id: str, model_id: str, symbol: str, m
         return {
             'status': 'success',
             'model_id': model_id,
-            'metrics': result['test_metrics'],
+            'metrics': test_metrics,
             'file_path': file_path
         }
         

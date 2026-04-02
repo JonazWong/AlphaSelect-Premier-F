@@ -55,4 +55,38 @@ echo.
 
 set /a total=0
 set /a success=0
-set /a failed=
+set /a failed=0
+
+set "API_URL=http://localhost:8000/api/v1/ai/training/train"
+
+for %%s in (%symbols%) do (
+    for %%m in (%models%) do (
+        set /a total+=1
+        echo [!total!] 提交訓練：%%s  ^|  %%m
+        curl.exe -s -X POST "%API_URL%" ^
+          -H "Content-Type: application/json" ^
+          -d "{\"symbol\": \"%%s\", \"model_type\": \"%%m\", \"min_data_points\": 100}" >NUL 2>&1
+        if errorlevel 1 (
+            echo     ❌ 失敗
+            set /a failed+=1
+        ) else (
+            echo     ✅ 已提交
+            set /a success+=1
+        )
+        timeout /t 2 /nobreak >NUL
+    )
+    echo.
+)
+
+echo.
+echo ========================================
+echo 批量訓練提交完成
+echo ========================================
+echo   總計提交：!total! 個任務
+echo   成功提交：!success! 個
+echo   失敗：    !failed! 個
+echo.
+echo 請至 http://localhost:3000/ai-training 查看訓練進度
+echo ========================================
+echo.
+pause

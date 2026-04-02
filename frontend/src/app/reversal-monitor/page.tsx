@@ -24,6 +24,7 @@ export type ReversalSignal = {
   atr?: number
   currentPrice?: number
   targetPrice?: number
+  targetPct?: number
   confidence?: number
   macdHistogram?: number
   fundingRate?: number
@@ -354,6 +355,11 @@ export default function ReversalMonitorPage() {
                     <span className="text-gray-500">{t('aiPredictions.targetPrice', { defaultValue: 'Target' })}: </span>
                     <span className={`font-mono font-bold ${signal.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
                       ${(signal.targetPrice ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
+                      {signal.targetPct !== undefined && (
+                        <span className="ml-1 text-[10px] opacity-80">
+                          ({signal.targetPct > 0 ? '+' : ''}{signal.targetPct.toFixed(1)}%)
+                        </span>
+                      )}
                     </span>
                   </div>
                   {signal.atr !== undefined && (

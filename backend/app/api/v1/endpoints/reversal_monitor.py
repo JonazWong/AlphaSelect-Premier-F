@@ -21,18 +21,53 @@ import numpy as np
 
 from app.db.session import get_db
 from app.models.contract_market import ContractMarket
+from app.core.mexc.contract import MEXCContractAPI
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Timeframe → number of DB rows to pull per symbol
+# Timeframe → number of DB rows to pull per symbol (DB fallback)
 TIMEFRAME_LIMITS: dict[str, int] = {
     "Min15": 50,
     "Hour1": 100,
     "Hour4": 200,
     "Day1": 400,
 }
+
+# Timeframe → MEXC kline interval and candle count
+TIMEFRAME_KLINE: dict[str, tuple[str, int]] = {
+    "Min15": ("Min15", 100),
+    "Hour1": ("Min60", 100),
+    "Hour4": ("Hour4", 100),
+    "Day1":  ("Day1",  100),
+}
+
+
+def _fetch_kline_prices(symbol: str, timeframe: str = "Hour1") -> Optional[List[float]]:
+    """
+    Fetch closing prices from MEXC kline API for the given symbol/timeframe.
+    Returns a list of floats (chronological order) or None on failure.
+    """
+    interval, limit = TIMEFRAME_KLINE.get(timeframe, ("Min60", 100))
+    mexc_symbol = normalize_symbol(symbol).replace("_", "")
+    try:
+        client = MEXCContractAPI()
+        raw = client.get_contract_klines(symbol=mexc_symbol, interval=interval, limit=limit)
+        if not raw or not isinstance(raw, list):
+            return None
+        prices: List[float] = []
+        for candle in raw:
+            if isinstance(candle, (list, tuple)) and len(candle) >= 3:
+                prices.append(float(candle[2]))  # index 2 = close price
+            elif isinstance(candle, dict):
+                c = candle.get("close", candle.get("c"))
+                if c is not None:
+                    prices.append(float(c))
+        return prices if len(prices) >= 10 else None
+    except Exception as e:
+        logger.debug(f"MEXC kline fetch failed for {symbol} ({timeframe}): {e}")
+        return None
 
 
 def normalize_symbol(symbol: str) -> str:
@@ -201,6 +236,17 @@ def _detect_reversals(
         confidence: int,
         description: str,
     ) -> dict:
+        # Direction-aware target price:
+        # - Bullish: mean-reversion UP to bb_mid, or ATR-based if bb_mid too close
+        # - Bearish: mean-reversion DOWN to bb_mid, or ATR-based if bb_mid too close
+        # Always enforce a minimum move of 1.5% so target ≠ current price
+        min_move = max(2.0 * atr, current_price * 0.015)
+        if direction == "bullish":
+            target = bb_mid if bb_mid >= current_price + min_move else current_price + min_move
+        else:
+            target = bb_mid if bb_mid <= current_price - min_move else current_price - min_move
+        target_pct = round((target - current_price) / current_price * 100, 2) if current_price else 0.0
+
         return {
             "id": str(uuid.uuid4()),
             "symbol": symbol,
@@ -216,7 +262,8 @@ def _detect_reversals(
             "bbMid": round(bb_mid, 6),
             "atr": round(atr, 6),
             "currentPrice": round(current_price, 6),
-            "targetPrice": round(bb_mid, 6),
+            "targetPrice": round(target, 6),
+            "targetPct": target_pct,
             "fundingRate": round(funding_rate, 6),
             "description": description,
         }
@@ -323,10 +370,8 @@ def _detect_reversals(
                 funding_confirms=True,
             )
             urgency = "high" if funding_rate > 0.003 else "medium"
-            s = _signal("pullback", "bearish", urgency, conf,
-                        f"Extreme positive funding ({funding_rate*100:.3f}%) → bearish pressure")
-            s["targetPrice"] = round(current_price * 0.97, 6)
-            results.append(s)
+            results.append(_signal("pullback", "bearish", urgency, conf,
+                        f"Extreme positive funding ({funding_rate*100:.3f}%) → bearish pressure"))
         else:
             conf = _confidence_score(
                 base=48.0,
@@ -337,94 +382,147 @@ def _detect_reversals(
                 funding_confirms=True,
             )
             urgency = "high" if funding_rate < -0.003 else "medium"
-            s = _signal("bounce", "bullish", urgency, conf,
-                        f"Extreme negative funding ({funding_rate*100:.3f}%) → bullish pressure")
-            s["targetPrice"] = round(current_price * 1.03, 6)
-            results.append(s)
+            results.append(_signal("bounce", "bullish", urgency, conf,
+                        f"Extreme negative funding ({funding_rate*100:.3f}%) → bullish pressure"))
 
     return results
 
 
-def _get_reversals_for_symbol(symbol: str, db: Session, limit: int = 100) -> List[dict]:
-    """Fetch price data and detect reversals for a given symbol."""
-    db_symbol = normalize_symbol(symbol)
-    records = (
-        db.query(ContractMarket)
-        .filter(ContractMarket.symbol == db_symbol)
-        .order_by(ContractMarket.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-    if not records:
-        return []
-    records = list(reversed(records))
-    prices = [float(r.last_price) for r in records if r.last_price is not None]
-    latest_funding = float(records[-1].funding_rate or 0.0)
+def _get_reversals_for_symbol(
+    symbol: str, db: Session, limit: int = 100, timeframe: str = "Hour1"
+) -> List[dict]:
+    """Fetch price data (MEXC kline first, DB fallback) and detect reversals."""
+    # Try real-time MEXC kline data first
+    prices = _fetch_kline_prices(symbol, timeframe)
+    latest_funding = 0.0
+
+    if not prices:
+        # Fall back to DB historical data
+        db_symbol = normalize_symbol(symbol)
+        records = (
+            db.query(ContractMarket)
+            .filter(ContractMarket.symbol == db_symbol)
+            .order_by(ContractMarket.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        if not records:
+            return []
+        records = list(reversed(records))
+        prices = [float(r.last_price) for r in records if r.last_price is not None]
+        latest_funding = float(records[-1].funding_rate or 0.0)
+    else:
+        # Still fetch latest funding rate from DB for the signal score
+        db_symbol = normalize_symbol(symbol)
+        latest_record = (
+            db.query(ContractMarket)
+            .filter(ContractMarket.symbol == db_symbol)
+            .order_by(ContractMarket.created_at.desc())
+            .first()
+        )
+        if latest_record:
+            latest_funding = float(latest_record.funding_rate or 0.0)
+
     return _detect_reversals(symbol, prices, latest_funding)
 
 
 def _get_reversals_for_symbols(
-    symbols: List[str], db: Session, per_symbol_limit: int = 100
+    symbols: List[str], db: Session, per_symbol_limit: int = 100,
+    timeframe: str = "Hour1",
 ) -> List[dict]:
     """
-    Fetch price data and detect reversals for multiple symbols in a single
-    batched query using a window function (avoids N+1 pattern).
+    Fetch price data (MEXC kline first, DB fallback) and detect reversals for
+    multiple symbols. Falls back to DB batch query for symbols where kline fails.
     """
     if not symbols:
         return []
 
-    db_symbol_map: dict[str, str] = {}
-    for s in symbols:
-        db_sym = normalize_symbol(s)
-        db_symbol_map[db_sym] = s
-
-    db_symbols = list(db_symbol_map.keys())
-
-    subq = (
-        db.query(
-            ContractMarket.id,
-            ContractMarket.symbol,
-            ContractMarket.last_price,
-            ContractMarket.funding_rate,
-            ContractMarket.created_at,
-            func.row_number()
-            .over(
-                partition_by=ContractMarket.symbol,
-                order_by=ContractMarket.created_at.desc(),
-            )
-            .label("rn"),
-        )
-        .filter(ContractMarket.symbol.in_(db_symbols))
-        .subquery()
-    )
-
-    rows = (
-        db.query(
-            subq.c.symbol,
-            subq.c.last_price,
-            subq.c.funding_rate,
-            subq.c.created_at,
-        )
-        .filter(subq.c.rn <= per_symbol_limit)
-        .order_by(subq.c.symbol.asc(), subq.c.created_at.asc())
-        .all()
-    )
-
+    # ── Step 1: Try real-time MEXC klines for every symbol ──────────────────
     prices_by_symbol: dict[str, List[float]] = {}
+    kline_failed: List[str] = []
+    for s in symbols:
+        prices = _fetch_kline_prices(s, timeframe)
+        if prices:
+            prices_by_symbol[s] = prices
+        else:
+            kline_failed.append(s)
+
+    # ── Step 2: DB fallback for symbols where MEXC kline failed ─────────────
+    if kline_failed:
+        db_symbol_map: dict[str, str] = {normalize_symbol(s): s for s in kline_failed}
+        db_symbols = list(db_symbol_map.keys())
+
+        subq = (
+            db.query(
+                ContractMarket.id,
+                ContractMarket.symbol,
+                ContractMarket.last_price,
+                ContractMarket.funding_rate,
+                ContractMarket.created_at,
+                func.row_number()
+                .over(
+                    partition_by=ContractMarket.symbol,
+                    order_by=ContractMarket.created_at.desc(),
+                )
+                .label("rn"),
+            )
+            .filter(ContractMarket.symbol.in_(db_symbols))
+            .subquery()
+        )
+
+        rows = (
+            db.query(
+                subq.c.symbol,
+                subq.c.last_price,
+                subq.c.funding_rate,
+                subq.c.created_at,
+            )
+            .filter(subq.c.rn <= per_symbol_limit)
+            .order_by(subq.c.symbol.asc(), subq.c.created_at.asc())
+            .all()
+        )
+
+        for sym, last_price, funding_rate, _ in rows:
+            if last_price is None:
+                continue
+            frontend_sym = db_symbol_map.get(sym, sym.replace("_", ""))
+            prices_by_symbol.setdefault(frontend_sym, []).append(float(last_price))
+
+    # ── Step 3: Latest funding rates from DB (for all symbols) ──────────────
+    all_db_symbols = [normalize_symbol(s) for s in symbols]
     funding_by_symbol: dict[str, float] = {}
+    try:
+        subq2 = (
+            db.query(
+                ContractMarket.symbol,
+                ContractMarket.funding_rate,
+                func.row_number()
+                .over(
+                    partition_by=ContractMarket.symbol,
+                    order_by=ContractMarket.created_at.desc(),
+                )
+                .label("rn"),
+            )
+            .filter(ContractMarket.symbol.in_(all_db_symbols))
+            .subquery()
+        )
+        funding_rows = (
+            db.query(subq2.c.symbol, subq2.c.funding_rate)
+            .filter(subq2.c.rn == 1)
+            .all()
+        )
+        for sym, fr in funding_rows:
+            funding_by_symbol[sym] = float(fr or 0.0)
+    except Exception:
+        pass
 
-    for sym, last_price, funding_rate, _ in rows:
-        if last_price is None:
-            continue
-        prices_by_symbol.setdefault(sym, []).append(float(last_price))
-        funding_by_symbol[sym] = float(funding_rate or 0.0)
-
+    # ── Step 4: Run detection ────────────────────────────────────────────────
     all_signals: List[dict] = []
-    for db_symbol, prices in prices_by_symbol.items():
+    for frontend_symbol, prices in prices_by_symbol.items():
         if not prices:
             continue
-        frontend_symbol = db_symbol_map.get(db_symbol, db_symbol.replace("_", ""))
-        latest_funding = funding_by_symbol.get(db_symbol, 0.0)
+        db_sym = normalize_symbol(frontend_symbol)
+        latest_funding = funding_by_symbol.get(db_sym, 0.0)
         try:
             sigs = _detect_reversals(frontend_symbol, prices, latest_funding)
             all_signals.extend(sigs)
@@ -468,7 +566,7 @@ def scan_reversals(
                 return {"signals": [], "total": 0}
             symbol_list = [row[0].replace("_", "") for row in rows]
 
-        all_signals = _get_reversals_for_symbols(symbol_list, db, per_symbol_limit)
+        all_signals = _get_reversals_for_symbols(symbol_list, db, per_symbol_limit, timeframe)
         all_signals.sort(key=lambda s: s["confidence"], reverse=True)
 
         return {
@@ -492,7 +590,7 @@ def get_symbol_reversals(
     """Get reversal signals for a single symbol."""
     per_symbol_limit = TIMEFRAME_LIMITS.get(timeframe, 100)
     try:
-        sigs = _get_reversals_for_symbol(symbol, db, per_symbol_limit)
+        sigs = _get_reversals_for_symbol(symbol, db, per_symbol_limit, timeframe)
         return {
             "symbol": symbol,
             "signals": sigs,
